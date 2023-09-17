@@ -5,7 +5,9 @@ using Eigen::Vector3d;
 
 #include <algorithm>
 #include <array>
+#include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <iostream>
 #include <limits>
 #include <queue>
@@ -128,8 +130,20 @@ static std::array<P, 16> divideBezierPatch(std::span<P const> cp, Bounds2d const
 	return divCp;
 }
 
-std::array<Vector3d, 16> g_Cp1;
-std::array<Vector3d, 16> g_Cp2;
+std::array<Vector3d, 16> g_Cp1 = {
+	Vector3d(0, 0, 0), Vector3d(1, 0, 0), Vector3d(2, 0, 0), Vector3d(3, 0, 0),
+	Vector3d(0, 1, 0), Vector3d(1, 1, 0), Vector3d(2, 1, 0), Vector3d(3, 1, 0),
+	Vector3d(0, 2, 0), Vector3d(1, 2, 0), Vector3d(2, 2, 0), Vector3d(3, 2, 0),
+	Vector3d(0, 3, 0), Vector3d(1, 3, 0), Vector3d(2, 3, 0), Vector3d(3, 3, 0),
+};
+std::array<Vector3d, 16> g_Cp2 = {
+	Vector3d(0, 0, 2), Vector3d(1, 0, 2), Vector3d(2, 0, 2), Vector3d(3, 0, 2),
+	Vector3d(0, 1, 2), Vector3d(1, 1, 2), Vector3d(2, 1, 2), Vector3d(3, 1, 2),
+	Vector3d(0, 2, 2), Vector3d(1, 2, 2), Vector3d(2, 2, 2), Vector3d(3, 2, 2),
+	Vector3d(0, 3, 2), Vector3d(1, 3, 2), Vector3d(2, 3, 2), Vector3d(3, 3, 2),
+};
+
+std::uint64_t cnt;
 
 static double getDist(double min1, double max1, double min2, double max2) {
 	if (max1 <= min2) {
@@ -167,12 +181,15 @@ static double solve() {
 	while (!heap.empty()) {
 		auto const cur = heap.top();
 		heap.pop();
+		cnt++;
 		// Set uv of the middle point
 		Array2d uvMid1 = (cur.uvB1.pMin + cur.uvB1.pMax) / 2;
 		Array2d uvMid2 = (cur.uvB2.pMin + cur.uvB2.pMax) / 2;
 
 		// Decide whether the algorithm converges
 		if (std::max(cur.uvB1.diagonal().maxCoeff(), cur.uvB2.diagonal().maxCoeff()) < MinDeltaUV) {
+			std::cout << ((cur.uvB1.pMin + cur.uvB1.pMax) / 2).transpose() << std::endl;
+			std::cout << ((cur.uvB2.pMin + cur.uvB2.pMax) / 2).transpose() << std::endl;
 			return cur.dLower;
 		}
 
@@ -192,7 +209,39 @@ static double solve() {
 	return false;
 }
 
+
+
+static double solveNaive() {
+	constexpr double eps = .01;
+	double ans = std::numeric_limits<double>::infinity();
+	Array2d ap1, ap2;
+	for (double x1 = 0; x1 <= 1; x1 += eps) {
+		for (double y1 = 0; y1 <= 1; y1 += eps) {
+			Vector3d const p1 = evaluateBicubicBezier(g_Cp1, { x1, y1 });
+			for (double x2 = 0; x2 <= 1; x2 += eps) {
+				for (double y2 = 0; y2 <= 1; y2 += eps) {
+					Vector3d const p2 = evaluateBicubicBezier(g_Cp2, { x2, y2 });
+					double const dist2 = (p1 - p2).squaredNorm();
+					if (dist2 < ans) {
+						ans = dist2;
+						ap1 = { x1, y1 };
+						ap2 = { x2, y2 };
+					}
+				}
+			}
+		}
+	}
+	std::cout << ap1.transpose() << std::endl << ap2.transpose() << std::endl;
+	return ans;
+}
+
 int main() {
-	std::cout << solve();
+	std::srand(std::time(nullptr));
+	for (int i = 0; i < 16; i++) {
+		g_Cp1[i] += Vector3d::Random() * .6 - Vector3d::Constant(.3);
+		g_Cp2[i] += Vector3d::Random() * .6 - Vector3d::Constant(.3);
+	}
+	std::cout << solveNaive() << std::endl;
+	std::cout << solve() << std::endl << cnt << std::endl;
 	return 0;
 }
