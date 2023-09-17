@@ -128,8 +128,36 @@ static std::array<P, 16> divideBezierPatch(std::span<P const> cp, Bounds2d const
 	return divCp;
 }
 
+std::array<Vector3d, 16> g_Cp1;
+std::array<Vector3d, 16> g_Cp2;
+
+static double getDist(double min1, double max1, double min2, double max2) {
+	if (max1 <= min2) {
+		return min2 - max1;
+	} else if (max2 <= min1) {
+		return min1 - max2;
+	} else {
+		return 0.;
+	}
+}
+
 static double getLowerBound(Bounds2d const &divUvB1, Bounds2d const &divUvB2) {
-	return 0.;
+	auto const pt1 = divideBezierPatch<Vector3d>(g_Cp1, divUvB1);
+	auto const pt2 = divideBezierPatch<Vector3d>(g_Cp2, divUvB2);
+	Vector3d min1 = pt1[0];
+	Vector3d max1 = pt1[0];
+	Vector3d min2 = pt2[0];
+	Vector3d max2 = pt2[0];
+	for (int i = 1; i < 16; i++) {
+		min1 = min1.cwiseMin(pt1[i]);
+		max1 = max1.cwiseMax(pt1[i]);
+		min2 = min2.cwiseMin(pt2[i]);
+		max2 = max2.cwiseMax(pt2[i]);
+	}
+	double const dx = getDist(min1.x(), max1.x(), min2.x(), max2.x()); 
+	double const dy = getDist(min1.y(), max1.y(), min2.y(), max2.y()); 
+	double const dz = getDist(min1.z(), max1.z(), min2.z(), max2.z()); 
+	return dx * dx + dy * dy + dz * dz;
 }
 
 static double solve() {
