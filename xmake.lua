@@ -9,6 +9,14 @@ target("test")
     set_kind("binary")
     add_packages("eigen")
 
-    add_includedirs("src")
-    add_headerfiles("src/**.h")
-    add_files("src/**.cpp")
+    add_includedirs("dcd")
+    add_headerfiles("dcd/**.h")
+    add_files("dcd/**.cpp")
+
+target("ccd")
+    set_kind("binary")
+    add_packages("eigen")
+
+    add_includedirs("ccd")
+    add_headerfiles("ccd/**.h")
+    add_files("ccd/**.cpp")
