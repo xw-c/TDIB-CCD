@@ -282,141 +282,114 @@ static double AABBcheck(Bounds2d const &divUvB1, Bounds2d const &divUvB2){
                 exit(-1);
             }
             return -(b-l.b)/(k-l.k);
-            // double x=-(b-l.b)/(k-l.k), y=k*x+b;
-            // return Array2s(x,y);
         }
     };
 
-    auto getCH = [&] (std::vector<Line>& lines) {
+    auto getCH = [&] (std::vector<Line>& lines, std::vector<Line>& ch, std::vector<double>& pts) {
         lines.erase(std::unique(lines.begin(), lines.end()), lines.end()); // 去重
-        if(lines.size() < 2) return lines;
+		pts.push_back(0);
+		ch.push_back(lines[0]);
 
-        std::vector<std::pair<Line, double>> res; // (直线，开始点)
-        res.push_back(std::make_pair(lines[0], 0));
         double id = 1, intsctX = 0;
         while(id < lines.size()){
-            while(!res.empty()){
-                intsctX = -(lines[id].b-res.back().first.b)/(lines[id].k-res.back().first.k);
-                if(intsctX<=res.back().second)res.pop_back();
+            while(!ch.empty()){
+                intsctX = -lines[id].lineIntersect_x(ch.back());
+                if(intsctX<=pts.back()){
+					pts.pop_back();
+					ch.pop_back();
+				}
             }
-            res.push_back(std::make_pair(lines[id],intsctX));
+            ch.push_back(lines[id]);
+            pts.push_back(intsctX);
             id++;
         }
-
-        return res;
+		while(pts.back()>=DeltaT){
+			pts.pop_back();
+			ch.pop_back();
+		}
+		pts.push_back(DeltaT);
+		if(ch.empty()){
+            std::cout<<"empty CH!\n";
+            exit(-1);
+        }
+		if(ch.size()+1!=pts.size()){
+            std::cout<<"segments and inflections are not compatible!\n";
+            exit(-1);
+        }
     };
 
     auto linearCHIntersect = [&] (const std::vector<Line>& ch1, const std::vector<Line>& ch2, 
                                     const std::vector<double>& pts1, const std::vector<double>& pts2) {
-        if(ch1.empty()||ch1.empty()){
-            std::cout<<"empty CH!\n";
-            exit(-1);
-        }
-        if(ch1.size()!=pts1.size()||ch2.size()!=pts2.size()){
-            std::cout<<"segments and inflections are not compatible!\n";
-            exit(-1);
-        }
-
-        int id1=0, id2=0;
+        int id1=1, id2=1;
         double intvL=-1, intvR=-1;
         double sweep=-1, lastsweep=-1;
+		bool stopInAdv = false; // 还没写上，但是比如：intvL==-1&&ch1[id1-1].k>ch1[id1-1].k
 
         auto checkSweepLine = [&] (const int id1, const int id2) {
-            if(sweep==lastsweep)continue;//并不知道这样跳过能不能更快
             double y1=ch1[id1].k*sweep+ch1[id1].b;
-            double y2=l2.k*sweep+l2.b;
-            if(y1==y2){
-                if(intvL==-1)intvL=sweep;
-                else if()
-            }
-            if(y1<=y2&&intvL==-1){
-                if(l1.k!=l2.k)
-                    intvL = l1.lineIntsct_x(l2.first);
-                else intvL = sweep;
-            }
-            else if (y1>y2&&intvL!=-1)
-                intvR = l1.lineIntsct_x(l2.first);
-                if(l1.k==l2.k){std::cout<<"how come!\n";exit(-1);}
-                intvR = l1.lineIntsct_x(l2.first);
-                else intvR = lastsweep;
+            double y2=ch2[id2].k*sweep+ch2[id2].b;
+            if (y1>y2)
+                if(intvL!=-1)
+					intvR = ch1[id1-1].lineIntersect_x(ch2[id2-1]); // 如果k1==k2，那么必然前一个节点必然已经满足y1<y2了
+            else if(y1<y2)
+				if(intvL==-1)
+                    intvL = ch1[id1-1].lineIntersect_x(ch2[id2-1]); // 如果k1==k2，那么必然前一个节点必然已经满足y1<y2了
+            else{
+				//y1==y2
+				if(intvL==-1) intvR = intvL = sweep;
+				else intvR = sweep;
+			}
             lastsweep = sweep;
         };
 
-        while(id1<lines1.size()&&id2<lines2.size()){
-            sweep = std::min(lines1[id1].second, lines2[id2].second);
-            checkSweepLine();
-            if(lines1[id1].second < lines2[id2].second) id1++;
+		if(ch1[0].b<=ch2[0].b)
+			intvL = intvR = 0;
+        while(id1<pts1.size()&&id2<pts1.size()){
+            sweep = std::min(pts1[id1], pts2[id2]);
+            if(sweep==lastsweep)continue;//并不知道这样跳过能不能更快
+            checkSweepLine(id1, id2);
+            if(pts1[id1] < pts2[id2]) id1++;
+            else id2++;
         }
-        while(id1<lines1.size()){
-            sweep = lines1[id1].second;
+        while(id1<pts1.size()){
+            sweep = pts1[id1];
+            if(sweep==lastsweep)continue;//并不知道这样跳过能不能更快
             checkSweepLine(id1, id2-1);
             id1++;
         }
-        while(id2<lines2.size()){
-            sweep = lines2[id2].second;
+        while(id2<pts2.size()){
+            sweep = pts2[id2];
+            if(sweep==lastsweep)continue;//并不知道这样跳过能不能更快
             checkSweepLine(id1-1, id2);
             id2++;
         }
         if(intvL!=-1 && intvR==-1)intvR=DeltaT;
-        return Array(intvL,intvR);
+        return Array2d(intvL,intvR);
+    };
 
-
-        // std::vector<double> sweepline;
-        // for(const auto& l: lines1){
-        //     if(l.second>=DeltaT) break;
-        //     sweepline.push_back(l.second);
-        // }
-        // for(const auto& l: lines2){
-        //     if(l.second>=DeltaT) break;
-        //     sweepline.push_back(l.second);
-        // }
-        // std::sort(sweepline.begin(), sweepline.end());
-        // sweepline.push_back(DeltaT);
-        // sweepline.erase(std::unique(sweepline.begin(), sweepline.end()), sweepline.end()); // 去重
-        // int id1 = 0, id2 = 0;
-        // double intvL = -1, intvR = -1;
-        // bool flag = false;
-        // for(const double& x: sweepline){
-        //     double nextX1 = id1<lines1.size()-1 ? lines1[id1+1].second : DeltaT;
-        //     double nextX1 = id2<lines2.size()-1 ? lines2[id2+1].second : DeltaT;
-        //     if(x > nextX1) id1++;
-        //     else if(x > nextX2) id2++;
-        //     double y1=lines1[id1].first.k*x+lines1[id1].first.b;
-        //     double y2=lines2[id2].first.k*x+lines2[id2].first.b;
-        //     if(y1<=y2&&!flag){
-        //         // start intsct
-        //         intvL=std::max(0, lineIntsct(lines1[id1].first,lines2[id2].first));
-        //         flag=true;
-        //     }
-        //     else if (y1>=y2&&flag){
-        //         // end intsct
-        //         intvR=std::min(DeltaT, lineIntsct(lines1[id1].first,lines2[id2].first));
-        //         flag=false;
-        //         break;
-        //     }
-        // }//平行，只相交一个点????
-        // if(flag)intvR=DeltaT;
-        // return Array(intvL,intvR);
-    }
-
-    // std::array<Array2d, 6> feasibleInts = ;
+    std::vector<Array2d> feasibleIntvs;
     for(int dim = 0; dim < 3; dim++){
         std::vector<Line> lines1, lines2;
         std::vector<Line> ch1, ch2;
         std::vector<double> pts1, pts2;
-        for(int i = 0; i < 16; i++) lines1.emplace_back(ptVel1(i), ptPos1(i));
-        for(int i = 0; i < 16; i++) lines2.emplace_back(-ptVel2(i), -ptPos2(i));
+        for(int i = 0; i < 16; i++) lines1.emplace_back(ptVel1[i](dim), ptPos1[i](dim));
+        for(int i = 0; i < 16; i++) lines2.emplace_back(-ptVel2[i](dim), -ptPos2[i](dim));
         std::sort(lines1.begin(), lines1.end());
         std::sort(lines2.begin(), lines2.end());
         getCH(lines1, ch1, pts2);
         getCH(lines2, ch2, pts2);
         for(auto & l:ch2)
-            l.first.k = -l.first.k, l.first.b = -l.first.b;
+            l.k = -l.k, l.b = -l.b;
         const auto intvT = linearCHIntersect(ch1, ch2, pts1, pts2);
-        feasibleIntvs.push_?
+        if(intvT[0]!=-1)feasibleIntvs.push_back(intvT);
     }
-
-
+	double minT = std::numeric_limits<double>::infinity(), maxT = -std::numeric_limits<double>::infinity();
+	for(const auto intv: feasibleIntvs){
+		minT = std::max(minT, intv(0));
+		maxT = std::min(maxT, intv(0));
+	}
+	if(minT<maxT)return minT;
+	else return -1;
 	// Vector3d min1 = pt1[0];
 	// Vector3d max1 = pt1[0];
 	// Vector3d min2 = pt2[0];
@@ -482,24 +455,6 @@ static double ccd(const std::function<double(const Bounds2d &, const Bounds2d &)
 	return false;
 }
 
-int computeMinDist() {
-	std::srand(std::time(nullptr));
-	for (int i = 0; i < 16; i++) {
-		CpPos1[i] += Vector3d::Random() * .6 - Vector3d::Constant(.3);
-		CpPos2[i] += Vector3d::Random() * .6 - Vector3d::Constant(.3);
-	}
-	// std::cout << solveNaive() << std::endl;
-	std::cout << solve() << std::endl << cnt << std::endl;
-	return 0;
-}
-
-int detectIntersect(){
-	cnt=0;
-	std::cout << dcd(AABBcheck) << std::endl << cnt << std::endl;
-	cnt=0;
-	std::cout << dcd(OBBcheck) << std::endl << cnt << std::endl;
-	return 0;
-}
 void readinDoFs(){
 	std::ifstream readin("DoFs.txt");
 	for (int i = 0; i < 16; i++)
@@ -508,6 +463,12 @@ void readinDoFs(){
 	for (int i = 0; i < 16; i++)
 		for(int k=0;k<3;k++)
 			readin>>CpPos2[i](k);
+	for (int i = 0; i < 16; i++)
+		for(int k=0;k<3;k++)
+			readin>>CpVel1[i](k);
+	for (int i = 0; i < 16; i++)
+		for(int k=0;k<3;k++)
+			readin>>CpVel2[i](k);
 	readin.close();
 }
 void saveDoFs(){
@@ -516,15 +477,19 @@ void saveDoFs(){
 		f<<item.transpose()<<"\n";
 	for(auto item : CpPos2)
 		f<<item.transpose()<<"\n";
+	for(auto item : CpVel1)
+		f<<item.transpose()<<"\n";
+	for(auto item : CpVel2)
+		f<<item.transpose()<<"\n";
 	f.close();
 }
 void generatePatches(){
-	std::srand(std::time(nullptr));
+	std::srand(0);
 	for (int i = 0; i < 16; i++) {
 		CpPos1[i] = Vector3d::Random() - Vector3d::Constant(.5);
-		CpVel1[i] = Vector3d::Random() - Vector3d::Constant(.3);
+		CpVel1[i] = Vector3d::Random() + Vector3d::Constant(.3);
 		CpPos2[i] = Vector3d::Random() + Vector3d::Constant(.5);
-		CpVel2[i] = Vector3d::Random() + Vector3d::Constant(.3);
+		CpVel2[i] = Vector3d::Random() - Vector3d::Constant(.3);
 	}
 }
 void randomTest(){
@@ -535,32 +500,32 @@ void randomTest(){
 	std::srand(0);
 	for(int kase=0;kase<100;kase++){
 		generatePatches();
-		if(dcd(AABBcheck))cntAABB++;
+		if(ccd(AABBcheck))cntAABB++;
 		// if(dcd(OBBcheck))cntOBB++;
 		// if(cntAABB!=cntOBB){saveDoFs();exit(-1);}
 	}
 	const auto endAABB = steady_clock::now();
-	const auto initOBB = steady_clock::now();
-	std::srand(0);
-	for(int kase=0;kase<100;kase++){
-		generatePatches();
-		if(dcd(OBBcheck))cntOBB++;
-	}
-	const auto endOBB = steady_clock::now();
-	const auto initLPOBB = steady_clock::now();
-	std::srand(0);
-	for(int kase=0;kase<100;kase++){
-		generatePatches();
-		if(dcd(LPOBBcheck))cntLPOBB++;
-	}
-	const auto endLPOBB = steady_clock::now();
+	// const auto initOBB = steady_clock::now();
+	// std::srand(0);
+	// for(int kase=0;kase<100;kase++){
+	// 	generatePatches();
+	// 	if(dcd(OBBcheck))cntOBB++;
+	// }
+	// const auto endOBB = steady_clock::now();
+	// const auto initLPOBB = steady_clock::now();
+	// std::srand(0);
+	// for(int kase=0;kase<100;kase++){
+	// 	generatePatches();
+	// 	if(dcd(LPOBBcheck))cntLPOBB++;
+	// }
+	// const auto endLPOBB = steady_clock::now();
 	std::cout<<"AABB: "<<cntAABB<<"used seconds: "<<duration(endAABB - initAABB).count()*0.01<<"\n";
-	std::cout<<"OBB: "<<cntOBB<<"used seconds: "<<duration(endOBB - initOBB).count()*0.01<<"\n";
-	std::cout<<"LPOBB: "<<cntLPOBB<<"used seconds: "<<duration(endLPOBB - initLPOBB).count()*0.01<<"\n";
+	// std::cout<<"OBB: "<<cntOBB<<"used seconds: "<<duration(endOBB - initOBB).count()*0.01<<"\n";
+	// std::cout<<"LPOBB: "<<cntLPOBB<<"used seconds: "<<duration(endLPOBB - initLPOBB).count()*0.01<<"\n";
 }
 int main(){
 	// readinDoFs();
 	// detectIntersect();
     generatePatches();
-    std::cout<<
+    std::cout<<ccd(AABBcheck)<<"\n";
 }
