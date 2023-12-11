@@ -1,4 +1,5 @@
 #include <Eigen/Dense>
+#include "config.h"
 
 using Eigen::Array2d;
 using Eigen::Vector3d;
@@ -16,19 +17,11 @@ using Eigen::MatrixXd;
 #include <queue>
 #include <span>
 #include <chrono>
-static constexpr double MinDeltaUV = 1e-6;
-static constexpr double Epsilon = 1e-6;
-static constexpr double DeltaT = 1;
-bool DEBUG = 0;
-static constexpr bool SHOWANS = 0;
-enum class BB { AABB, OBB };
 
 std::array<Vector3d, 16> CpPos1 {};
 std::array<Vector3d, 16> CpPos2 {};
 std::array<Vector3d, 16> CpVel1 {};
 std::array<Vector3d, 16> CpVel2 {};
-
-std::uint64_t cnt;
 
 template <typename T> static T lerp(double t, T const &t0, T const &t1) { return (1 - t) * t0 + t * t1; }
 
@@ -153,6 +146,7 @@ static std::array<P, 16> divideBezierPatch(std::span<P const> cp, Bounds2d const
 	return divCp;
 }
 
+Array2d uv1, uv2;
 
 
 static double point2Box(const MatrixXd &x, const MatrixXd &u, const double tMax)
@@ -284,6 +278,8 @@ static double ccdSample() {
 	if(minT<=DeltaT&&minT>=0){
 		std::cout << ap1.transpose() << std::endl << ap2.transpose() << std::endl;
 		const auto endTime = steady_clock::now();
+		uv1 = ap1,
+		uv2 = ap2;
 		std::cout << "min time: "<<  minT << "used seconds: " <<
 			duration(endTime - initialTime).count()
 			<< std::endl;
@@ -491,7 +487,7 @@ static double PrimitiveCheck(Bounds2d const &divUvB1, Bounds2d const &divUvB2, c
 	if(feasibleIntvs.size()==0 || (feasibleIntvs[0](0)>0)) return 0;
 	double minT = feasibleIntvs[0](1);
 	for(int i=1;i<feasibleIntvs.size();i++)
-		if(feasibleIntvs[i](0)<=minT)
+		if(feasibleIntvs[i](0)<minT) //不能加等，因为无碰撞给的是开区间，如果有),(的情况加等号会把这个情况漏掉
 			minT=std::max(minT, feasibleIntvs[i](1));
 		else break;
 	if(minT<DeltaT)return minT;
@@ -520,7 +516,6 @@ static double PrimitiveCheck(Bounds2d const &divUvB1, Bounds2d const &divUvB2, c
 	// 	if (min1[i]>max2[i]||min2[i]>max1[i]) return false;
 	// return true;
 }
-Array2d uv1, uv2;
 static double ccd(const BB bbtype) {
 	using steady_clock = std::chrono::steady_clock;
 	using duration = std::chrono::duration<double>;
@@ -534,12 +529,16 @@ static double ccd(const BB bbtype) {
 
 	while (!heap.empty()) {
 		auto const cur = heap.top();
+		// std::cout << "patch1 : (" << cur.uvB1.pMin[0]<<", "<<cur.uvB1.pMin[1]<<") (" <<cur.uvB1.pMax[0]<<", "<<cur.uvB1.pMax[1]<<")" 
+		// 	<< " patch2 : (" << cur.uvB2.pMin[0]<<", "<<cur.uvB2.pMin[1]<<") (" <<cur.uvB2.pMax[0]<<", "<<cur.uvB2.pMax[1]<<")\n";
+
 		heap.pop();
 		cnt++;
 		if(DEBUG) std::cout<<cnt<<"\n";
 		// Set uv of the middle point
 		Array2d uvMid1 = (cur.uvB1.pMin + cur.uvB1.pMax) / 2;
 		Array2d uvMid2 = (cur.uvB2.pMin + cur.uvB2.pMax) / 2;
+		// std::cout<<"center at ("<<uvMid1.transpose()<<"), ("<<uvMid2.transpose()<<"), width ("<<cur.uvB1.diagonal().transpose()<<"), ("<<cur.uvB1.diagonal().transpose()<<")\n";
 		// Decide whether the algorithm converges
 		if (std::max(cur.uvB1.diagonal().maxCoeff(), cur.uvB2.diagonal().maxCoeff()) < MinDeltaUV) {
 			// DEBUG=1;
@@ -616,7 +615,7 @@ void randomTest(){
 	using steady_clock = std::chrono::steady_clock;
 	using duration = std::chrono::duration<double>;
 	int cntAABB=0, cntSample=0;
-	const int Kase = 50;
+	const int Kase = 10;
 	double ans[2][Kase];
 
 	const auto initOBB = steady_clock::now();
@@ -626,23 +625,22 @@ void randomTest(){
 		ans[0][kase]=ccd(BB::OBB);
 	}
 	const auto endOBB = steady_clock::now();
-	std::cout<<"OBB used seconds: "<<duration(endOBB - initOBB).count()*0.01<<"\n";
+	std::cout<<"OBB used seconds: "<<duration(endOBB - initOBB).count()/Kase<<"\n";
 
 	const auto initAABB = steady_clock::now();
 	std::srand(0);
 	for(int kase=0;kase<Kase;kase++){
 		generatePatches();
+		saveDoFs();
 		ans[0][kase]=ccd(BB::AABB);
 		// if(ccd(AABBcheck)!=-1)cntAABB++;
 		// if(dcd(OBBcheck))cntOBB++;
 		// if(cntAABB!=cntOBB){saveDoFs();exit(-1);}
 	}
 	const auto endAABB = steady_clock::now();
-	std::cout<<"AABB used seconds: "<<duration(endAABB - initAABB).count()*0.01<<"\n";
+	std::cout<<"AABB used seconds: "<<duration(endAABB - initAABB).count()/Kase<<"\n";
 
-	std::cout<<"OBB used seconds: "<<duration(endOBB - initOBB).count()*0.01<<"\n";
-	std::cout<<"OBB used seconds: "<<duration(endOBB - initOBB).count()*0.01<<"\n";
-
+	std::cout<<"OBB used seconds: "<<duration(endOBB - initOBB).count()/Kase<<"\n";
 
 	// const auto initSample = steady_clock::now();
 	// std::srand(0);
@@ -709,6 +707,22 @@ void singleTest(){
 	std::cout<<"pos at: "<<pt1.transpose()<<"     "<<pt2.transpose()<<"\n";
 	std::cout<<"delta: "<<(pt2-pt1).norm()<<"\n";
 	std::cout<<"check OBB ans: min time "<<point2patch(p1, v1, checkUV);}
+
+	{std::srand(0);
+	generatePatches();
+	double t = ccdSample();
+
+	Array2d checkUV;
+	Vector3d const p1 = evaluateBicubicBezier(CpPos1, uv1);
+	Vector3d const v1 = evaluateBicubicBezier(CpVel1, uv1);
+	Vector3d const p2 = evaluateBicubicBezier(CpPos2, uv2);
+	Vector3d const v2 = evaluateBicubicBezier(CpVel2, uv2);
+	Vector3d const pt1=(v1*t+p1), pt2=(v2*t+p2);
+	std::cout<<"trajectories: "<<v1.transpose()<<"   "<<p1.transpose()<<"\n";
+	std::cout<<"trajectories: "<<v2.transpose()<<"   "<<p2.transpose()<<"\n";
+	std::cout<<"pos at: "<<pt1.transpose()<<"     "<<pt2.transpose()<<"\n";
+	std::cout<<"delta: "<<(pt2-pt1).norm()<<"\n";
+	std::cout<<"check Sample ans: min time "<<point2patch(p1, v1, checkUV);}
 }
 
 int main(){
@@ -727,7 +741,10 @@ int main(){
 	// double t=0.474162;
 	// std::cout<<v1*t+p1<<"\n\n\n"<<v2*t+p2;
 
-	// randomTest();
-	singleTest();
+	// freopen("aabb.txt","w",stdout);
+	randomTest();
+	// readinDoFs();
+	// ccd(BB::AABB);
+	// singleTest();
 
 }
