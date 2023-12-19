@@ -1,4 +1,5 @@
 #include <Eigen/Dense>
+#include "paramCCD.h"
 
 using Eigen::Array2d;
 using Eigen::Vector3d;
@@ -6,13 +7,13 @@ using Eigen::MatrixXd;
 
 #include<iostream>
 
-class BaryCoord {
+class BaryCoord:ParamCoord {
 public:
-	double u,v,w;
+	double w;
 	BaryCoord() {}
 
-	BaryCoord(const double _u, const double _v, const double _w): u(_u), v(_v), w(1-_u-_v) {}
-	BaryCoord(const BaryCoord& bc): u(bc.u), v(bc.v), w(1-bc.u-bc.v) {}
+	BaryCoord(const double _u, const double _v, const double _w): ParamCoord(_u,_v), w(1-_u-_v) {}
+	BaryCoord(const BaryCoord& bc): ParamCoord(bc.u, bc.v), w(1-bc.u-bc.v) {}
 	// BaryCoord(const double u, const double v, const double w): u(u), v(v), w(w) {}
 	// BaryCoord(const BaryCoord& bc): u(bc.u), v(bc.v), w(bc.w) {}
 	BaryCoord operator*(const double scalar) const {
@@ -32,7 +33,7 @@ public:
 
 
 
-class TriParamBound{
+class TriParamBound:ParamBound{
 public:
 
     std::array<BaryCoord,3> nodes;
@@ -47,8 +48,14 @@ public:
     TriParamBound(const BaryCoord& n0, const BaryCoord& n1, const BaryCoord& n2) { nodes[0] = n0, nodes[1] = n1, nodes[2] = n2; }
     TriParamBound(const std::array<BaryCoord,3>& n): nodes(n) {}
 
+	virtual initialize () { 
+		nodes[0]=BaryCoord(1,0,0), 
+		nodes[2]=BaryCoord(0,1,0), 
+		nodes[2]=BaryCoord(0,0,1);
+	}
+
 	BaryCoord interpPointParam(const BaryCoord& interp) const { return nodes[0]*interp.u + nodes[1]*interp.v + nodes[2]*interp.w; }
-	TriParamBound interpSubpatchParam(const int id) const {
+	virtual TriParamBound interpSubpatchParam(const int id) const {
 		std::array<BaryCoord,3> subParam;
 		for(int i=0; i<3; i++){
 			subParam[i]=interpPointParam(relativeSubpatch[id][i]);
@@ -56,38 +63,16 @@ public:
 		return { subParam };
 	}
 
-	BaryCoord centerParam() const { return BaryCoord((nodes[0].u+nodes[1].u+nodes[2].u)/3., (nodes[0].v+nodes[1].v+nodes[2].v)/3., (nodes[0].w+nodes[1].w+nodes[2].w)/3.); }
-	double maxEdgeDist() const {
+	virtual BaryCoord centerParam() const { return BaryCoord((nodes[0].u+nodes[1].u+nodes[2].u)/3., (nodes[0].v+nodes[1].v+nodes[2].v)/3., (nodes[0].w+nodes[1].w+nodes[2].w)/3.); }
+	virtual double maxEdgeDist() const {
 		const double e[3]={nodes[0].computeSquaredDist(nodes[1]), nodes[2].computeSquaredDist(nodes[1]), nodes[0].computeSquaredDist(nodes[2])};
 		return std::max(std::max(e[0], e[1]), e[2]);
 	}
 };
 
-class TriPatchPair{
+class TriBezierObj:ParamObj<TriBezier> {
 public:
-    TriParamBound tpb1, tpb2;
-    double tLower;
-    TriPatchPair(const TriParamBound& c1, const TriParamBound& c2, double t = std::numeric_limits<double>::infinity()): tpb1(c1), tpb2(c2), tLower(t) {}
-	bool operator<(TriPatchPair const &o) const { return tLower > o.tLower; }
-};
-
-
-
-class TriBezier {
-public:
-
 	// 003,102,201,300,012,111,210,021,120,030
-	std::array<Vector3d, 10> ctrlp {};
-
-	TriBezier() {}
-	TriBezier(int randSeed){
-		if(randSeed<0) std::srand(std::time(nullptr));
-		else std::srand(randSeed);
-		for (int i = 0; i < 10; i++)
-			ctrlp[i] = Vector3d::Random();
-	}
-
-	TriBezier(const std::array<Vector3d, 10>& p): ctrlp(p) {}
 
 	Vector3d triLerp(const Vector3d& b0, const Vector3d& b1, const Vector3d& b2, const BaryCoord& coord) {
 		if(std::abs(coord.u + coord.v + coord.w - 1) > 1e-12){
@@ -113,7 +98,7 @@ public:
 	}
 
 	// 100,010,001
-	std::array<Vector3d, 10> divideBezierPatch(const TriParamBound& coords){
+	virtual std::array<Vector3d, TriBeizer> divideBezierPatch(const TriParamBound& coords){
 		std::array<Vector3d, 10> divCp;
 		divCp[0] = blossomBicubicBezier(ctrlp, coords.nodes[2], coords.nodes[2], coords.nodes[2]);
 		divCp[1] = blossomBicubicBezier(ctrlp, coords.nodes[0], coords.nodes[2], coords.nodes[2]);
