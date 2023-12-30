@@ -3,11 +3,17 @@ set_languages("cxxlatest")
 set_optimize("faster")
 
 add_rules("mode.debug", "mode.release")
-
 add_requires("eigen")
 
-target("demo")
+-- target("demo")
+--     set_kind("binary")
+--     add_includedirs("core", {public = true})
+--     add_packages("eigen", {public = true})
+--     add_files("demo.cpp")
+
+target("scene")
     set_kind("binary")
     add_includedirs("core", {public = true})
     add_packages("eigen", {public = true})
-    add_files("demo.cpp")
+    -- add_deps("viewer")
+    add_files("scene/writeBezierObj.cpp")
