@@ -23,6 +23,128 @@ std::array<Vector3d, 16> CpPos2 {};
 std::array<Vector3d, 16> CpVel1 {};
 std::array<Vector3d, 16> CpVel2 {};
 
+template <typename T> static T lerp(double t, T const &t0, T const &t1) { return (1 - t) * t0 + t * t1; }
+
+struct Bounds2d {
+	Array2d pMin, pMax;
+
+	Bounds2d() = default;
+	Bounds2d(Array2d const &p1, Array2d const &p2) :
+		pMin { std::min(p1[0], p2[0]), std::min(p1[1], p2[1]) },
+		pMax { std::max(p1[0], p2[0]), std::max(p1[1], p2[1]) } {
+	}
+
+	Array2d operator[](int i) const { return i == 0 ? pMin : pMax; }
+
+	Bounds2d operator&(Bounds2d const &o) const {
+		Bounds2d ret;
+		ret.pMin = pMin.max(o.pMin);
+		ret.pMax = pMax.min(o.pMax);
+		return ret;
+	}
+
+	bool isDegenerate() const { return pMin.x() > pMax.x() || pMin.y() > pMax.y(); }
+	bool isInside(Array2d const &o) const { return (o.x() >= pMin.x() && o.x() <= pMax.x() && o.y() >= pMin.y() && o.y() <= pMax.y()); }
+
+	Array2d diagonal() const { return pMax - pMin; }
+	Array2d corner(int i) const { return Array2d((*this)[(i & 1)][0], (*this)[(i & 2) ? 1 : 0][1]); }
+};
+
+struct DividedPatches {
+	Bounds2d uvB1;
+	Bounds2d uvB2;
+	double tLower;
+
+	DividedPatches(Bounds2d const &uvB1, Bounds2d const &uvB2, double tLower = std::numeric_limits<double>::infinity()) : uvB1 { uvB1 }, uvB2 { uvB2 }, tLower { tLower } { }
+	bool operator<(DividedPatches const &o) const { return tLower > o.tLower; }
+};
+
+struct DividedPatch {
+	Bounds2d uvB;
+	double tLower;
+
+	DividedPatch(Bounds2d const &uvB, double tLower = std::numeric_limits<double>::infinity()) : uvB { uvB }, tLower { tLower } { }
+	bool operator<(DividedPatch const &o) const { return tLower > o.tLower; }
+};
+
+// Bicubic Bezier Functions
+template <typename P>
+static P blossomCubicBezier(std::span<P const> p, double u0, double u1, double u2) {
+	P a[3] = { lerp(u0, p[0], p[1]), lerp(u0, p[1], p[2]), lerp(u0, p[2], p[3]) };
+	P b[2] = { lerp(u1, a[0], a[1]), lerp(u1, a[1], a[2]) };
+	return lerp(u2, b[0], b[1]);
+}
+
+template <typename P>
+static P blossomBicubicBezier(std::span<P const> cp, Array2d const &uv0, Array2d const &uv1, Array2d const &uv2) {
+	std::array<P, 4> q;
+	for (int i = 0; i < 4; i++) {
+		q[i] = blossomCubicBezier(cp.subspan(i * 4, 4), uv0.y(), uv1.y(), uv2.y());
+	}
+	return blossomCubicBezier<P>(q, uv0.x(), uv1.x(), uv2.x());
+}
+
+static Vector3d evaluateBicubicBezier(std::span<Vector3d const> cp, Array2d const &uv, Vector3d *dpdu = nullptr, Vector3d *dpdv = nullptr) {
+	if (dpdu && dpdv) {
+		std::array<Vector3d, 4> cpU, cpV;
+		for (int i = 0; i < 4; i++) {
+			cpU[i] = blossomCubicBezier(cp.subspan(i * 4, 4), uv.y(), uv.y(), uv.y());
+			std::array<Vector3d, 3> a = { lerp(uv.x(), cp[i], cp[i + 4]),
+										 lerp(uv.x(), cp[i + 4], cp[i + 8]),
+										 lerp(uv.x(), cp[i + 8], cp[i + 12]) };
+			std::array<Vector3d, 2> b = { lerp(uv.x(), a[0], a[1]),
+										 lerp(uv.x(), a[1], a[2]) };
+			cpV[i] = lerp(uv.x(), b[0], b[1]);
+		}
+		std::array<Vector3d, 3> cpU1 = { lerp(uv.x(), cpU[0], cpU[1]),
+										lerp(uv.x(), cpU[1], cpU[2]),
+										lerp(uv.x(), cpU[2], cpU[3]) };
+		std::array<Vector3d, 2> cpU2 = { lerp(uv.x(), cpU1[0], cpU1[1]),
+										lerp(uv.x(), cpU1[1], cpU1[2]) };
+		if ((cpU2[1] - cpU2[0]).squaredNorm() > 0)
+			*dpdu = 3 * (cpU2[1] - cpU2[0]);
+		else {
+			*dpdu = cpU[3] - cpU[0];
+		}
+		std::array<Vector3d, 3> cpV1 = { lerp(uv.y(), cpV[0], cpV[1]),
+										lerp(uv.y(), cpV[1], cpV[2]),
+										lerp(uv.y(), cpV[2], cpV[3]) };
+		std::array<Vector3d, 2> cpV2 = { lerp(uv.y(), cpV1[0], cpV1[1]),
+										lerp(uv.y(), cpV1[1], cpV1[2]) };
+		if ((cpV2[1] - cpV2[0]).squaredNorm() > 0)
+			*dpdv = 3 * (cpV2[1] - cpV2[0]);
+		else {
+			*dpdv = cpV[3] - cpV[0];
+		}
+		return blossomCubicBezier<Vector3d>(cpU, uv.x(), uv.x(), uv.x());
+	}
+	else {
+		return blossomBicubicBezier(cp, uv, uv, uv);
+	}
+}
+
+// Patch Functions
+template <typename P>
+static std::array<P, 16> divideBezierPatch(std::span<P const> cp, Bounds2d const &uvB) {
+	std::array<P, 16> divCp;
+	divCp[0] = blossomBicubicBezier(cp, uvB.corner(0), uvB.corner(0), uvB.corner(0));
+	divCp[1] = blossomBicubicBezier(cp, uvB.corner(0), uvB.corner(0), uvB.corner(2));
+	divCp[2] = blossomBicubicBezier(cp, uvB.corner(0), uvB.corner(2), uvB.corner(2));
+	divCp[3] = blossomBicubicBezier(cp, uvB.corner(2), uvB.corner(2), uvB.corner(2));
+	divCp[4] = blossomBicubicBezier(cp, uvB.corner(0), uvB.corner(0), uvB.corner(1));
+	divCp[5] = blossomBicubicBezier(cp, uvB.corner(0), uvB.corner(0), uvB.corner(3));
+	divCp[6] = blossomBicubicBezier(cp, uvB.corner(0), uvB.corner(2), uvB.corner(3));
+	divCp[7] = blossomBicubicBezier(cp, uvB.corner(2), uvB.corner(2), uvB.corner(3));
+	divCp[8] = blossomBicubicBezier(cp, uvB.corner(0), uvB.corner(1), uvB.corner(1));
+	divCp[9] = blossomBicubicBezier(cp, uvB.corner(0), uvB.corner(1), uvB.corner(3));
+	divCp[10] = blossomBicubicBezier(cp, uvB.corner(0), uvB.corner(3), uvB.corner(3));
+	divCp[11] = blossomBicubicBezier(cp, uvB.corner(2), uvB.corner(3), uvB.corner(3));
+	divCp[12] = blossomBicubicBezier(cp, uvB.corner(1), uvB.corner(1), uvB.corner(1));
+	divCp[13] = blossomBicubicBezier(cp, uvB.corner(1), uvB.corner(1), uvB.corner(3));
+	divCp[14] = blossomBicubicBezier(cp, uvB.corner(1), uvB.corner(3), uvB.corner(3));
+	divCp[15] = blossomBicubicBezier(cp, uvB.corner(3), uvB.corner(3), uvB.corner(3));
+	return divCp;
+}
 
 Array2d uv1, uv2;
 
@@ -291,17 +413,17 @@ static Array2d linearCHIntersect(const std::vector<Line>& ch1, const std::vector
 }
 
 // maybe no need to contruct from scratch?
-static double PrimitiveCheck(Bounds2d const &divUvB1, Bounds2d const &divUvB2, const BB bbtype){
+static double PrimitiveCheck(Bounds2d const &divUvB1, Bounds2d const &divUvB2, const BoundingBoxType bbtype){
 	auto const ptPos1 = divideBezierPatch<Vector3d>(CpPos1, divUvB1);
 	auto const ptVel1 = divideBezierPatch<Vector3d>(CpVel1, divUvB1);
 	auto const ptPos2 = divideBezierPatch<Vector3d>(CpPos2, divUvB2);
 	auto const ptVel2 = divideBezierPatch<Vector3d>(CpVel2, divUvB2);
 
 	auto setAxes = [&] (std::vector<Vector3d>& axes) {
-		if(bbtype==BB::AABB){
+		if(bbtype==BoundingBoxType::AABB){
 			axes = {Vector3d::Unit(0), Vector3d::Unit(1), Vector3d::Unit(2)};
 		}
-		else if(bbtype==BB::OBB) {
+		else if(bbtype==BoundingBoxType::OBB) {
 			Vector3d 
 			lu1 = (ptPos1[3]-ptPos1[0]+ptPos1[15]-ptPos1[12]),
 			lv1 = (ptPos1[12]-ptPos1[0]+ptPos1[15]-ptPos1[3]),
@@ -394,7 +516,7 @@ static double PrimitiveCheck(Bounds2d const &divUvB1, Bounds2d const &divUvB2, c
 	// 	if (min1[i]>max2[i]||min2[i]>max1[i]) return false;
 	// return true;
 }
-static double ccd(const BB bbtype) {
+static double ccd(const BoundingBoxType bbtype) {
 	using steady_clock = std::chrono::steady_clock;
 	using duration = std::chrono::duration<double>;
 	const auto initialTime = steady_clock::now();
@@ -481,7 +603,7 @@ void saveDoFs(){
 	f.close();
 }
 void generatePatches(){
-	// std::srand(0);
+	std::srand(10);
 	for (int i = 0; i < 16; i++) {
 		CpPos1[i] = Vector3d::Random() - Vector3d::Constant(.6);
 		CpVel1[i] = Vector3d::Random()*0.3 + Vector3d::Constant(.6);
@@ -500,7 +622,7 @@ void randomTest(){
 	std::srand(0);
 	for(int kase=0;kase<Kase;kase++){
 		generatePatches();
-		ans[0][kase]=ccd(BB::OBB);
+		ans[0][kase]=ccd(BoundingBoxType::OBB);
 	}
 	const auto endOBB = steady_clock::now();
 	std::cout<<"OBB used seconds: "<<duration(endOBB - initOBB).count()/Kase<<"\n";
@@ -510,7 +632,7 @@ void randomTest(){
 	for(int kase=0;kase<Kase;kase++){
 		generatePatches();
 		saveDoFs();
-		ans[0][kase]=ccd(BB::AABB);
+		ans[0][kase]=ccd(BoundingBoxType::AABB);
 		// if(ccd(AABBcheck)!=-1)cntAABB++;
 		// if(dcd(OBBcheck))cntOBB++;
 		// if(cntAABB!=cntOBB){saveDoFs();exit(-1);}
@@ -555,24 +677,9 @@ void randomTest(){
 
 void singleTest(){
 
-{	std::srand(0);
-	generatePatches();
-	double t = ccd(BB::AABB);
-	Array2d checkUV;
-	Vector3d const p1 = evaluateBicubicBezier(CpPos1, uv1);
-	Vector3d const v1 = evaluateBicubicBezier(CpVel1, uv1);
-	Vector3d const p2 = evaluateBicubicBezier(CpPos2, uv2);
-	Vector3d const v2 = evaluateBicubicBezier(CpVel2, uv2);
-	Vector3d const pt1=(v1*t+p1), pt2=(v2*t+p2);
-	std::cout<<"trajectories: "<<v1.transpose()<<"   "<<p1.transpose()<<"\n";
-	std::cout<<"trajectories: "<<v2.transpose()<<"   "<<p2.transpose()<<"\n";
-	std::cout<<"pos at: "<<pt1.transpose()<<"     "<<pt2.transpose()<<"\n";
-	std::cout<<"delta: "<<(pt2-pt1).norm()<<"\n";
-	std::cout<<"check AABB ans: min time "<<point2patch(p1, v1, checkUV)<<"\n\n";}
-
 	{std::srand(0);
 	generatePatches();
-	double t = ccd(BB::OBB);
+	double t = ccd(BoundingBoxType::OBB);
 
 	Array2d checkUV;
 	Vector3d const p1 = evaluateBicubicBezier(CpPos1, uv1);
@@ -585,6 +692,22 @@ void singleTest(){
 	std::cout<<"pos at: "<<pt1.transpose()<<"     "<<pt2.transpose()<<"\n";
 	std::cout<<"delta: "<<(pt2-pt1).norm()<<"\n";
 	std::cout<<"check OBB ans: min time "<<point2patch(p1, v1, checkUV);}
+
+{	std::srand(0);
+	generatePatches();
+	double t = ccd(BoundingBoxType::AABB);
+	Array2d checkUV;
+	Vector3d const p1 = evaluateBicubicBezier(CpPos1, uv1);
+	Vector3d const v1 = evaluateBicubicBezier(CpVel1, uv1);
+	Vector3d const p2 = evaluateBicubicBezier(CpPos2, uv2);
+	Vector3d const v2 = evaluateBicubicBezier(CpVel2, uv2);
+	Vector3d const pt1=(v1*t+p1), pt2=(v2*t+p2);
+	std::cout<<"trajectories: "<<v1.transpose()<<"   "<<p1.transpose()<<"\n";
+	std::cout<<"trajectories: "<<v2.transpose()<<"   "<<p2.transpose()<<"\n";
+	std::cout<<"pos at: "<<pt1.transpose()<<"     "<<pt2.transpose()<<"\n";
+	std::cout<<"delta: "<<(pt2-pt1).norm()<<"\n";
+	std::cout<<"check AABB ans: min time "<<point2patch(p1, v1, checkUV)<<"\n\n";}
+
 
 	{std::srand(0);
 	generatePatches();
@@ -620,9 +743,9 @@ int main(){
 	// std::cout<<v1*t+p1<<"\n\n\n"<<v2*t+p2;
 
 	// freopen("aabb.txt","w",stdout);
-	randomTest();
+	// randomTest();
 	// readinDoFs();
-	// ccd(BB::AABB);
-	// singleTest();
+	// ccd(BoundingBoxType::AABB);
+	singleTest();
 
 }
