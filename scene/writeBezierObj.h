@@ -3,15 +3,22 @@
 #include <fstream>
 using Eigen::Vector3i;
 
-class BezierMesh{
+class RecBezierMesh{
+public:
 	int cntPatches;
 	std::vector<RecBezierObj> patches;
 
-	std::vector<Vector3d> verts;
-	std::vector<Vector3i> faces;
-
-public:
-	BezierMesh(const std::string& filename){
+	// 用于初始化速度
+	RecBezierMesh(const int cnt){
+		cntPatches = cnt;
+		patches.resize(cntPatches);
+		for(auto& patch: patches){
+			for(auto& pt:patch.ctrlp)
+				pt.setZero();
+		}
+	};
+	// 读入模型
+	RecBezierMesh(const std::string& filename){
 		std::ifstream in(filename);
 		in>>cntPatches;
 		patches.resize(cntPatches);
@@ -22,9 +29,10 @@ public:
 				in>>pt[0]>>pt[1]>>pt[2];
 		}
 		in.close();
-		convert2Mesh();
 	};
-	void convert2Mesh(){
+
+	// int cntPatches() { return cntPatches; }
+	void convert2Mesh(std::vector<Vector3d>&verts, std::vector<Vector3i>&faces) const {
 		double du=0.2, dv=0.2;
 		int cntVerts=0;
 		for(auto& patch: patches){
@@ -44,16 +52,26 @@ public:
 				}
 		}
 	}
-	void writeObj(const std::string& filename){
+	void writeObj(const std::string& filename) const {
+		std::vector<Vector3d> verts;
+		std::vector<Vector3i> faces;
+		convert2Mesh(verts, faces);
 		std::ofstream out(filename);
 		for(auto&vert:verts)
 			out<<"v "<<vert[0]<<" "<<vert[1]<<" "<<vert[2]<<"\n";
 		for(auto&face:faces)
 			out<<"f "<<face[0]<<" "<<face[1]<<" "<<face[2]<<"\n";
 		out.close();
-	};
+	}
+	void moveObj(const Vector3d& dis){
+		for(auto& patch: patches)
+			for(auto& pt:patch.ctrlp)
+				pt+=dis;
+	}
+	void rotateObj(const double& angle, const Vector3d& axis, const Vector3d& origin = Vector3d::Zero()){
+		Eigen::AngleAxisd rot(angle, axis);
+		for(auto& patch: patches)
+			for(auto& pt:patch.ctrlp)
+				pt = (rot.matrix()*(pt-origin)+origin).eval();
+	}
 };
-int main(){
-	BezierMesh obj("teapot32.txt");
-	obj.writeObj("teapot32.obj");
-}

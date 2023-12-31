@@ -19,9 +19,9 @@
 using Eigen::Array2d;
 using Eigen::Vector3d;
 using Eigen::MatrixXd;
-
+const double PI = std::acos(-1);
 static constexpr double MinDeltaUV = 1e-6;
-static constexpr double MinSquaredDist = 1e-12;
+static constexpr double MinSquaredDist = 1e-4;
 static constexpr double Epsilon = 1e-6;
 static constexpr double DeltaT = 1;
 bool DEBUG = 0;

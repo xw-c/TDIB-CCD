@@ -31,7 +31,8 @@ template<typename ParamObj1, typename ParamObj2, typename ParamBound1, typename 
 static double primitiveCheck(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1, 
 						const ParamObj2 &CpPos2, const ParamObj2 &CpVel2,
 						const ParamBound1 const &divUvB1, const ParamBound2 const &divUvB2,
-						const BoundingBoxType bbtype){
+						const BoundingBoxType bbtype,
+						const double upperTime = DeltaT){
 	auto const ptPos1 = CpPos1.divideBezierPatch(divUvB1);
 	auto const ptVel1 = CpVel1.divideBezierPatch(divUvB1);
 	auto const ptPos2 = CpPos2.divideBezierPatch(divUvB2);
@@ -114,7 +115,7 @@ static double primitiveCheck(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1,
 		if(feasibleIntvs[i](0)<minT) //不能加等，因为无碰撞给的是开区间，如果有),(的情况加等号会把这个情况漏掉
 			minT=std::max(minT, feasibleIntvs[i](1));
 		else break;
-	if(minT<DeltaT)return minT;
+	if(minT<upperTime)return minT;
 	else return -1;
 }
 
@@ -122,7 +123,8 @@ template<typename ParamObj1, typename ParamObj2, typename ParamBound1, typename 
 static double solveCCD(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1, 
 						const ParamObj2 &CpPos2, const ParamObj2 &CpVel2,
 						Array2d& uv1, Array2d& uv2, 
-						const BoundingBoxType bbtype) {
+						const BoundingBoxType bbtype,
+						const double upperTime = DeltaT) {
 	struct PatchPair{
 		ParamBound1 pb1;
 		ParamBound2 pb2;
@@ -149,10 +151,10 @@ static double solveCCD(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1,
 	std::priority_queue<PatchPair> heap;
 	ParamBound1 initParam1;
 	ParamBound2 initParam2;
-	double colTime = primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, initParam1, initParam2, bbtype);
-	if (colTime>=0 && colTime<=DeltaT)
+	double colTime = primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, initParam1, initParam2, bbtype, upperTime);
+	if (colTime>=0 && colTime<=upperTime)
 		heap.emplace(initParam1, initParam2, colTime);
-	std::cout<<"done!\n";
+	// std::cout<<"done!\n";
 
 	while (!heap.empty()) {
 		auto const cur = heap.top();
@@ -183,8 +185,8 @@ static double solveCCD(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1,
 			ParamBound1 divUvB1(cur.pb1.interpSubpatchParam(i));
 			for (int j = 0; j < 4; j++) {
 				ParamBound2 divUvB2(cur.pb2.interpSubpatchParam(j));
-				colTime = primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, divUvB1, divUvB2, bbtype);//maybe also need timeLB?
-				if (colTime>=0 && colTime<=DeltaT){
+				colTime = primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, divUvB1, divUvB2, bbtype, upperTime);//maybe also need timeLB?
+				if (colTime>=0 && colTime<=upperTime){
 					heap.emplace(divUvB1, divUvB2, colTime);
 				}
 			}
