@@ -44,7 +44,7 @@ void saveDoFs(){
 // }
 void certificate(){
 	std::srand(std::time(nullptr));
-	RecBezierObj cpp1,cpp2,cpv1,cpv2;
+	RecCubicBezier cpp1,cpp2,cpv1,cpv2;
 	generatePatches(cpp1,cpp2,cpv1,cpv2);
 	Array2d uv1,uv2;
     {
@@ -84,7 +84,7 @@ void certificate(){
 }
 int main(){
 	certificate();
-	// RecBezierObj p1,p2,v1,v2;
+	// RecCubicBezier p1,p2,v1,v2;
 	// generatePatches(p1,p2,v1,v2);
 	// std::cout<<recBezierCCD(p1,p2,v1,v2, uv1,uv2,BoundingBoxType::OBB);
 }

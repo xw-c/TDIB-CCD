@@ -4,7 +4,7 @@
 
 void certificate(){
 	std::srand(std::time(nullptr));
-	RecBezierObj cpp1,cpp2,cpv1,cpv2;
+	RecCubicBezier cpp1,cpp2,cpv1,cpv2;
 	generatePatches(cpp1,cpp2,cpv1,cpv2);
 	Array2d uv1,uv2;
     {
@@ -44,10 +44,10 @@ void certificate(){
 }
 int main(){
 	// certificate();
-	TriBezierObj p1,p2,v1,v2;
+	TriCubicBezier p1,p2,v1,v2;
 	// generatePatches(p1,p2,v1,v2);
 	// std::cout<<recBezierCCD(p1,p2,v1,v2, uv1,uv2,BoundingBoxType::OBB);
-	RecBezierObj p;
+	RecCubicBezier p;
 	p.ctrlp={
 		Vector3d(0, 0, 0), Vector3d(1, 0, 0), Vector3d(2, 0, 0), Vector3d(3, 0, 0.1),
 		Vector3d(0, 1, 0), Vector3d(1, 1, 0), Vector3d(2, 1, 0), Vector3d(3, 1, 0.1),

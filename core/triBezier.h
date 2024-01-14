@@ -65,12 +65,12 @@ public:
 		return std::max(std::max(e[0], e[1]), e[2]);
 	}
 };
-class TriLinearObj{
+class TriLinearBezier{
 public:
 	static const int cntCp = 3;
 	std::array<Vector3d, 3> ctrlp;
-	TriLinearObj() {}
-	TriLinearObj(const std::array<Vector3d, 3>& p): ctrlp(p) {}
+	TriLinearBezier() {}
+	TriLinearBezier(const std::array<Vector3d, 3>& p): ctrlp(p) {}
 
 	Vector3d blossomBilinearBezier(const std::array<Vector3d, 3> &b, const BaryCoord& coord) const {
 		if(std::abs(coord.u + coord.v + coord.w - 1) > 1e-12){
@@ -80,8 +80,20 @@ public:
 		return coord.w * b[0] + coord.u * b[1] + coord.v * b[2];
 	}
 
-	Vector3d blossomBilinearBezier(const BaryCoord& coord) const {
+	Vector3d evaluatePatchPoint(const Array2d& uv) const {
+		BaryCoord coord(uv);
 		return blossomBilinearBezier(ctrlp, coord);
+	}
+
+	double feasibleUpperV(const double& u) const { return 1 - u; }
+	static int cornerId(const int i) {
+		// 00 01 10 11
+		switch(i){
+			case 0: return 0;
+			case 1: return 2;
+			case 2: return 1;
+			default: {std::cerr<<"invalid corner id!\n"; exit(-1);}
+		}
 	}
 
 	// 100,010,001
@@ -94,12 +106,12 @@ public:
 	}
 };
 
-class TriQuadObj{
+class TriQuadBezier{
 public:
 	static const int cntCp = 6;
 	std::array<Vector3d, 6> ctrlp;
-	TriQuadObj() {}
-	TriQuadObj(const std::array<Vector3d, 6>& p): ctrlp(p) {}
+	TriQuadBezier() {}
+	TriQuadBezier(const std::array<Vector3d, 6>& p): ctrlp(p) {}
 
 	Vector3d triLerp(const Vector3d& b0, const Vector3d& b1, const Vector3d& b2, const BaryCoord& coord) const {
 		if(std::abs(coord.u + coord.v + coord.w - 1) > 1e-12){
@@ -114,8 +126,20 @@ public:
 		return triLerp(b[0], b[1], b[2], coord1);
 	}
 
-	Vector3d blossomBiquadBezier(const BaryCoord& coord) const {
+	Vector3d evaluatePatchPoint(const Array2d& uv) const {
+		BaryCoord coord(uv);
 		return blossomBiquadBezier(ctrlp, coord, coord);
+	}
+
+	double feasibleUpperV(const double& u) const { return 1 - u; }
+	static int cornerId(const int i) {
+		// 00 01 10 11
+		switch(i){
+			case 0: return 0;
+			case 1: return 5;
+			case 2: return 2;
+			default: {std::cerr<<"invalid corner id!\n"; exit(-1);}
+		}
 	}
 
 	// 100,010,001
@@ -131,21 +155,21 @@ public:
 	}
 };
 
-class TriBezierObj {
+class TriCubicBezier {
 public:
 	static const int cntCp = 10;
 	// 003,102,201,300,012,111,210,021,120,030
 	std::array<Vector3d, 10> ctrlp;
 
-	TriBezierObj() {}
-	TriBezierObj(int randSeed){
+	TriCubicBezier() {}
+	TriCubicBezier(int randSeed){
 		if(randSeed<0) std::srand(std::time(nullptr));
 		else std::srand(randSeed);
 		for (int i = 0; i < 10; i++)
 			ctrlp[i] = Vector3d::Random();
 	}
 
-	TriBezierObj(const std::array<Vector3d, 10>& p): ctrlp(p) {}
+	TriCubicBezier(const std::array<Vector3d, 10>& p): ctrlp(p) {}
 
 	Vector3d triLerp(const Vector3d& b0, const Vector3d& b1, const Vector3d& b2, const BaryCoord& coord) const {
 		if(std::abs(coord.u + coord.v + coord.w - 1) > 1e-12){
@@ -172,7 +196,15 @@ public:
 	}
 
 	double feasibleUpperV(const double& u) const { return 1 - u; }
-
+	static int cornerId(const int i) {
+		// 00 01 10 11
+		switch(i){
+			case 0: return 0;
+			case 1: return 9;
+			case 2: return 3;
+			default: {std::cerr<<"invalid corner id!\n"; exit(-1);}
+		}
+	}
 	// 100,010,001
 	std::array<Vector3d, 10> divideBezierPatch(const TriParamBound& coords) const {
 		std::array<Vector3d, 10> divCp;

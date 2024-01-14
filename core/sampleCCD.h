@@ -187,4 +187,4 @@ static double sampleCCD(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1,
 }
 
 //得改一下对三角形的采样
-auto recSampleCCD = sampleCCD<RecBezierObj, RecBezierObj, RecParamBound>;
+auto recSampleCCD = sampleCCD<RecCubicBezier, RecCubicBezier, RecParamBound>;

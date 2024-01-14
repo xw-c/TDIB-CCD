@@ -44,8 +44,102 @@ public:
 	}
 };
 
+class RecLinearBezier{
+public:
+	static const int cntCp = 4;
+	std::array<Vector3d, 4> ctrlp;
+	Vector3d lerp(double t, Vector3d const &t0, Vector3d const &t1) const { return (1 - t) * t0 + t * t1; }
+	Vector3d blossomLinearBezier(std::span<Vector3d const> p, double u0) const {
+		return lerp(u0, p[0], p[1]);
+	}
+
+	Vector3d blossomBilinearBezier(std::span<Vector3d const> cp, Array2d const &uv0) const {
+		std::array<Vector3d, 2> q;
+		for (int i = 0; i < 2; i++) {
+			q[i] = blossomLinearBezier(cp.subspan(i * 2, 2), uv0.y());
+		}
+		return blossomLinearBezier(q, uv0.x());
+	}
+
+	Vector3d evaluatePatchPoint(Array2d const &uv) const {
+		return blossomBilinearBezier(ctrlp, uv);
+	}
+
+	static double feasibleUpperV(const double& u) { return 1; }
+	static int cornerId(const int i) {
+		// 00 01 10 11
+		switch(i){
+			case 0: return 0;
+			case 1: return 1;
+			case 2: return 2;
+			case 3: return 3;
+			default: {std::cerr<<"invalid corner id!\n"; exit(-1);}
+		}
+	}
+	// Patch Functions
+	// 先v变再u变
+	std::array<Vector3d, 4> divideBezierPatch(RecParamBound const &uvB) const {
+		std::array<Vector3d, 4> divCp;
+		divCp[0] = blossomBilinearBezier(ctrlp, uvB.corner(0));
+		divCp[1] = blossomBilinearBezier(ctrlp, uvB.corner(2));
+		divCp[2] = blossomBilinearBezier(ctrlp, uvB.corner(1));
+		divCp[3] = blossomBilinearBezier(ctrlp, uvB.corner(3));
+		return divCp;
+	}
+};
+
+class RecQuadBezier{
+public:
+	static const int cntCp = 9;
+	std::array<Vector3d, 9> ctrlp;
+	Vector3d lerp(double t, Vector3d const &t0, Vector3d const &t1) const { return (1 - t) * t0 + t * t1; }
+	Vector3d blossomQuadBezier(std::span<Vector3d const> p, double u0, double u1) const {
+		Vector3d b[2] = { lerp(u0, p[0], p[1]), lerp(u0, p[1], p[2]) };
+		return lerp(u1, b[0], b[1]);
+	}
+
+	Vector3d blossomBiquadBezier(std::span<Vector3d const> cp, Array2d const &uv0, Array2d const &uv1) const {
+		std::array<Vector3d, 3> q;
+		for (int i = 0; i < 3; i++) {
+			q[i] = blossomQuadBezier(cp.subspan(i * 3, 3), uv0.y(), uv1.y());
+		}
+		return blossomQuadBezier(q, uv0.x(), uv1.x());
+	}
+
+	Vector3d evaluatePatchPoint(Array2d const &uv) const {
+		return blossomBiquadBezier(ctrlp, uv, uv);
+	}
+
+	static double feasibleUpperV(const double& u) { return 1; }
+	static int cornerId(const int i) {
+		// 00 01 10 11
+		switch(i){
+			case 0: return 0;
+			case 1: return 2;
+			case 2: return 6;
+			case 3: return 8;
+			default: {std::cerr<<"invalid corner id!\n"; exit(-1);}
+		}
+	}
+	// Patch Functions
+	// 先v变再u变
+	std::array<Vector3d, 9> divideBezierPatch(RecParamBound const &uvB) const {
+		std::array<Vector3d, 9> divCp;
+		divCp[0] = blossomBiquadBezier(ctrlp, uvB.corner(0), uvB.corner(0));
+		divCp[1] = blossomBiquadBezier(ctrlp, uvB.corner(0), uvB.corner(2));
+		divCp[2] = blossomBiquadBezier(ctrlp, uvB.corner(2), uvB.corner(2));
+		divCp[3] = blossomBiquadBezier(ctrlp, uvB.corner(0), uvB.corner(1));
+		divCp[4] = blossomBiquadBezier(ctrlp, uvB.corner(0), uvB.corner(3));
+		divCp[5] = blossomBiquadBezier(ctrlp, uvB.corner(2), uvB.corner(3));
+		divCp[6] = blossomBiquadBezier(ctrlp, uvB.corner(1), uvB.corner(1));
+		divCp[7] = blossomBiquadBezier(ctrlp, uvB.corner(1), uvB.corner(3));
+		divCp[8] = blossomBiquadBezier(ctrlp, uvB.corner(3), uvB.corner(3));
+		return divCp;
+	}
+};
+
 // Bicubic Bezier Functions
-class RecBezierObj{
+class RecCubicBezier{
 public:
 	static const int cntCp = 16;
 	std::array<Vector3d, 16> ctrlp;
@@ -69,6 +163,16 @@ public:
 	}
 
 	static double feasibleUpperV(const double& u) { return 1; }
+	static int cornerId(const int i) {
+		// 00 01 10 11
+		switch(i){
+			case 0: return 0;
+			case 1: return 3;
+			case 2: return 12;
+			case 3: return 15;
+			default: {std::cerr<<"invalid corner id!\n"; exit(-1);}
+		}
+	}
 
 	// Patch Functions
 	// 先v变再u变
@@ -93,7 +197,7 @@ public:
 		return divCp;
 	}
 };
-void generatePatches(RecBezierObj &CpPos1, RecBezierObj &CpPos2, RecBezierObj &CpVel1, RecBezierObj &CpVel2){
+void generatePatches(RecCubicBezier &CpPos1, RecCubicBezier &CpPos2, RecCubicBezier &CpVel1, RecCubicBezier &CpVel2){
 	std::srand(10);
 	for (int i = 0; i < 16; i++) {
 		CpPos1.ctrlp[i] = Vector3d::Random() - Vector3d::Constant(.6);

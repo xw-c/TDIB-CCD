@@ -5,7 +5,7 @@
 #include <string>
 class BezierVisualize: public Simulation{
 	int cntPatches;
-	std::vector<RecBezierObj> patches;
+	std::vector<RecCubicBezier> patches;
 public:
 	BezierVisualize(const std::string& filename){
 		std::ifstream readin(filename);

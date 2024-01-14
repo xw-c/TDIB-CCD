@@ -30,7 +30,7 @@ static void generatePatchPair(ParamObj1 &CpPos1, ParamObj1 &CpVel1, ParamObj2 &C
 template<typename ParamObj1, typename ParamObj2, typename ParamBound1, typename ParamBound2>
 static double primitiveCheck(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1, 
 						const ParamObj2 &CpPos2, const ParamObj2 &CpVel2,
-						const ParamBound1 const &divUvB1, const ParamBound2 const &divUvB2,
+						const ParamBound1 &divUvB1, const ParamBound2 &divUvB2,
 						const BoundingBoxType bbtype,
 						const double upperTime = DeltaT){
 	auto const ptPos1 = CpPos1.divideBezierPatch(divUvB1);
@@ -47,13 +47,13 @@ static double primitiveCheck(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1,
 					Vector3d(1,1,1).normalized(), Vector3d(-1,1,1).normalized(), Vector3d(-1,-1,1).normalized()};
 		}
 		else if(bbtype==BoundingBoxType::OBB){
-			Vector3d lu1 = (ptPos1[9]-ptPos1[0]).normalized();//v-w，即u的对边
-			Vector3d lv1 = (ptPos1[9]-ptPos1[3]+ptPos1[0]-ptPos1[3]);//中线
+			Vector3d lu1 = (ptPos1[ParamObj1::cornerId(2)]-ptPos1[ParamObj1::cornerId(0)]).normalized();//u延展的方向
+			Vector3d lv1 = (ptPos1[ParamObj1::cornerId(1)]-ptPos1[ParamObj1::cornerId(0)]);//v延展的方向
 			lv1 = (lv1-lv1.dot(lu1)*lu1).eval();
 			Vector3d ln1 = lu1.cross(lv1);
 
-			Vector3d lu2 = (ptPos2[9]-ptPos2[0]).normalized();
-			Vector3d lv2 = (ptPos2[9]-ptPos2[3]+ptPos2[0]-ptPos2[3]);
+			Vector3d lu2 = (ptPos2[ParamObj2::cornerId(2)]-ptPos2[ParamObj2::cornerId(0)]).normalized();//u延展的方向
+			Vector3d lv2 = (ptPos2[ParamObj2::cornerId(1)]-ptPos2[ParamObj2::cornerId(0)]);//v延展的方向
 			lv2 = (lv2-lv2.dot(lu2)*lu2).eval();
 			Vector3d ln2 = lu2.cross(lv2);
 			
@@ -194,14 +194,18 @@ static double solveCCD(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1,
 	}
 
 	const auto endTime = steady_clock::now();
-	std::cout << "used seconds: " <<
-		duration(endTime - initialTime).count()
-		<< std::endl;
+	// std::cout << "used seconds: " <<
+	// 	duration(endTime - initialTime).count()
+	// 	<< std::endl;
 	return -1;
 }
 
-auto triGenerate = generatePatchPair<TriBezierObj,TriBezierObj>;
-auto triBezierCCD = solveCCD<TriBezierObj,TriBezierObj,TriParamBound,TriParamBound>;
+auto triGenerate = generatePatchPair<TriCubicBezier,TriCubicBezier>;
+auto triBezierCCD = solveCCD<TriCubicBezier,TriCubicBezier,TriParamBound,TriParamBound>;
 
-auto recGenerate = generatePatchPair<RecBezierObj,RecBezierObj>;
-auto recBezierCCD = solveCCD<RecBezierObj,RecBezierObj,RecParamBound,RecParamBound>;
+auto recGenerate = generatePatchPair<RecCubicBezier,RecCubicBezier>;
+auto recBezierCCD = solveCCD<RecCubicBezier,RecCubicBezier,RecParamBound,RecParamBound>;
+
+auto triLinearCCD = solveCCD<TriLinearBezier,TriLinearBezier,TriParamBound,TriParamBound>;
+
+auto recRatBezierCCD = solveCCD<RecQuadRatBezier,RecQuadRatBezier,RecParamBound,RecParamBound>;
