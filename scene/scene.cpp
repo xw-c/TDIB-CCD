@@ -20,7 +20,7 @@ double ccd(const Mesh1& mesh1, const Mesh1& vel1,
 			// if(i==j)continue;
 			if(i%100==0&&j==0)std::cout<<i<<" "<<j<<" : "<<minTime<<" \n";
 			double t = paramCCD(mesh1.patches[i], vel1.patches[i], mesh2.patches[j], vel2.patches[j], 
-								uv1, uv2, BoundingBoxType::OBB, minTime);
+								uv1, uv2, minTime);
 			if(t>=0){
 				if(t==0)return 0;
 				minTime = std::min(minTime, t);
