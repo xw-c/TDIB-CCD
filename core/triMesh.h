@@ -67,11 +67,39 @@ class TriLinearMesh{
 			for(auto& pt:patch.ctrlp)
 				pt+=dis;
 	}
+	void moveObj(const TriLinearMesh& vel, const double& t){
+		for(int i=0;i<cntPatches;i++)
+			for(int j=0;j<TriLinearBezier::cntCp;j++)
+				patches[i].ctrlp[j]+=vel.patches[i].ctrlp[j]*t;
+	}
+	Vector3d getOrigin(){
+		Vector3d center = Vector3d::Zero();
+		for(const auto& patch:patches){
+			for(const auto& p:patch.ctrlp){
+				center+=p;
+			}
+		}
+		center /= cntPatches * TriLinearBezier::cntCp;
+		return center;
+	}
+	void setOrigin(const Vector3d& dis){
+		Vector3d diff = getOrigin() - dis;
+		for(auto& patch:patches){
+			for(auto& p:patch.ctrlp){
+				p -= diff;
+			}
+		}
+	}
 	void rotateObj(const double& angle, const Vector3d& axis, const Vector3d& origin = Vector3d::Zero()){
 		//似乎带仿射
 		Eigen::AngleAxisd rot(angle, axis);
 		for(auto& patch: patches)
 			for(auto& pt:patch.ctrlp)
 				pt = (rot.matrix()*(pt-origin)+origin).eval();
+	}
+	void setVel(const TriLinearMesh& p1, const TriLinearMesh& p2, const double& dt){
+		for(int i=0;i<cntPatches;i++)
+			for(int j=0;j<TriLinearBezier::cntCp;j++)
+				patches[i].ctrlp[j] = (p2.patches[i].ctrlp[j] - p1.patches[i].ctrlp[j]) / dt;
 	}
 };

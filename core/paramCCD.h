@@ -38,35 +38,35 @@ static double primitiveCheck(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1,
 	auto const ptVel2 = CpVel2.divideBezierPatch(divUvB2);
 
 	auto setAxes = [&] (std::vector<Vector3d>& axes) {
-		if(bbtype==BoundingBoxType::AABB){
-			axes = {Vector3d::Unit(0), Vector3d::Unit(1), Vector3d::Unit(2)};
-		}
-		else if(bbtype==BoundingBoxType::DOP14){
-			axes = {Vector3d::Unit(0), Vector3d::Unit(1), Vector3d::Unit(2), 
-					Vector3d(1,1,1).normalized(), Vector3d(-1,1,1).normalized(), Vector3d(-1,-1,1).normalized()};
-		}
-		else if(bbtype==BoundingBoxType::OBB){
-			Vector3d lu1 = (ptPos1[ParamObj1::cornerId(2)]-ptPos1[ParamObj1::cornerId(0)]).normalized();//u延展的方向
-			Vector3d lv1 = (ptPos1[ParamObj1::cornerId(1)]-ptPos1[ParamObj1::cornerId(0)]);//v延展的方向
-			lv1 = (lv1-lv1.dot(lu1)*lu1).eval();
-			Vector3d ln1 = lu1.cross(lv1);
-
-			Vector3d lu2 = (ptPos2[ParamObj2::cornerId(2)]-ptPos2[ParamObj2::cornerId(0)]).normalized();//u延展的方向
-			Vector3d lv2 = (ptPos2[ParamObj2::cornerId(1)]-ptPos2[ParamObj2::cornerId(0)]);//v延展的方向
-			lv2 = (lv2-lv2.dot(lu2)*lu2).eval();
-			Vector3d ln2 = lu2.cross(lv2);
-			
-			axes = {lu1,lv1,ln1,lu2,lv2,ln2, 
-				lu1.cross(lu2), lu1.cross(lv2), lu1.cross(ln2), 
-				lv1.cross(lu2), lv1.cross(lv2), lv1.cross(ln2), 
-				ln1.cross(lu2), ln1.cross(lv2), ln1.cross(ln2)};
-		}
+		
 	};
 
 	// std::cout<<"done!\n";
 	std::vector<Vector3d> axes;
-	axes.clear();
-	setAxes(axes);
+	// axes.clear();
+	if(bbtype==BoundingBoxType::AABB){
+		axes = {Vector3d::Unit(0), Vector3d::Unit(1), Vector3d::Unit(2)};
+	}
+	else if(bbtype==BoundingBoxType::DOP14){
+		axes = {Vector3d::Unit(0), Vector3d::Unit(1), Vector3d::Unit(2), 
+				Vector3d(1,1,1).normalized(), Vector3d(-1,1,1).normalized(), Vector3d(-1,-1,1).normalized()};
+	}
+	else if(bbtype==BoundingBoxType::OBB){
+		Vector3d lu1 = (ptPos1[ParamObj1::cornerId(2)]-ptPos1[ParamObj1::cornerId(0)]).normalized();//u延展的方向
+		Vector3d lv1 = (ptPos1[ParamObj1::cornerId(1)]-ptPos1[ParamObj1::cornerId(0)]);//v延展的方向
+		lv1 = (lv1-lv1.dot(lu1)*lu1).eval();
+		Vector3d ln1 = lu1.cross(lv1);
+
+		Vector3d lu2 = (ptPos2[ParamObj2::cornerId(2)]-ptPos2[ParamObj2::cornerId(0)]).normalized();//u延展的方向
+		Vector3d lv2 = (ptPos2[ParamObj2::cornerId(1)]-ptPos2[ParamObj2::cornerId(0)]);//v延展的方向
+		lv2 = (lv2-lv2.dot(lu2)*lu2).eval();
+		Vector3d ln2 = lu2.cross(lv2);
+		
+		axes = {lu1,lv1,ln1,lu2,lv2,ln2, 
+			lu1.cross(lu2), lu1.cross(lv2), lu1.cross(ln2), 
+			lv1.cross(lu2), lv1.cross(lv2), lv1.cross(ln2), 
+			ln1.cross(lu2), ln1.cross(lv2), ln1.cross(ln2)};
+	}
 	std::vector<Array2d> feasibleIntvs;
 	feasibleIntvs.clear();
 
@@ -119,17 +119,28 @@ static double primitiveCheck(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1,
 		lines1.clear(); lines2.clear();
 		for(int i = 0; i < CpPos1.cntCp; i++) lines1.emplace_back(ptVel1[i].dot(axis), ptPos1[i].dot(axis));
 		for(int i = 0; i < CpPos2.cntCp; i++) lines2.emplace_back(ptVel2[i].dot(axis), ptPos2[i].dot(axis));
-		auto CHCheck=[&](std::vector<Line> lineSet1, std::vector<Line> lineSet2)
+		
+		std::sort(lines1.begin(), lines1.end());
+		std::sort(lines2.begin(), lines2.end()); 
+		// auto CHCheck=[&](std::vector<Line> lineSet1, std::vector<Line> lineSet2)
 		{
 			ch1.clear(); ch2.clear();
 			pts1.clear(); pts2.clear();
-			getCH(lineSet1, ch1, pts1, true, upperTime);
-			getCH(lineSet2, ch2, pts2, false, upperTime);//1/20
+			getCH(lines1, ch1, pts1, true, upperTime);
+			getCH(lines2, ch2, pts2, false, upperTime);//1/20
 			const auto intvT = linearCHIntersect(ch1, ch2, pts1, pts2, upperTime);
 			if(intvT[0]!=-1)feasibleIntvs.push_back(intvT);
-		};
-		CHCheck(lines1, lines2);
-		CHCheck(lines2, lines1);
+		}
+		{
+			ch1.clear(); ch2.clear();
+			pts1.clear(); pts2.clear();
+			getCH(lines2, ch1, pts1, true, upperTime);
+			getCH(lines1, ch2, pts2, false, upperTime);//1/20
+			const auto intvT = linearCHIntersect(ch1, ch2, pts1, pts2, upperTime);
+			if(intvT[0]!=-1)feasibleIntvs.push_back(intvT);
+		}
+		// CHCheck(lines1, lines2);
+		// CHCheck(lines2, lines1);
 	}
 	// for(auto& axis:axes){
 	// 	AxisCheck(ptPos2, ptVel2, ptPos1, ptVel1, axis);}
@@ -149,6 +160,7 @@ static double primitiveCheck(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1,
 		if(feasibleIntvs[i](0)<minT) //不能加等，因为无碰撞给的是开区间，如果有),(的情况加等号会把这个情况漏掉
 			minT=std::max(minT, feasibleIntvs[i](1));
 		else break;
+	
 	if(minT<upperTime)return minT;
 	else return -1;
 }
@@ -186,12 +198,26 @@ static double solveCCD(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1,
 		// }
 		double calcL1Dist(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1, 
 						const ParamObj2 &CpPos2, const ParamObj2 &CpVel2) const{
-			Vector3d const p1 = CpPos1.evaluatePatchPoint(pb1.centerParam());
-			Vector3d const v1 = CpVel1.evaluatePatchPoint(pb1.centerParam());
-			Vector3d const p2 = CpPos2.evaluatePatchPoint(pb2.centerParam());
-			Vector3d const v2 = CpVel2.evaluatePatchPoint(pb2.centerParam());
-        	Vector3d const pt1=(v1*tLower+p1), pt2=(v2*tLower+p2);
-			return (pt2-pt1).cwiseAbs().maxCoeff();
+			auto const ptPos1 = CpPos1.divideBezierPatch(pb1);
+			auto const ptPos2 = CpPos2.divideBezierPatch(pb2);
+			double d=0;
+			for(int axis=0;axis<3;axis++){
+				double maxv = ptPos1[0][axis], minv=maxv;
+				for(int i = 1; i < ParamObj1::cntCp; i++) {
+					maxv=std::max(maxv, ptPos1[i][axis]);
+					minv=std::min(minv, ptPos1[i][axis]);
+				}
+				d=std::max(d,maxv-minv);
+			}
+			for(int axis=0;axis<3;axis++){
+				double maxv = ptPos2[0][axis], minv=maxv;
+				for(int i = 1; i < ParamObj2::cntCp; i++) {
+					maxv=std::max(maxv, ptPos2[i][axis]);
+					minv=std::min(minv, ptPos2[i][axis]);
+				}
+				d=std::max(d,maxv-minv);
+			}
+			return d;
 		}
 	};
 

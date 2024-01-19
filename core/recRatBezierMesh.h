@@ -64,11 +64,32 @@ public:
 			out<<"f "<<face[0]<<" "<<face[1]<<" "<<face[2]<<"\n";
 		out.close();
 	}
+	Vector3d getOrigin(){
+		Vector3d center = Vector3d::Zero();
+		for(const auto& patch:patches){
+			for(const auto& p:patch.ctrlp){
+				center+=p.segment(0,3)/p[3];
+			}
+		}
+		center /= cntPatches * RecQuadRatBezier::cntCp;
+		return center;
+	}
+	void setOrigin(const Vector3d& dis){
+		Vector3d diff = dis - getOrigin();
+		moveObj(diff);
+	}
 	void moveObj(const Vector3d& dis){
 		for(auto& patch: patches)
 			for(auto& pt:patch.ctrlp){
-				Vector3d pos(pt[0]/pt[3], pt[1]/pt[3], pt[2]/pt[3]);
+				Vector3d pos=pt.segment(0,3)/pt[3];
 				pt.segment(0,3)=((pos+dis)*pt[3]).eval();
+			}
+	}
+	void moveObj(const RecRatBezierMesh& vel, const double& t){
+		for(int i=0;i<cntPatches;i++)
+			for(int j=0;j<RecQuadRatBezier::cntCp;j++){
+				// 前提是vel的Weight与pos完全一致
+				patches[i].ctrlp[j].segment(0,3)+=vel.patches[i].ctrlp[j].segment(0,3)*t;
 			}
 	}
 	void rotateObj(const double& angle, const Vector3d& axis, const Vector3d& origin = Vector3d::Zero()){
@@ -80,6 +101,12 @@ public:
 				Vector3d pos(pt[0]/pt[3], pt[1]/pt[3], pt[2]/pt[3]);
 				pt.segment(0,3)=((rot.matrix()*(pos-origin)+origin)*pt[3]).eval();
 			}
+	}
+	void setVel(const RecRatBezierMesh& p1, const RecRatBezierMesh& p2, const double& dt){
+		for(int i=0;i<cntPatches;i++)
+			for(int j=0;j<RecQuadRatBezier::cntCp;j++)
+				patches[i].ctrlp[j].segment(0,3) = 
+				(p2.patches[i].ctrlp[j].segment(0,3) - p1.patches[i].ctrlp[j].segment(0,3)) / dt;
 	}
 };
 
