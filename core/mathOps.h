@@ -19,7 +19,7 @@ inline double lineIntersect_x(const Line& l1, const Line &l2) {
 	}
 	return (l2.b-l1.b)/(l1.k-l2.k);
 }
-void getCH(std::vector<Line> lines, std::vector<Line>& ch, std::vector<double>& pts,
+void getCH(std::vector<Line>& lines, std::vector<Line>& ch, std::vector<double>& pts,
 			 const bool getUpperCH = true, const double& upperT = DeltaT) {
 	if(!getUpperCH)std::reverse(lines.begin(),lines.end());
 	lines.erase(std::unique(lines.begin(), lines.end()), lines.end()); // 去重
@@ -103,20 +103,29 @@ void getCH(std::vector<Line> lines, std::vector<Line>& ch, std::vector<double>& 
 Array2d linearCHIntersect(const std::vector<Line>& ch1, const std::vector<Line>& ch2, 
 							const std::vector<double>& pts1, const std::vector<double>& pts2,
 							const double& upperT = DeltaT) {
-	int id1=0, id2=0;
+	int id1=1, id2=1;
 	double intvL=-1, intvR=-1;
 	double sweep=0, lastsweep=0;
-	// bool stopInAdv = false; // 还没写上，但是比如：intvL==-1&&ch1[id1-1].k>ch1[id1-1].k
+	bool stopInAdv = false; // 还没写上，但是比如：intvL==-1&&ch1[id1-1].k>ch1[id1-1].k
 
 	auto checkSweepLine = [&] (const int id1, const int id2) {
 		double y1=ch1[id1].k*sweep+ch1[id1].b;
 		double y2=ch2[id2].k*sweep+ch2[id2].b;
-		if (intvL!=-1&&y1>y2){
-			intvR = lineIntersect_x(ch1[id1], ch2[id2]);
+		if (y1>y2){
+			if(intvL!=-1)
+				intvR = lineIntersect_x(ch1[id1], ch2[id2]);
 		} // 如果k1==k2，那么必然前一个节点必然已经满足y1<y2了
-		else if(intvL==-1&&y1<y2){
-			intvL = lineIntersect_x(ch1[id1], ch2[id2]);
+		else if(y1<y2){
+			if(intvL==-1)
+				intvL = lineIntersect_x(ch1[id1], ch2[id2]); 
 		}// 如果k1==k2，那么必然前一个节点必然已经满足y1<y2了
+		// else{
+		// 	//y1==y2
+		// 	// if(intvL==-1) intvR = intvL = sweep;//这个不对，如果intv一直持续到deltaT就会变成只有一个点
+		// 	if(intvL!=-1) 
+		// 		intvR = sweep;
+		// }
+		if (DEBUG) std::cout<<id1<<"  "<<id2<<" /  "<<y1<<"  "<<y2<<" /  "<<intvL<<" "<<intvR<<"\n";
 		lastsweep = sweep;
 	};
 
@@ -124,63 +133,26 @@ Array2d linearCHIntersect(const std::vector<Line>& ch1, const std::vector<Line>&
 		intvL = 0;
 	// else if(ch1[0].b==ch2[0].b)
 	// 	intvL = intvR = 0;
-	while(id1<ch1.size()&&id2<ch2.size()){
-		sweep = std::min(pts1[id1+1], pts2[id2+1]);
-		// if(ch1[id1].k!=ch2[id2].k&&sweep!=lastsweep){
-		if(sweep!=lastsweep){
-			// double y1=ch1[id1].k*sweep+ch1[id1].b;
-			// double y2=ch2[id2].k*sweep+ch2[id2].b;
-			// if (intvL!=-1&&y1>y2){
-			// 	intvR = lineIntersect_x(ch1[id1], ch2[id2]);
-			// 	return Array2d(intvL,intvR);
-			// } // 如果k1==k2，那么必然前一个节点必然已经满足y1<y2了
-			// else if(intvL==-1&&y1<y2){
-			// 	intvL = lineIntersect_x(ch1[id1], ch2[id2]);
-			// }// 如果k1==k2，那么必然前一个节点必然已经满足y1<y2了
-			// lastsweep = sweep;
-			checkSweepLine(id1,id2);
-		}
+	while(id1<pts1.size()&&id2<pts1.size()){
+		sweep = std::min(pts1[id1], pts2[id2]);
+		if(sweep!=lastsweep)//并不知道这样跳过能不能更快
+			checkSweepLine(id1-1, id2-1);
 		if(pts1[id1] < pts2[id2]) id1++;
 		else id2++;
 	}
-	while(id1<ch1.size()){
-		sweep = pts1[id1+1];
-		// if(ch1[id1].k!=ch2[id2].k&&sweep!=lastsweep){
-		if(sweep!=lastsweep){
-			// double y1=ch1[id1].k*sweep+ch1[id1].b;
-			// double y2=ch2[id2].k*sweep+ch2[id2].b;
-			// if (intvL!=-1&&y1>y2){
-			// 	intvR = lineIntersect_x(ch1[id1], ch2[id2]);
-			// 	return Array2d(intvL,intvR);
-			// } // 如果k1==k2，那么必然前一个节点必然已经满足y1<y2了
-			// else if(intvL==-1&&y1<y2){
-			// 	intvL = lineIntersect_x(ch1[id1], ch2[id2]);
-			// }// 如果k1==k2，那么必然前一个节点必然已经满足y1<y2了
-			// lastsweep = sweep;
-			checkSweepLine(id1,id2);
-		}
+	while(id1<pts1.size()){
+		sweep = pts1[id1];
+		if(sweep!=lastsweep)//并不知道这样跳过能不能更快
+			checkSweepLine(id1-1, id2-1);
 		id1++;
 	}
-	while(id2<ch2.size()){
-		sweep = pts2[id2+1];
-		// if(ch1[id1].k!=ch2[id2].k&&sweep!=lastsweep){
-		if(sweep!=lastsweep){
-			// double y1=ch1[id1].k*sweep+ch1[id1].b;
-			// double y2=ch2[id2].k*sweep+ch2[id2].b;
-			// if (intvL!=-1&&y1>y2){
-			// 	intvR = lineIntersect_x(ch1[id1], ch2[id2]);
-			// 	return Array2d(intvL,intvR);
-			// } // 如果k1==k2，那么必然前一个节点必然已经满足y1<y2了
-			// else if(intvL==-1&&y1<y2){
-			// 	intvL = lineIntersect_x(ch1[id1], ch2[id2]);
-			// }// 如果k1==k2，那么必然前一个节点必然已经满足y1<y2了
-			// lastsweep = sweep;
-			checkSweepLine(id1,id2);
-		}
+	while(id2<pts2.size()){
+		sweep = pts2[id2];
+		if(sweep!=lastsweep)//并不知道这样跳过能不能更快axesOBB
+			checkSweepLine(id1-1, id2-1);
 		id2++;
 	}
-	if(intvL!=-1 && intvR==-1)intvR=upperT;
-	// std::cout<<intvL<<" "<<intvR<<"\n";
+	if(intvL!=-1 && intvR==-1)intvR=DeltaT;
 	return Array2d(intvL,intvR);
 }
 

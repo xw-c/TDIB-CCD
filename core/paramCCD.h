@@ -52,16 +52,20 @@ static double primitiveCheck(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1,
 				Vector3d(1,1,1).normalized(), Vector3d(-1,1,1).normalized(), Vector3d(-1,-1,1).normalized()};
 	}
 	else if(bbtype==BoundingBoxType::OBB){
-		Vector3d lu1 = (ptPos1[ParamObj1::cornerId(2)]-ptPos1[ParamObj1::cornerId(0)]).normalized();//u延展的方向
-		Vector3d lv1 = (ptPos1[ParamObj1::cornerId(1)]-ptPos1[ParamObj1::cornerId(0)]);//v延展的方向
+		Vector3d lu1 = (ptPos1[ParamObj1::cornerId(2)]-ptPos1[ParamObj1::cornerId(0)]
+				+ptPos1[ParamObj1::cornerId(3)]-ptPos1[ParamObj1::cornerId(1)]).normalized();//u延展的方向
+		Vector3d lv1 = (ptPos1[ParamObj1::cornerId(1)]-ptPos1[ParamObj1::cornerId(0)]
+				+ptPos1[ParamObj1::cornerId(3)]-ptPos1[ParamObj1::cornerId(2)]);//v延展的方向
 		lv1 = (lv1-lv1.dot(lu1)*lu1).eval();
 		Vector3d ln1 = lu1.cross(lv1);
 
-		Vector3d lu2 = (ptPos2[ParamObj2::cornerId(2)]-ptPos2[ParamObj2::cornerId(0)]).normalized();//u延展的方向
-		Vector3d lv2 = (ptPos2[ParamObj2::cornerId(1)]-ptPos2[ParamObj2::cornerId(0)]);//v延展的方向
+		Vector3d lu2 = (ptPos2[ParamObj2::cornerId(2)]-ptPos2[ParamObj2::cornerId(0)]
+				+ptPos2[ParamObj2::cornerId(3)]-ptPos2[ParamObj2::cornerId(1)]).normalized();//u延展的方向
+		Vector3d lv2 = (ptPos2[ParamObj2::cornerId(1)]-ptPos2[ParamObj2::cornerId(0)]
+				+ptPos2[ParamObj2::cornerId(3)]-ptPos2[ParamObj2::cornerId(2)]);//v延展的方向
 		lv2 = (lv2-lv2.dot(lu2)*lu2).eval();
 		Vector3d ln2 = lu2.cross(lv2);
-		
+
 		axes = {lu1,lv1,ln1,lu2,lv2,ln2, 
 			lu1.cross(lu2), lu1.cross(lv2), lu1.cross(ln2), 
 			lv1.cross(lu2), lv1.cross(lv2), lv1.cross(ln2), 
@@ -111,39 +115,40 @@ static double primitiveCheck(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1,
 		// // CHCheck(lines2, lines1);
 	// };
 
-	for(auto& axis:axes){
-		// AxisCheck(ptPos1, ptVel1, ptPos2, ptVel2, axis);
-		std::vector<Line> lines1, lines2;
-		std::vector<Line> ch1, ch2;
-		std::vector<double> pts1, pts2;
-		lines1.clear(); lines2.clear();
-		for(int i = 0; i < CpPos1.cntCp; i++) lines1.emplace_back(ptVel1[i].dot(axis), ptPos1[i].dot(axis));
-		for(int i = 0; i < CpPos2.cntCp; i++) lines2.emplace_back(ptVel2[i].dot(axis), ptPos2[i].dot(axis));
-		
-		std::sort(lines1.begin(), lines1.end());
-		std::sort(lines2.begin(), lines2.end()); 
-		// auto CHCheck=[&](std::vector<Line> lineSet1, std::vector<Line> lineSet2)
-		{
-			ch1.clear(); ch2.clear();
-			pts1.clear(); pts2.clear();
-			getCH(lines1, ch1, pts1, true, upperTime);
-			getCH(lines2, ch2, pts2, false, upperTime);//1/20
-			const auto intvT = linearCHIntersect(ch1, ch2, pts1, pts2, upperTime);
-			if(intvT[0]!=-1)feasibleIntvs.push_back(intvT);
-		}
-		{
-			ch1.clear(); ch2.clear();
-			pts1.clear(); pts2.clear();
-			getCH(lines2, ch1, pts1, true, upperTime);
-			getCH(lines1, ch2, pts2, false, upperTime);//1/20
-			const auto intvT = linearCHIntersect(ch1, ch2, pts1, pts2, upperTime);
-			if(intvT[0]!=-1)feasibleIntvs.push_back(intvT);
-		}
-		// CHCheck(lines1, lines2);
-		// CHCheck(lines2, lines1);
+
+
+	auto AxisCheck=[&](std::vector<Line> lines1, std::vector<Line> lines2){
+        // for(auto & l:lines2)
+        //     l.k = -l.k, l.b = -l.b;
+        std::vector<Line> ch1, ch2;
+        std::vector<double> pts1, pts2;
+		ch1.clear(); ch2.clear();
+		pts1.clear(); pts2.clear();
+
+        getCH(lines1, ch1, pts2, true);
+        getCH(lines2, ch2, pts2, false);
+		// std::cout<<"getCHOK!\n";
+        // for(auto & l:ch2)
+        //     l.k = -l.k, l.b = -l.b;
+        const auto intvT = linearCHIntersect(ch1, ch2, pts1, pts2);
+		if(SHOWANS) std::cout<<intvT.transpose()<<"\n";
+		if(DEBUG) std::cin.get();
+        if(intvT[0]!=-1)feasibleIntvs.push_back(intvT);
+	};
+
+    for(const auto& axis:axes){
+		std::vector<Line> ptLines1, ptLines2;
+		ptLines1.clear(); ptLines2.clear();
+		for(int i = 0; i < 16; i++) ptLines1.emplace_back(ptVel1[i].dot(axis), ptPos1[i].dot(axis));
+		for(int i = 0; i < 16; i++) ptLines2.emplace_back(ptVel2[i].dot(axis), ptPos2[i].dot(axis));
+		std::sort(ptLines1.begin(), ptLines1.end());
+        std::sort(ptLines2.begin(), ptLines2.end());
+        AxisCheck(ptLines1, ptLines2);
+        AxisCheck(ptLines2, ptLines1);
 	}
-	// for(auto& axis:axes){
-	// 	AxisCheck(ptPos2, ptVel2, ptPos1, ptVel1, axis);}
+    // for(const auto& axis:axes)
+    //     AxisCheck(ptPos2, ptVel2, ptPos1, ptVel1, axis);
+
 
 	if(SHOWANS) std::cout<<"done!\n";
 
@@ -251,9 +256,9 @@ static double solveCCD(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1,
 			uv1 = cur.pb1.centerParam();
 			uv2 = cur.pb2.centerParam();
 			const auto endTime = steady_clock::now();
-			// std::cout << "min time: "<<  cur.tLower << "used seconds: " <<
-			// 	duration(endTime - initialTime).count()
-			// 	<< std::endl;
+			std::cout << "min time: "<<  cur.tLower << "\nused seconds: " <<
+				duration(endTime - initialTime).count()
+				<< std::endl;
 			return cur.tLower;
 		}
 
@@ -271,18 +276,18 @@ static double solveCCD(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1,
 	}
 
 	const auto endTime = steady_clock::now();
-	// std::cout << "used seconds: " <<
-	// 	duration(endTime - initialTime).count()
-	// 	<< std::endl;
+	std::cout << "used seconds: " <<
+		duration(endTime - initialTime).count()
+		<< std::endl;
 	return -1;
 }
 
-auto triGenerate = generatePatchPair<TriCubicBezier,TriCubicBezier>;
-auto triBezierCCD = solveCCD<TriCubicBezier,TriCubicBezier,TriParamBound,TriParamBound>;
+// auto triGenerate = generatePatchPair<TriCubicBezier,TriCubicBezier>;
+// auto triBezierCCD = solveCCD<TriCubicBezier,TriCubicBezier,TriParamBound,TriParamBound>;
 
-auto recGenerate = generatePatchPair<RecCubicBezier,RecCubicBezier>;
+// auto recGenerate = generatePatchPair<RecCubicBezier,RecCubicBezier>;
 auto recBezierCCD = solveCCD<RecCubicBezier,RecCubicBezier,RecParamBound,RecParamBound>;
 
-auto triLinearCCD = solveCCD<TriLinearBezier,TriLinearBezier,TriParamBound,TriParamBound>;
+// auto triLinearCCD = solveCCD<TriLinearBezier,TriLinearBezier,TriParamBound,TriParamBound>;
 
-auto recRatBezierCCD = solveCCD<RecQuadRatBezier,RecQuadRatBezier,RecParamBound,RecParamBound>;
+// auto recRatBezierCCD = solveCCD<RecQuadRatBezier,RecQuadRatBezier,RecParamBound,RecParamBound>;

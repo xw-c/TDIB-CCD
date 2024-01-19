@@ -34,4 +34,4 @@ enum class PatchType { TriBezier = 10, RecBezier = 16};
 std::normal_distribution<double> randNormal(0.0, 1.0); // 均值为0，标准差为1的正态分布
 
 std::uint64_t cnt;
-const BoundingBoxType bbtype = BoundingBoxType::OBB;
+const BoundingBoxType bbtype = BoundingBoxType::AABB;
