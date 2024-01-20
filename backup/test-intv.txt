@@ -1,0 +1,300 @@
+min time: 0
+used seconds: 0.0165407
+0: 0.017303s
+min time: 0
+used seconds: 0.0229376
+1: 0.040761s
+min time: 0.617699
+used seconds: 0.0041903
+2: 0.0455575s
+min time: 0
+used seconds: 0.0235491
+3: 0.0697594s
+min time: 0
+used seconds: 0.0147206
+4: 0.0850377s
+min time: 0.138176
+used seconds: 0.003626
+5: 0.0891419s
+min time: 0
+used seconds: 0.0232181
+6: 0.112876s
+min time: 0
+used seconds: 0.0294455
+7: 0.142827s
+min time: 0
+used seconds: 0.015518
+8: 0.158797s
+min time: 0.284477
+used seconds: 0.240171
+9: 0.400333s
+min time: 0.0170517
+used seconds: 0.184667
+10: 0.586554s
+min time: 0.522354
+used seconds: 0.352123
+11: 0.94025s
+min time: 0.134544
+used seconds: 9.04527
+12: 9.98797s
+min time: 0
+used seconds: 0.0244547
+13: 10.013s
+min time: 0.275131
+used seconds: 0.0613254
+14: 10.0749s
+min time: 0
+used seconds: 0.0177178
+15: 10.0932s
+min time: 0
+used seconds: 0.018678
+16: 10.1126s
+min time: 0
+used seconds: 0.0160951
+17: 10.1296s
+min time: 0
+used seconds: 0.013728
+18: 10.1438s
+min time: 0
+used seconds: 0.0162466
+19: 10.1607s
+min time: 0
+used seconds: 0.0150418
+20: 10.1761s
+min time: 0
+used seconds: 0.0150459
+21: 10.1916s
+min time: 0.330887
+used seconds: 0.342954
+22: 10.5354s
+min time: 0.392181
+used seconds: 6.24809
+23: 16.7853s
+min time: 0
+used seconds: 0.0142125
+24: 16.8005s
+min time: 0.189865
+used seconds: 0.12174
+25: 16.9231s
+min time: 0.278328
+used seconds: 0.0258818
+26: 16.9496s
+min time: 0.147743
+used seconds: 0.0087261
+27: 16.9589s
+min time: 0.55925
+used seconds: 0.0098758
+28: 16.9695s
+min time: 0
+used seconds: 0.0147165
+29: 16.9849s
+min time: 0
+used seconds: 0.0141072
+30: 16.9995s
+min time: 0
+used seconds: 0.0086407
+31: 17.0086s
+min time: 0
+used seconds: 0.0232053
+32: 17.0323s
+min time: 0
+used seconds: 0.0231581
+33: 17.0562s
+min time: 0
+used seconds: 0.04313
+34: 17.0998s
+min time: 0.158112
+used seconds: 0.130803
+35: 17.2314s
+min time: 0
+used seconds: 0.0179357
+36: 17.2498s
+min time: 0
+used seconds: 0.0082027
+37: 17.2586s
+min time: 0.0982513
+used seconds: 4.21338
+38: 21.4737s
+min time: 0
+used seconds: 0.021298
+39: 21.4955s
+min time: 0
+used seconds: 0.0225266
+40: 21.5188s
+min time: 0
+used seconds: 0.0220254
+41: 21.5412s
+min time: 0.276581
+used seconds: 0.073098
+42: 21.6148s
+min time: 0.265617
+used seconds: 0.0377644
+43: 21.6531s
+min time: 0.471466
+used seconds: 8.83104
+44: 30.4863s
+min time: 0.0085907
+used seconds: 0.068731
+45: 30.5556s
+min time: 0
+used seconds: 0.0128083
+46: 30.569s
+min time: 0
+used seconds: 0.0170161
+47: 30.5865s
+min time: 0
+used seconds: 0.0260622
+48: 30.6131s
+min time: 0.306549
+used seconds: 0.12348
+49: 30.7382s
+min time: 0
+used seconds: 0.009318
+50: 30.7481s
+min time: 0
+used seconds: 0.0107789
+51: 30.7595s
+min time: 0
+used seconds: 0.0110222
+52: 30.7709s
+min time: 0
+used seconds: 0.0226984
+53: 30.7941s
+min time: 0
+used seconds: 0.0101467
+54: 30.8048s
+min time: 0
+used seconds: 0.0246317
+55: 30.83s
+min time: 0
+used seconds: 0.010203
+56: 30.8409s
+min time: 0
+used seconds: 0.0233878
+57: 30.8648s
+min time: 0
+used seconds: 0.0146872
+58: 30.8798s
+used seconds: 0.0017266
+59: 30.8819s
+min time: 0.289124
+used seconds: 0.005951
+60: 30.8883s
+min time: 0.434692
+used seconds: 0.0699811
+61: 30.9594s
+min time: 0.237961
+used seconds: 0.464243
+62: 31.4251s
+min time: 0
+used seconds: 0.0242227
+63: 31.4498s
+min time: 0
+used seconds: 0.0163263
+64: 31.4667s
+min time: 0
+used seconds: 0.0145484
+65: 31.4817s
+min time: 0
+used seconds: 0.0218675
+66: 31.5041s
+min time: 0
+used seconds: 0.0212017
+67: 31.5258s
+min time: 0.441772
+used seconds: 0.105909
+68: 31.633s
+min time: 0
+used seconds: 0.0427532
+69: 31.6764s
+min time: 0
+used seconds: 0.0152308
+70: 31.6921s
+min time: 0
+used seconds: 0.0084257
+71: 31.7009s
+min time: 0
+used seconds: 0.0074553
+72: 31.7088s
+min time: 0
+used seconds: 0.0134705
+73: 31.7227s
+min time: 0.552338
+used seconds: 5.40679
+74: 37.1308s
+min time: 0
+used seconds: 0.0152294
+75: 37.1466s
+min time: 0
+used seconds: 0.0103586
+76: 37.1576s
+min time: 0.0739059
+used seconds: 0.0045365
+77: 37.1628s
+min time: 0.0792999
+used seconds: 0.106506
+78: 37.27s
+min time: 0.611877
+used seconds: 5.55544
+79: 42.8264s
+min time: 0.202202
+used seconds: 1.38382
+80: 44.2117s
+min time: 0
+used seconds: 0.0262891
+81: 44.2388s
+min time: 0.0959778
+used seconds: 0.269468
+82: 44.5094s
+min time: 0
+used seconds: 0.0131183
+83: 44.5232s
+min time: 0.251785
+used seconds: 0.0383071
+84: 44.5625s
+min time: 0
+used seconds: 0.0118342
+85: 44.5748s
+min time: 0.330734
+used seconds: 0.243515
+86: 44.8189s
+min time: 0
+used seconds: 0.0241306
+87: 44.8439s
+min time: 0
+used seconds: 0.0171389
+88: 44.8616s
+min time: 0
+used seconds: 0.011642
+89: 44.8737s
+min time: 0.0711746
+used seconds: 0.0048778
+90: 44.8792s
+min time: 0.121521
+used seconds: 0.0046408
+91: 44.8844s
+min time: 0.362228
+used seconds: 0.0666263
+92: 44.9515s
+min time: 0
+used seconds: 0.0262547
+93: 44.9783s
+min time: 0.122513
+used seconds: 0.0031887
+94: 44.982s
+min time: 0.0251846
+used seconds: 0.256199
+95: 45.2387s
+min time: 0.597229
+used seconds: 5.13343
+96: 50.3741s
+min time: 0
+used seconds: 0.0157356
+97: 50.3905s
+min time: 0.0840149
+used seconds: 3.20757
+98: 53.5993s
+min time: 0
+used seconds: 0.0259967
+99: 53.6259s
+used seconds: 0.53626

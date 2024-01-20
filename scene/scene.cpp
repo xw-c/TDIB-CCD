@@ -2,6 +2,7 @@
 #include"recBezierMesh.h"
 #include"recRatBezierMesh.h"
 #include"paramCCD.h"
+#include"utils.h"
 
 // template<typename Mesh1, typename Mesh2, typename Func>
 // double ccd(const Mesh1& mesh1, const Mesh1& vel1,
@@ -350,27 +351,33 @@
 
 static void singleTest(){
 	RecCubicBezier obj1, obj2, vel1, vel2;
-	std::srand(0);
-	const int Kase = 100;
 	using steady_clock = std::chrono::steady_clock;
 	using duration = std::chrono::duration<double>;
-	const auto initialTime = steady_clock::now();
-	for(int kase = 0;kase<Kase;kase++){
-		for(auto &p:obj1.ctrlp)p=Vector3d::Random();
-		for(auto &p:obj1.ctrlp)p[0]-=3;
-		for(auto &p:obj2.ctrlp)p=Vector3d::Random();
-		for(auto &p:obj2.ctrlp)p[0]+=3;
-		for(auto &p:vel1.ctrlp)p=Vector3d(3,0,0);
-		for(auto &p:vel2.ctrlp)p=Vector3d(-3,0,0);
 
-		Array2d uv1,uv2;
-		double t = recBezierCCD(obj1,vel1,obj2,vel2,uv1,uv2, DeltaT);
-		std::cout<<kase<<": "<<duration(steady_clock::now() - initialTime).count()<<"s\n";
-	}
+	readinDoFs(obj1.ctrlp, vel1.ctrlp, obj2.ctrlp, vel2.ctrlp);
+
+	Array2d uv1,uv2;
+	const auto initialTime = steady_clock::now();
+	double t = recBezierCCD(obj1,vel1,obj2,vel2,uv1,uv2, DeltaT);
+
 	const auto endTime = steady_clock::now();
 	std::cout << "used seconds: " <<
-		duration(endTime - initialTime).count()/Kase
+		duration(endTime - initialTime).count()
 		<< std::endl;
+
+	Vector3d const p1 = obj1.evaluatePatchPoint(uv1);
+	Vector3d const v1 = vel1.evaluatePatchPoint(uv1);
+	Vector3d const p2 = obj2.evaluatePatchPoint(uv2);
+	Vector3d const v2 = vel2.evaluatePatchPoint(uv2);
+	Vector3d const pt1=(v1*t+p1), pt2=(v2*t+p2);
+	std::cout<<"delta: "<<(pt2-pt1).norm()<<"\n";
+
+	RecBezierMesh obj(2);
+	for(int i=0;i<16;i++)obj1.ctrlp[i]+=t*vel1.ctrlp[i];
+	for(int i=0;i<16;i++)obj2.ctrlp[i]+=t*vel2.ctrlp[i];
+	obj.patches[0]=obj1;
+	obj.patches[1]=obj2;
+	obj.writeObj("check.obj");
 }
 // template<typename Obj>
 static void randomTest(){
@@ -395,6 +402,10 @@ static void randomTest(){
 		}
 		Array2d uv1,uv2;
 		double t = recBezierCCD(obj1,vel1,obj2,vel2,uv1,uv2, DeltaT);
+		if(kase==12){
+			saveDoFs(obj1.ctrlp, vel1.ctrlp, obj2.ctrlp, vel2.ctrlp);
+			break;
+		}
 
 		// Vector3d const p1 = obj1.evaluatePatchPoint(uv1);
 		// Vector3d const v1 = vel1.evaluatePatchPoint(uv1);
@@ -418,5 +429,6 @@ int main(){
 	// boundaryTest();
 	// testBunny();
 	// sortupBunny();
-	randomTest();
+	// randomTest();
+	singleTest();
 }

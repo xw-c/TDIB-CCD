@@ -429,16 +429,20 @@ static double PrimitiveCheck(Bounds2d const &divUvB1, Bounds2d const &divUvB2, c
 		}
 		else if(bbtype==BB::OBB) {
 			Vector3d 
-			lu1 = (ptPos1[3]-ptPos1[0]+ptPos1[15]-ptPos1[12]),
-			lv1 = (ptPos1[12]-ptPos1[0]+ptPos1[15]-ptPos1[3]),
+			lu1 = (ptPos1[3]-ptPos1[0]+ptPos1[15]-ptPos1[12]).normalized(),
+			lv1 = (ptPos1[12]-ptPos1[0]+ptPos1[15]-ptPos1[3]);
+		lv1 = (lv1-lv1.dot(lu1)*lu1).eval();
+			Vector3d 
 			ln1 = lu1.cross(lv1);
 			Vector3d 
-			lu2 = (ptPos2[3]-ptPos2[0]+ptPos2[15]-ptPos2[12]),
-			lv2 = (ptPos2[12]-ptPos2[0]+ptPos2[15]-ptPos2[3]),
+			lu2 = (ptPos2[3]-ptPos2[0]+ptPos2[15]-ptPos2[12]).normalized(),
+			lv2 = (ptPos2[12]-ptPos2[0]+ptPos2[15]-ptPos2[3]);
+		lv2 = (lv2-lv2.dot(lu2)*lu2).eval();
+			Vector3d 
 			ln2 = lu2.cross(lv2);
 			axes = {lu1,lv1,ln1,lu2,lv2,ln2, 
 				lu1.cross(lu2), lu1.cross(lv2), lu1.cross(ln2), 
-				lv1.cross(lu2), lv1.cross(lv2), lv1.cross(ln2), 
+				lv1.cross(lu2), lv1.cross(lv2), lv1.cross(ln2),
 				ln1.cross(lu2), ln1.cross(lv2), ln1.cross(ln2)};
 		}
 		for(auto &a:axes)a.normalize();
@@ -545,8 +549,8 @@ static double ccd(const BB bbtype) {
 		if (std::max(cur.uvB1.diagonal().maxCoeff(), cur.uvB2.diagonal().maxCoeff()) < MinDeltaUV) {
 			// DEBUG=1;
 			// BBcheck(cur.uvB1, cur.uvB2);
-			std::cout << ((cur.uvB1.pMin + cur.uvB1.pMax) / 2).transpose() << std::endl;
-			std::cout << ((cur.uvB2.pMin + cur.uvB2.pMax) / 2).transpose() << std::endl;
+			std::cout << ((cur.uvB1.pMin + cur.uvB1.pMax) / 2) << std::endl;
+			std::cout << ((cur.uvB2.pMin + cur.uvB2.pMax) / 2) << std::endl;
 			uv1 = (cur.uvB1.pMin + cur.uvB1.pMax) / 2;
 			uv2 = (cur.uvB2.pMin + cur.uvB2.pMax) / 2;
 			const auto endTime = steady_clock::now();
@@ -576,7 +580,7 @@ static double ccd(const BB bbtype) {
 	return -1;
 }
 
-void readinDoFs(){
+static void readinDoFs(){
 	std::ifstream readin("DoFs.txt");
 	for (int i = 0; i < 16; i++)
 		for(int k=0;k<3;k++)
@@ -592,7 +596,7 @@ void readinDoFs(){
 			readin>>CpVel2[i](k);
 	readin.close();
 }
-void saveDoFs(){
+static void saveDoFs(){
 	std::ofstream f("DoFs.txt");
 	for(auto item : CpPos1)
 		f<<item.transpose()<<"\n";
@@ -604,7 +608,7 @@ void saveDoFs(){
 		f<<item.transpose()<<"\n";
 	f.close();
 }
-void generatePatches(){
+static void generatePatches(){
 	// std::srand(0);
 	for (int i = 0; i < 16; i++) {
 		CpPos1[i] = Vector3d::Random() - Vector3d::Constant(.6);
@@ -613,11 +617,11 @@ void generatePatches(){
 		CpVel2[i] = Vector3d::Random()*0.3 - Vector3d::Constant(.6);
 	}
 }
-void randomTest(){
+static void randomTest(){
 	using steady_clock = std::chrono::steady_clock;
 	using duration = std::chrono::duration<double>;
 	int cntAABB=0, cntSample=0;
-	const int Kase = 100;
+	const int Kase = 10;
 	double ans[2][Kase];
 
 	const auto initOBB = steady_clock::now();
@@ -628,7 +632,7 @@ void randomTest(){
 		saveDoFs();
 	}
 	const auto endOBB = steady_clock::now();
-	std::cout<<"OBB used seconds: "<<duration(endOBB - initOBB).count()*0.01<<"\n";
+	std::cout<<"OBB used seconds: "<<duration(endOBB - initOBB).count()/Kase<<"\n";
 
 	// const auto initAABB = steady_clock::now();
 	// std::srand(0);
@@ -679,7 +683,7 @@ void randomTest(){
 	// std::cout<<"LPOBB: "<<cntLPOBB<<"used seconds: "<<duration(endLPOBB - initLPOBB).count()*0.01<<"\n";
 }
 
-void singleTest(){
+static void singleTest(){
 
 // {	std::srand(0);
 // 	generatePatches();

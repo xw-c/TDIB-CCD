@@ -1,6 +1,7 @@
 #include"config.h"
 #include"recBezierMesh.h"
 #include"triBezier.h"
+#include"utils.h"
 
 
 template<typename ParamObj1, typename ParamObj2, typename ParamBound1, typename ParamBound2>
@@ -187,29 +188,31 @@ static double inclusionCCD(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1,
 static void singleTest(){
 	RecCubicBezier obj1, obj2, vel1, vel2;
 
-	const int Kase = 100;
-	std::srand(0);
 	using steady_clock = std::chrono::steady_clock;
 	using duration = std::chrono::duration<double>;
-	const auto initialTime = steady_clock::now();
 	// kase 19
-	for(int kase = 0;kase<Kase;kase++){
-		for(auto &p:obj1.ctrlp)p=Vector3d::Random();
-		for(auto &p:obj1.ctrlp)p[0]-=3;
-		for(auto &p:obj2.ctrlp)p=Vector3d::Random();
-		for(auto &p:obj2.ctrlp)p[0]+=3;
-		for(auto &p:vel1.ctrlp)p=Vector3d(3,0,0);
-		for(auto &p:vel2.ctrlp)p=Vector3d(-3,0,0);
-
-		Array2d uv1,uv2;
-		double t = inclusionCCD<RecCubicBezier,RecCubicBezier,RecParamBound,RecParamBound>
-							(obj1,vel1,obj2,vel2,uv1,uv2, DeltaT);
-		std::cout<<kase<<": "<<duration(steady_clock::now() - initialTime).count()<<"s\n";
-	}
+	Array2d uv1,uv2;
+	readinDoFs(obj1.ctrlp, vel1.ctrlp, obj2.ctrlp, vel2.ctrlp);
+	const auto initialTime = steady_clock::now();
+	double t = inclusionCCD<RecCubicBezier,RecCubicBezier,RecParamBound,RecParamBound>
+						(obj1,vel1,obj2,vel2,uv1,uv2, DeltaT);
 	const auto endTime = steady_clock::now();
 	std::cout << "used seconds: " <<
-		duration(endTime - initialTime).count()/Kase
+		duration(endTime - initialTime).count()
 		<< std::endl;
+	Vector3d const p1 = obj1.evaluatePatchPoint(uv1);
+	Vector3d const v1 = vel1.evaluatePatchPoint(uv1);
+	Vector3d const p2 = obj2.evaluatePatchPoint(uv2);
+	Vector3d const v2 = vel2.evaluatePatchPoint(uv2);
+	Vector3d const pt1=(v1*t+p1), pt2=(v2*t+p2);
+	std::cout<<"delta: "<<(pt2-pt1).norm()<<"\n";
+
+	RecBezierMesh obj(2);
+	for(int i=0;i<16;i++)obj1.ctrlp[i]+=t*vel1.ctrlp[i];
+	for(int i=0;i<16;i++)obj2.ctrlp[i]+=t*vel2.ctrlp[i];
+	obj.patches[0]=obj1;
+	obj.patches[1]=obj2;
+	obj.writeObj("check-intv.obj");
 }
 static void randomTest(){
 	RecCubicBezier obj1, obj2, vel1, vel2;
@@ -242,5 +245,7 @@ static void randomTest(){
 		<< std::endl;
 }
 int main(){
-	randomTest();
+	// randomTest();
+	singleTest();
+
 }
