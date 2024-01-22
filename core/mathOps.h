@@ -135,20 +135,20 @@ Array2d linearCHIntersect(const std::vector<Line>& ch1, const std::vector<Line>&
 	// 	intvL = intvR = 0;
 	while(id1<pts1.size()&&id2<pts1.size()){
 		sweep = std::min(pts1[id1], pts2[id2]);
-		if(sweep!=lastsweep)//并不知道这样跳过能不能更快
+		if(ch1[id1-1].k != ch2[id2-1].k && sweep!=lastsweep)//并不知道这样跳过能不能更快
 			checkSweepLine(id1-1, id2-1);
 		if(pts1[id1] < pts2[id2]) id1++;
 		else id2++;
 	}
 	while(id1<pts1.size()){
 		sweep = pts1[id1];
-		if(sweep!=lastsweep)//并不知道这样跳过能不能更快
+		if(ch1[id1-1].k != ch2[id2-1].k && sweep!=lastsweep)//并不知道这样跳过能不能更快
 			checkSweepLine(id1-1, id2-1);
 		id1++;
 	}
 	while(id2<pts2.size()){
 		sweep = pts2[id2];
-		if(sweep!=lastsweep)//并不知道这样跳过能不能更快axesOBB
+		if(ch1[id1-1].k != ch2[id2-1].k && sweep!=lastsweep)//并不知道这样跳过能不能更快axesOBB
 			checkSweepLine(id1-1, id2-1);
 		id2++;
 	}
