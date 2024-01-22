@@ -135,8 +135,8 @@ static double primitiveCheck(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1,
     for(const auto& axis:axes){
 		std::vector<Line> ptLines1, ptLines2;
 		ptLines1.clear(); ptLines2.clear();
-		for(int i = 0; i < 16; i++) ptLines1.emplace_back(ptVel1[i].dot(axis), ptPos1[i].dot(axis));
-		for(int i = 0; i < 16; i++) ptLines2.emplace_back(ptVel2[i].dot(axis), ptPos2[i].dot(axis));
+		for(int i = 0; i < ParamObj1::cntCp; i++) ptLines1.emplace_back(ptVel1[i].dot(axis), ptPos1[i].dot(axis));
+		for(int i = 0; i < ParamObj1::cntCp; i++) ptLines2.emplace_back(ptVel2[i].dot(axis), ptPos2[i].dot(axis));
 		std::sort(ptLines1.begin(), ptLines1.end());
         std::sort(ptLines2.begin(), ptLines2.end());
         AxisCheck(ptLines1, ptLines2);
