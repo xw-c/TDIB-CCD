@@ -48,15 +48,11 @@ public:
 	}
 
 	static double feasibleUpperV(const double& u) { return 1; }
-	static int cornerId(const int i) {
-		// 00 01 10 11
-		switch(i){
-			case 0: return 0;
-			case 1: return 2;
-			case 2: return 6;
-			case 3: return 8;
-			default: {std::cerr<<"invalid corner id!\n"; exit(-1);}
-		}
+	static Vector3d axisU(const std::array<Vector3d, 9>& pt){
+		return (pt[6]-pt[0]+pt[8]-pt[2]);
+	}
+	static Vector3d axisV(const std::array<Vector3d, 9>& pt){
+		return (pt[2]-pt[0]+pt[8]-pt[6]);
 	}
 
 	// Patch Functions
@@ -119,15 +115,11 @@ public:
 	}
 
 	static double feasibleUpperV(const double& u) { return 1; }
-	static int cornerId(const int i) {
-		// 00 01 10 11
-		switch(i){
-			case 0: return 0;
-			case 1: return 3;
-			case 2: return 12;
-			case 3: return 15;
-			default: {std::cerr<<"invalid corner id!\n"; exit(-1);}
-		}
+	static Vector3d axisU(const std::array<Vector3d, 16>& pt){
+		return (pt[12]-pt[0]+pt[15]-pt[3]);
+	}
+	static Vector3d axisV(const std::array<Vector3d, 16>& pt){
+		return (pt[3]-pt[0]+pt[15]-pt[12]);
 	}
 	// Patch Functions
 	// 先v变再u变

@@ -33,17 +33,13 @@ static bool inclusionCheck(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1,
 				Vector3d(1,1,1).normalized(), Vector3d(-1,1,1).normalized(), Vector3d(-1,-1,1).normalized()};
 	}
 	else if(bbtype==BoundingBoxType::OBB){
-		Vector3d lu1 = (posStart1[ParamObj1::cornerId(2)]-posStart1[ParamObj1::cornerId(0)]
-				+posStart1[ParamObj1::cornerId(3)]-posStart1[ParamObj1::cornerId(1)]).normalized();//u延展的方向
-		Vector3d lv1 = (posStart1[ParamObj1::cornerId(1)]-posStart1[ParamObj1::cornerId(0)]
-				+posStart1[ParamObj1::cornerId(3)]-posStart1[ParamObj1::cornerId(2)]);//v延展的方向
+		Vector3d lu1 = ParamObj1::axisU(posStart1).normalized();//u延展的方向
+		Vector3d lv1 = ParamObj1::axisV(posStart1);//v延展的方向
 		lv1 = (lv1-lv1.dot(lu1)*lu1).eval();
 		Vector3d ln1 = lu1.cross(lv1);
 
-		Vector3d lu2 = (posStart2[ParamObj2::cornerId(2)]-posStart2[ParamObj2::cornerId(0)]
-				+posStart2[ParamObj2::cornerId(3)]-posStart2[ParamObj2::cornerId(1)]).normalized();//u延展的方向
-		Vector3d lv2 = (posStart2[ParamObj2::cornerId(1)]-posStart2[ParamObj2::cornerId(0)]
-				+posStart2[ParamObj2::cornerId(3)]-posStart2[ParamObj2::cornerId(2)]);//v延展的方向
+		Vector3d lu2 = ParamObj2::axisU(posStart2).normalized();//u延展的方向
+		Vector3d lv2 = ParamObj2::axisV(posStart2);//v延展的方向
 		lv2 = (lv2-lv2.dot(lu2)*lu2).eval();
 		Vector3d ln2 = lu2.cross(lv2);
 
@@ -155,9 +151,9 @@ static double inclusionCCD(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1,
 			uv1 = cur.pb1.centerParam();
 			uv2 = cur.pb2.centerParam();
 			const auto endTime = steady_clock::now();
-			std::cout << "min time: "<<  cur.tIntv[0] << "\nused seconds: " <<
-				duration(endTime - initialTime).count()
-				<< std::endl;
+			// std::cout << "min time: "<<  cur.tIntv[0] << "\nused seconds: " <<
+				// duration(endTime - initialTime).count()
+				// << std::endl;
 			return cur.tIntv[0];
 		}
 
@@ -179,9 +175,9 @@ static double inclusionCCD(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1,
 	}
 
 	const auto endTime = steady_clock::now();
-	std::cout << "used seconds: " <<
-		duration(endTime - initialTime).count()
-		<< std::endl;
+	// std::cout << "used seconds: " <<
+	// 	duration(endTime - initialTime).count()
+	// 	<< std::endl;
 	return -1;
 }
 
@@ -214,17 +210,19 @@ static void singleTest(){
 	obj.patches[1]=obj2;
 	obj.writeObj("check-intv.obj");
 }
+template<typename ObjType, typename ParamType>
 static void randomTest(){
-	RecCubicBezier obj1, obj2, vel1, vel2;
+	ObjType obj1, obj2, vel1, vel2;
 	std::srand(0);
 	std::default_random_engine randGenerator(0);
-	const int Kase = 100;
+	const int Kase = 1000;
 	using steady_clock = std::chrono::steady_clock;
 	using duration = std::chrono::duration<double>;
 	const auto initialTime = steady_clock::now();
+	int hasCol = 0;
 	for(int kase = 0;kase<Kase;kase++){
 		Vector3d dir=Vector3d::Random().normalized()/1.625;
-		for (int i = 0; i < RecCubicBezier::cntCp; i++) {
+		for (int i = 0; i < ObjType::cntCp; i++) {
 			for(int dim=0; dim<3; dim++) obj1.ctrlp[i][dim] = randNormal(randGenerator);
 			for(int dim=0; dim<3; dim++) vel1.ctrlp[i][dim] = randNormal(randGenerator);
 			for(int dim=0; dim<3; dim++) obj2.ctrlp[i][dim] = randNormal(randGenerator);
@@ -235,17 +233,26 @@ static void randomTest(){
 			vel2.ctrlp[i]+=dir;
 		}
 		Array2d uv1,uv2;
-		double t = inclusionCCD<RecCubicBezier,RecCubicBezier,RecParamBound,RecParamBound>
+		double t = inclusionCCD<ObjType,ObjType,ParamType,ParamType>
 							(obj1,vel1,obj2,vel2,uv1,uv2, DeltaT);
-		std::cout<<kase<<": "<<duration(steady_clock::now() - initialTime).count()<<"s\n";
+		if(t>=0)hasCol++;
+		// std::cout<<kase<<": "<<duration(steady_clock::now() - initialTime).count()<<"s\n";
 	}
 	const auto endTime = steady_clock::now();
+	std::cout << hasCol<<" pairs have collided.\n";
 	std::cout << "used seconds: " <<
 		duration(endTime - initialTime).count()/Kase
 		<< std::endl;
 }
 int main(){
-	// randomTest();
-	singleTest();
+
+	// randomTest<TriLinearBezier, TriParamBound>();
+	// randomTest<TriQuadBezier, TriParamBound>();
+	randomTest<TriCubicBezier, TriParamBound>();
+	// randomTest<RecLinearBezier, RecParamBound>();
+	// randomTest<RecQuadBezier, RecParamBound>();
+	// randomTest<RecCubicBezier, RecParamBound>();
+	// randomTest<RecQuadRatBezier, RecParamBound>();
+	// randomTest<RecCubicRatBezier, RecParamBound>();
 
 }

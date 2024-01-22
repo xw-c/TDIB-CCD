@@ -9,7 +9,7 @@ target("demo")
     set_kind("binary")
     -- add_includedirs("core", {public = true})
     add_packages("eigen", {public = true})
-    add_files("backup/ccd/testtri.cpp")
+    add_files("backup/ccd/test.cpp")
 
 target("scene")
     set_kind("binary")

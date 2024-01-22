@@ -86,14 +86,11 @@ public:
 	}
 
 	double feasibleUpperV(const double& u) const { return 1 - u; }
-	static int cornerId(const int i) {
-		// 00 01 10 11
-		switch(i){
-			case 0: return 0;
-			case 1: return 2;
-			case 2: return 1;
-			default: {std::cerr<<"invalid corner id!\n"; exit(-1);}
-		}
+	static Vector3d axisU(const std::array<Vector3d, 3>& pt) {
+		return pt[1]-pt[0];
+	}
+	static Vector3d axisV(const std::array<Vector3d, 3>& pt) {
+		return pt[2]-pt[0];
 	}
 
 	// 100,010,001
@@ -132,14 +129,11 @@ public:
 	}
 
 	double feasibleUpperV(const double& u) const { return 1 - u; }
-	static int cornerId(const int i) {
-		// 00 01 10 11
-		switch(i){
-			case 0: return 0;
-			case 1: return 5;
-			case 2: return 2;
-			default: {std::cerr<<"invalid corner id!\n"; exit(-1);}
-		}
+	static Vector3d axisU(const std::array<Vector3d, 6>& pt) {
+		return pt[2]-pt[0];
+	}
+	static Vector3d axisV(const std::array<Vector3d, 6>& pt) {
+		return pt[5]-pt[0];
 	}
 
 	// 100,010,001
@@ -196,15 +190,13 @@ public:
 	}
 
 	double feasibleUpperV(const double& u) const { return 1 - u; }
-	static int cornerId(const int i) {
-		// 00 01 10 11
-		switch(i){
-			case 0: return 0;
-			case 1: return 9;
-			case 2: return 3;
-			default: {std::cerr<<"invalid corner id!\n"; exit(-1);}
-		}
+	static Vector3d axisU(const std::array<Vector3d, 10>& pt) {
+		return pt[3]-pt[0];
 	}
+	static Vector3d axisV(const std::array<Vector3d, 10>& pt) {
+		return pt[9]-pt[0];
+	}
+
 	// 100,010,001
 	std::array<Vector3d, 10> divideBezierPatch(const TriParamBound& coords) const {
 		std::array<Vector3d, 10> divCp;

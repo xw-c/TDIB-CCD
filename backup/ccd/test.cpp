@@ -1,5 +1,4 @@
 #include <Eigen/Dense>
-#include "config.h"
 
 using Eigen::Array2d;
 using Eigen::Vector3d;
@@ -17,11 +16,19 @@ using Eigen::MatrixXd;
 #include <queue>
 #include <span>
 #include <chrono>
+static constexpr double MinDeltaUV = 1e-6;
+static constexpr double Epsilon = 1e-6;
+static constexpr double DeltaT = 1;
+bool DEBUG = 0;
+static constexpr bool SHOWANS = 0;
+enum class BB { AABB, OBB };
 
 std::array<Vector3d, 16> CpPos1 {};
 std::array<Vector3d, 16> CpPos2 {};
 std::array<Vector3d, 16> CpVel1 {};
 std::array<Vector3d, 16> CpVel2 {};
+
+std::uint64_t cnt;
 
 template <typename T> static T lerp(double t, T const &t0, T const &t1) { return (1 - t) * t0 + t * t1; }
 
@@ -146,7 +153,6 @@ static std::array<P, 16> divideBezierPatch(std::span<P const> cp, Bounds2d const
 	return divCp;
 }
 
-Array2d uv1, uv2;
 
 
 static double point2Box(const MatrixXd &x, const MatrixXd &u, const double tMax)
@@ -278,8 +284,6 @@ static double ccdSample() {
 	if(minT<=DeltaT&&minT>=0){
 		std::cout << ap1.transpose() << std::endl << ap2.transpose() << std::endl;
 		const auto endTime = steady_clock::now();
-		uv1 = ap1,
-		uv2 = ap2;
 		std::cout << "min time: "<<  minT << "used seconds: " <<
 			duration(endTime - initialTime).count()
 			<< std::endl;
@@ -413,28 +417,32 @@ static Array2d linearCHIntersect(const std::vector<Line>& ch1, const std::vector
 }
 
 // maybe no need to contruct from scratch?
-static double PrimitiveCheck(Bounds2d const &divUvB1, Bounds2d const &divUvB2, const BoundingBoxType bbtype){
+static double PrimitiveCheck(Bounds2d const &divUvB1, Bounds2d const &divUvB2, const BB bbtype){
 	auto const ptPos1 = divideBezierPatch<Vector3d>(CpPos1, divUvB1);
 	auto const ptVel1 = divideBezierPatch<Vector3d>(CpVel1, divUvB1);
 	auto const ptPos2 = divideBezierPatch<Vector3d>(CpPos2, divUvB2);
 	auto const ptVel2 = divideBezierPatch<Vector3d>(CpVel2, divUvB2);
 
 	auto setAxes = [&] (std::vector<Vector3d>& axes) {
-		if(bbtype==BoundingBoxType::AABB){
+		if(bbtype==BB::AABB){
 			axes = {Vector3d::Unit(0), Vector3d::Unit(1), Vector3d::Unit(2)};
 		}
-		else if(bbtype==BoundingBoxType::OBB) {
+		else if(bbtype==BB::OBB) {
 			Vector3d 
-			lu1 = (ptPos1[3]-ptPos1[0]+ptPos1[15]-ptPos1[12]),
-			lv1 = (ptPos1[12]-ptPos1[0]+ptPos1[15]-ptPos1[3]),
+			lu1 = (ptPos1[3]-ptPos1[0]+ptPos1[15]-ptPos1[12]).normalized(),
+			lv1 = (ptPos1[12]-ptPos1[0]+ptPos1[15]-ptPos1[3]);
+		lv1 = (lv1-lv1.dot(lu1)*lu1).eval();
+			Vector3d 
 			ln1 = lu1.cross(lv1);
 			Vector3d 
-			lu2 = (ptPos2[3]-ptPos2[0]+ptPos2[15]-ptPos2[12]),
-			lv2 = (ptPos2[12]-ptPos2[0]+ptPos2[15]-ptPos2[3]),
+			lu2 = (ptPos2[3]-ptPos2[0]+ptPos2[15]-ptPos2[12]).normalized(),
+			lv2 = (ptPos2[12]-ptPos2[0]+ptPos2[15]-ptPos2[3]);
+		lv2 = (lv2-lv2.dot(lu2)*lu2).eval();
+			Vector3d 
 			ln2 = lu2.cross(lv2);
 			axes = {lu1,lv1,ln1,lu2,lv2,ln2, 
 				lu1.cross(lu2), lu1.cross(lv2), lu1.cross(ln2), 
-				lv1.cross(lu2), lv1.cross(lv2), lv1.cross(ln2), 
+				lv1.cross(lu2), lv1.cross(lv2), lv1.cross(ln2),
 				ln1.cross(lu2), ln1.cross(lv2), ln1.cross(ln2)};
 		}
 	};
@@ -487,7 +495,7 @@ static double PrimitiveCheck(Bounds2d const &divUvB1, Bounds2d const &divUvB2, c
 	if(feasibleIntvs.size()==0 || (feasibleIntvs[0](0)>0)) return 0;
 	double minT = feasibleIntvs[0](1);
 	for(int i=1;i<feasibleIntvs.size();i++)
-		if(feasibleIntvs[i](0)<minT) //不能加等，因为无碰撞给的是开区间，如果有),(的情况加等号会把这个情况漏掉
+		if(feasibleIntvs[i](0)<=minT)
 			minT=std::max(minT, feasibleIntvs[i](1));
 		else break;
 	if(minT<DeltaT)return minT;
@@ -516,7 +524,8 @@ static double PrimitiveCheck(Bounds2d const &divUvB1, Bounds2d const &divUvB2, c
 	// 	if (min1[i]>max2[i]||min2[i]>max1[i]) return false;
 	// return true;
 }
-static double ccd(const BoundingBoxType bbtype) {
+Array2d uv1, uv2;
+static double ccd(const BB bbtype) {
 	using steady_clock = std::chrono::steady_clock;
 	using duration = std::chrono::duration<double>;
 	const auto initialTime = steady_clock::now();
@@ -529,28 +538,24 @@ static double ccd(const BoundingBoxType bbtype) {
 
 	while (!heap.empty()) {
 		auto const cur = heap.top();
-		// std::cout << "patch1 : (" << cur.uvB1.pMin[0]<<", "<<cur.uvB1.pMin[1]<<") (" <<cur.uvB1.pMax[0]<<", "<<cur.uvB1.pMax[1]<<")" 
-		// 	<< " patch2 : (" << cur.uvB2.pMin[0]<<", "<<cur.uvB2.pMin[1]<<") (" <<cur.uvB2.pMax[0]<<", "<<cur.uvB2.pMax[1]<<")\n";
-
 		heap.pop();
 		cnt++;
 		if(DEBUG) std::cout<<cnt<<"\n";
 		// Set uv of the middle point
 		Array2d uvMid1 = (cur.uvB1.pMin + cur.uvB1.pMax) / 2;
 		Array2d uvMid2 = (cur.uvB2.pMin + cur.uvB2.pMax) / 2;
-		// std::cout<<"center at ("<<uvMid1.transpose()<<"), ("<<uvMid2.transpose()<<"), width ("<<cur.uvB1.diagonal().transpose()<<"), ("<<cur.uvB1.diagonal().transpose()<<")\n";
 		// Decide whether the algorithm converges
 		if (std::max(cur.uvB1.diagonal().maxCoeff(), cur.uvB2.diagonal().maxCoeff()) < MinDeltaUV) {
 			// DEBUG=1;
 			// BBcheck(cur.uvB1, cur.uvB2);
-			std::cout << ((cur.uvB1.pMin + cur.uvB1.pMax) / 2).transpose() << std::endl;
-			std::cout << ((cur.uvB2.pMin + cur.uvB2.pMax) / 2).transpose() << std::endl;
+			// std::cout << ((cur.uvB1.pMin + cur.uvB1.pMax) / 2).transpose() << std::endl;
+			// std::cout << ((cur.uvB2.pMin + cur.uvB2.pMax) / 2).transpose() << std::endl;
 			uv1 = (cur.uvB1.pMin + cur.uvB1.pMax) / 2;
 			uv2 = (cur.uvB2.pMin + cur.uvB2.pMax) / 2;
 			const auto endTime = steady_clock::now();
-			std::cout << "min time: "<<  cur.tLower << "used seconds: " <<
-				duration(endTime - initialTime).count()
-				<< std::endl;
+			// std::cout << "min time: "<<  cur.tLower << "used seconds: " <<
+			// 	duration(endTime - initialTime).count()
+			// 	<< std::endl;
 			return cur.tLower;
 		}
 
@@ -568,9 +573,9 @@ static double ccd(const BoundingBoxType bbtype) {
 	}
 
 	const auto endTime = steady_clock::now();
-	std::cout << "used seconds: " <<
-		duration(endTime - initialTime).count()
-		<< std::endl;
+	// std::cout << "used seconds: " <<
+	// 	duration(endTime - initialTime).count()
+	// 	<< std::endl;
 	return -1;
 }
 
@@ -603,7 +608,7 @@ void saveDoFs(){
 	f.close();
 }
 void generatePatches(){
-	std::srand(10);
+	// std::srand(0);
 	for (int i = 0; i < 16; i++) {
 		CpPos1[i] = Vector3d::Random() - Vector3d::Constant(.6);
 		CpVel1[i] = Vector3d::Random()*0.3 + Vector3d::Constant(.6);
@@ -615,32 +620,37 @@ void randomTest(){
 	using steady_clock = std::chrono::steady_clock;
 	using duration = std::chrono::duration<double>;
 	int cntAABB=0, cntSample=0;
-	const int Kase = 10;
+	const int Kase = 100;
 	double ans[2][Kase];
 
+	int hasCol=0;
 	const auto initOBB = steady_clock::now();
 	std::srand(0);
 	for(int kase=0;kase<Kase;kase++){
 		generatePatches();
-		ans[0][kase]=ccd(BoundingBoxType::OBB);
+		ans[0][kase]=ccd(BB::OBB);
+		if(kase%100==0)std::cout<<kase<<"\n";
+		if(ans[0][kase]>=0)hasCol++;
 	}
 	const auto endOBB = steady_clock::now();
-	std::cout<<"OBB used seconds: "<<duration(endOBB - initOBB).count()/Kase<<"\n";
+	std::cout<<hasCol<<"pairs have collided.\n";
+	std::cout<<"OBB used seconds: "<<duration(endOBB - initOBB).count()*0.01<<"\n";
 
-	const auto initAABB = steady_clock::now();
-	std::srand(0);
-	for(int kase=0;kase<Kase;kase++){
-		generatePatches();
-		saveDoFs();
-		ans[0][kase]=ccd(BoundingBoxType::AABB);
-		// if(ccd(AABBcheck)!=-1)cntAABB++;
-		// if(dcd(OBBcheck))cntOBB++;
-		// if(cntAABB!=cntOBB){saveDoFs();exit(-1);}
-	}
-	const auto endAABB = steady_clock::now();
-	std::cout<<"AABB used seconds: "<<duration(endAABB - initAABB).count()/Kase<<"\n";
+	// const auto initAABB = steady_clock::now();
+	// std::srand(0);
+	// for(int kase=0;kase<Kase;kase++){
+	// 	generatePatches();
+	// 	ans[0][kase]=ccd(BB::AABB);
+	// 	// if(ccd(AABBcheck)!=-1)cntAABB++;
+	// 	// if(dcd(OBBcheck))cntOBB++;
+	// 	// if(cntAABB!=cntOBB){saveDoFs();exit(-1);}
+	// }
+	// const auto endAABB = steady_clock::now();
+	// std::cout<<"AABB used seconds: "<<duration(endAABB - initAABB).count()*0.01<<"\n";
 
-	std::cout<<"OBB used seconds: "<<duration(endOBB - initOBB).count()/Kase<<"\n";
+	// std::cout<<"OBB used seconds: "<<duration(endOBB - initOBB).count()*0.01<<"\n";
+	// std::cout<<"OBB used seconds: "<<duration(endOBB - initOBB).count()*0.01<<"\n";
+
 
 	// const auto initSample = steady_clock::now();
 	// std::srand(0);
@@ -677,25 +687,9 @@ void randomTest(){
 
 void singleTest(){
 
-	{std::srand(0);
-	generatePatches();
-	double t = ccd(BoundingBoxType::OBB);
-
-	Array2d checkUV;
-	Vector3d const p1 = evaluateBicubicBezier(CpPos1, uv1);
-	Vector3d const v1 = evaluateBicubicBezier(CpVel1, uv1);
-	Vector3d const p2 = evaluateBicubicBezier(CpPos2, uv2);
-	Vector3d const v2 = evaluateBicubicBezier(CpVel2, uv2);
-	Vector3d const pt1=(v1*t+p1), pt2=(v2*t+p2);
-	std::cout<<"trajectories: "<<v1.transpose()<<"   "<<p1.transpose()<<"\n";
-	std::cout<<"trajectories: "<<v2.transpose()<<"   "<<p2.transpose()<<"\n";
-	std::cout<<"pos at: "<<pt1.transpose()<<"     "<<pt2.transpose()<<"\n";
-	std::cout<<"delta: "<<(pt2-pt1).norm()<<"\n";
-	std::cout<<"check OBB ans: min time "<<point2patch(p1, v1, checkUV);}
-
 {	std::srand(0);
 	generatePatches();
-	double t = ccd(BoundingBoxType::AABB);
+	double t = ccd(BB::AABB);
 	Array2d checkUV;
 	Vector3d const p1 = evaluateBicubicBezier(CpPos1, uv1);
 	Vector3d const v1 = evaluateBicubicBezier(CpVel1, uv1);
@@ -708,10 +702,9 @@ void singleTest(){
 	std::cout<<"delta: "<<(pt2-pt1).norm()<<"\n";
 	std::cout<<"check AABB ans: min time "<<point2patch(p1, v1, checkUV)<<"\n\n";}
 
-
 	{std::srand(0);
 	generatePatches();
-	double t = ccdSample();
+	double t = ccd(BB::OBB);
 
 	Array2d checkUV;
 	Vector3d const p1 = evaluateBicubicBezier(CpPos1, uv1);
@@ -723,7 +716,7 @@ void singleTest(){
 	std::cout<<"trajectories: "<<v2.transpose()<<"   "<<p2.transpose()<<"\n";
 	std::cout<<"pos at: "<<pt1.transpose()<<"     "<<pt2.transpose()<<"\n";
 	std::cout<<"delta: "<<(pt2-pt1).norm()<<"\n";
-	std::cout<<"check Sample ans: min time "<<point2patch(p1, v1, checkUV);}
+	std::cout<<"check OBB ans: min time "<<point2patch(p1, v1, checkUV);}
 }
 
 int main(){
@@ -742,10 +735,7 @@ int main(){
 	// double t=0.474162;
 	// std::cout<<v1*t+p1<<"\n\n\n"<<v2*t+p2;
 
-	// freopen("aabb.txt","w",stdout);
-	// randomTest();
-	// readinDoFs();
-	// ccd(BoundingBoxType::AABB);
-	singleTest();
+	randomTest();
+	// singleTest();
 
 }

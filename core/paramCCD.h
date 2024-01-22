@@ -52,17 +52,13 @@ static double primitiveCheck(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1,
 				Vector3d(1,1,1).normalized(), Vector3d(-1,1,1).normalized(), Vector3d(-1,-1,1).normalized()};
 	}
 	else if(bbtype==BoundingBoxType::OBB){
-		Vector3d lu1 = (ptPos1[ParamObj1::cornerId(2)]-ptPos1[ParamObj1::cornerId(0)]
-				+ptPos1[ParamObj1::cornerId(3)]-ptPos1[ParamObj1::cornerId(1)]).normalized();//u延展的方向
-		Vector3d lv1 = (ptPos1[ParamObj1::cornerId(1)]-ptPos1[ParamObj1::cornerId(0)]
-				+ptPos1[ParamObj1::cornerId(3)]-ptPos1[ParamObj1::cornerId(2)]);//v延展的方向
+		Vector3d lu1 = ParamObj1::axisU(ptPos1).normalized();//u延展的方向
+		Vector3d lv1 = ParamObj1::axisV(ptPos1);//v延展的方向
 		lv1 = (lv1-lv1.dot(lu1)*lu1).eval();
 		Vector3d ln1 = lu1.cross(lv1);
 
-		Vector3d lu2 = (ptPos2[ParamObj2::cornerId(2)]-ptPos2[ParamObj2::cornerId(0)]
-				+ptPos2[ParamObj2::cornerId(3)]-ptPos2[ParamObj2::cornerId(1)]).normalized();//u延展的方向
-		Vector3d lv2 = (ptPos2[ParamObj2::cornerId(1)]-ptPos2[ParamObj2::cornerId(0)]
-				+ptPos2[ParamObj2::cornerId(3)]-ptPos2[ParamObj2::cornerId(2)]);//v延展的方向
+		Vector3d lu2 = ParamObj2::axisU(ptPos2).normalized();//u延展的方向
+		Vector3d lv2 = ParamObj2::axisV(ptPos2);//v延展的方向
 		lv2 = (lv2-lv2.dot(lu2)*lu2).eval();
 		Vector3d ln2 = lu2.cross(lv2);
 
@@ -256,9 +252,9 @@ static double solveCCD(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1,
 			uv1 = cur.pb1.centerParam();
 			uv2 = cur.pb2.centerParam();
 			const auto endTime = steady_clock::now();
-			std::cout << "min time: "<<  cur.tLower << "\nused seconds: " <<
-				duration(endTime - initialTime).count()
-				<< std::endl;
+			// std::cout << "min time: "<<  cur.tLower << "\nused seconds: " <<
+			// 	duration(endTime - initialTime).count()
+			// 	<< std::endl;
 			return cur.tLower;
 		}
 
@@ -276,14 +272,14 @@ static double solveCCD(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1,
 	}
 
 	const auto endTime = steady_clock::now();
-	std::cout << "used seconds: " <<
-		duration(endTime - initialTime).count()
-		<< std::endl;
+	// std::cout << "used seconds: " <<
+	// 	duration(endTime - initialTime).count()
+	// 	<< std::endl;
 	return -1;
 }
 
 // auto triGenerate = generatePatchPair<TriCubicBezier,TriCubicBezier>;
-// auto triBezierCCD = solveCCD<TriCubicBezier,TriCubicBezier,TriParamBound,TriParamBound>;
+auto triBezierCCD = solveCCD<TriCubicBezier,TriCubicBezier,TriParamBound,TriParamBound>;
 
 // auto recGenerate = generatePatchPair<RecCubicBezier,RecCubicBezier>;
 auto recBezierCCD = solveCCD<RecCubicBezier,RecCubicBezier,RecParamBound,RecParamBound>;
