@@ -14,7 +14,7 @@ struct Line
 };
 inline double lineIntersect_x(const Line& l1, const Line &l2) {
 	if(l1.k==l2.k){
-		std::cout<<"parallel lines do not intersect at a single point!\n";
+				std::cout<<"parallel lines do not intersect at a single point!\n";
 		exit(-1);
 	}
 	return (l2.b-l1.b)/(l1.k-l2.k);
@@ -60,42 +60,48 @@ void getCH(std::vector<Line>& lines, std::vector<Line>& ch, std::vector<double>&
 		exit(-1);
 	}
 }
-
-// void getCH(const std::map<double,double>& lines, std::map<double,double>& ch, std::vector<double>& pts,
+// void getCH(std::vector<Line>& lines, std::vector<Line>& ch, std::vector<double>& pts,
 // 			 const bool getUpperCH = true, const double& upperT = DeltaT) {
+// 	if(!getUpperCH)std::reverse(lines.begin(),lines.end());
+// 	lines.erase(std::unique(lines.begin(), lines.end()), lines.end()); // 去重
 // 	ch.clear();
 // 	pts.clear();
 // 	pts.push_back(0);
-// 	auto it=lines.begin();
-// 	ch.insert(*it);
-// 	double intsctX = 0;
-// 	it++;
-// 	while(it != lines.end()){
+// 	ch.push_back(lines[0]);
+// 	std::vector<double> heights; heights.clear();heights.push_back(lines[0].b);
+// 	if(DEBUG) for(const auto&l:lines)std::cout<<"lines:\t"<<l.k<<" "<<l.b<<"\n";
+// 	double id = 1, height = 0;
+// 	while(id < lines.size()){
 // 		// std::cout<<id<<"  "<<pts.size()<<"\n";
 // 		while(!ch.empty()){
-// 			intsctX = -(it->second-ch.rbegin()->second)/(it->first-ch.rbegin()->first);
-// 			if(intsctX<=pts.back()){
+// 			height=lines[id].k*pts.back()+lines[id].b;
+// 			if((getUpperCH&&height>heights.back())||(!getUpperCH&&height<heights.back())){
 // 			// if(ch.back().k*pts.back()+ch.back().b<=lines[id].k*pts.back()+lines[id].b){
 // 				pts.pop_back();
-// 				ch.erase(std::prev(ch.end()));
+// 				ch.pop_back();
+// 				heights.pop_back();
 // 			}
 // 			else break;
 // 		}
-// 		ch.insert(*it);
-// 		pts.push_back(std::max(0.,intsctX));
-// 		it++;
+// 		// intsctX = lineIntersect_x(lines[id], ch.back());
+// 		heights.push_back(height);
+// 		pts.push_back(ch.empty()?0:std::max(0.,lineIntersect_x(lines[id], ch.back(), false)));
+// 		ch.push_back(lines[id]);
+// 		id++;
 // 	}
 // 	while(pts.back()>=upperT){
 // 		pts.pop_back();
-// 		ch.erase(std::prev(ch.end()));
+// 		ch.pop_back();
 // 	}
 // 	pts.push_back(upperT);
+// 	if(DEBUG) for(const auto&l:ch)std::cout<<"ch:\t"<<l.k<<" "<<l.b<<"\n";
+// 	if(DEBUG) for(const auto&pt:pts)std::cout<<"pt:\t"<<pt<<"\n";
 // 	if(ch.empty()){
 // 		std::cout<<"empty CH!\n";
 // 		exit(-1);
 // 	}
 // 	if(ch.size()+1!=pts.size()){
-// 		std::cout<<"segments and inflections are not compatible!\n"<<ch.size()<<" "<<pts.size();
+// 		std::cout<<"segments and inflections are not compatible!\n";
 // 		exit(-1);
 // 	}
 // }
@@ -133,26 +139,26 @@ Array2d linearCHIntersect(const std::vector<Line>& ch1, const std::vector<Line>&
 		intvL = 0;
 	// else if(ch1[0].b==ch2[0].b)
 	// 	intvL = intvR = 0;
-	while(id1<pts1.size()&&id2<pts1.size()){
+	while(id1<pts1.size()&&id2<pts2.size()&&intvR==-1){
 		sweep = std::min(pts1[id1], pts2[id2]);
 		if(sweep!=lastsweep)//并不知道这样跳过能不能更快
 			checkSweepLine(id1-1, id2-1);
 		if(pts1[id1] < pts2[id2]) id1++;
 		else id2++;
 	}
-	while(id1<pts1.size()){
+	while(id1<pts1.size()&&intvR==-1){
 		sweep = pts1[id1];
 		if(sweep!=lastsweep)//并不知道这样跳过能不能更快
 			checkSweepLine(id1-1, id2-1);
 		id1++;
 	}
-	while(id2<pts2.size()){
+	while(id2<pts2.size()&&intvR==-1){
 		sweep = pts2[id2];
 		if(sweep!=lastsweep)//并不知道这样跳过能不能更快axesOBB
 			checkSweepLine(id1-1, id2-1);
 		id2++;
 	}
-	if(intvL!=-1 && intvR==-1)intvR=DeltaT;
+	if(intvL!=-1 && intvR==-1)intvR=upperT;
 	return Array2d(intvL,intvR);
 }
 

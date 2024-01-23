@@ -31,15 +31,25 @@ template<typename ParamObj1, typename ParamObj2, typename ParamBound1, typename 
 static double primitiveCheck(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1, 
 						const ParamObj2 &CpPos2, const ParamObj2 &CpVel2,
 						const ParamBound1 &divUvB1, const ParamBound2 &divUvB2,
-						const double upperTime = DeltaT){
-	auto const ptPos1 = CpPos1.divideBezierPatch(divUvB1);
-	auto const ptVel1 = CpVel1.divideBezierPatch(divUvB1);
-	auto const ptPos2 = CpPos2.divideBezierPatch(divUvB2);
-	auto const ptVel2 = CpVel2.divideBezierPatch(divUvB2);
-
-	auto setAxes = [&] (std::vector<Vector3d>& axes) {
-		
-	};
+						const double lowerTime = 0,
+						double upperTime = DeltaT){
+	auto ptPos1 = CpPos1.divideBezierPatch(divUvB1);
+	auto ptVel1 = CpVel1.divideBezierPatch(divUvB1);
+	auto ptPos2 = CpPos2.divideBezierPatch(divUvB2);
+	auto ptVel2 = CpVel2.divideBezierPatch(divUvB2);
+	for(int i=0;i<ParamObj1::cntCp;i++){
+		ptPos1[i]+=ptVel1[i]*lowerTime;
+	}
+	for(int i=0;i<ParamObj2::cntCp;i++){
+		ptPos2[i]+=ptVel2[i]*lowerTime;
+	}
+	upperTime-=lowerTime;
+	// std::cout<<divUvB1.nodes[0]<<"\n";
+	// std::cout<<divUvB1.nodes[1]<<"\n";
+	// std::cout<<divUvB1.nodes[2]<<"\n";
+	// std::cout<<divUvB2.nodes[0]<<"\n";
+	// std::cout<<divUvB2.nodes[1]<<"\n";
+	// std::cout<<divUvB2.nodes[2]<<"\n";
 
 	// std::cout<<"done!\n";
 	std::vector<Vector3d> axes;
@@ -70,49 +80,6 @@ static double primitiveCheck(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1,
 	std::vector<Array2d> feasibleIntvs;
 	feasibleIntvs.clear();
 
-	// auto AxisCheck=[&](const std::array<Vector3d, ParamObj1::cntCp>& p1, const std::array<Vector3d, ParamObj1::cntCp>& v1, 
-	// 					const std::array<Vector3d, ParamObj2::cntCp>& p2, const std::array<Vector3d, ParamObj2::cntCp>& v2, 
-	// 					const Vector3d& axis){
-		// std::map<double, double> lines1, lines2;
-		// std::map<double, double> ch1, ch2;
-		// std::vector<double> pts1, pts2;
-		// lines1.clear(); lines2.clear();
-		// for(int i = 0; i < CpPos1.cntCp; i++) {
-		// 	double k=v1[i].dot(axis), b=p1[i].dot(axis);
-		// 	auto it = lines1.find(k);
-		// 	if(it!=lines1.end()){
-		// 		it->second = std::max(it->second, b);
-		// 	}
-		// 	else lines1[k]=b;
-		// }
-		// for(int i = 0; i < CpPos1.cntCp; i++) {
-		// 	double k=-v2[i].dot(axis), b=-p2[i].dot(axis);
-		// 	auto it = lines2.find(k);
-		// 	if(it!=lines2.end()){
-		// 		it->second = std::max(it->second, b);
-		// 	}
-		// 	else lines2[k]=b;
-		// }
-		// // auto CHCheck=[&](std::map<double,double> lineSet1, std::map<double,double> lineSet2)
-		// // {
-		// ch1.clear(); ch2.clear();
-		// pts1.clear(); pts2.clear();
-		// getCH(lines1, ch1, pts1, true, upperTime);
-		// getCH(lines2, ch2, pts2, false, upperTime);//1/20
-		// std::map<double,double,std::greater<double> > ch3;
-		// ch3.clear();
-		// for(const auto& it:ch2) {
-		// 	ch3[-it.first]=-it.second;
-		// }
-		// const auto intvT = linearCHIntersect(ch1, ch3, pts1, pts2, upperTime);
-		// if(intvT[0]!=-1)feasibleIntvs.push_back(intvT);
-		// // };
-		// // CHCheck(lines1, lines2);
-		// // CHCheck(lines2, lines1);
-	// };
-
-
-
 	auto AxisCheck=[&](std::vector<Line> lines1, std::vector<Line> lines2){
         // for(auto & l:lines2)
         //     l.k = -l.k, l.b = -l.b;
@@ -121,15 +88,16 @@ static double primitiveCheck(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1,
 		ch1.clear(); ch2.clear();
 		pts1.clear(); pts2.clear();
 
-        getCH(lines1, ch1, pts2, true);
-        getCH(lines2, ch2, pts2, false);
+        getCH(lines1, ch1, pts1, true, upperTime);
+        getCH(lines2, ch2, pts2, false, upperTime);
 		// std::cout<<"getCHOK!\n";
         // for(auto & l:ch2)
         //     l.k = -l.k, l.b = -l.b;
-        const auto intvT = linearCHIntersect(ch1, ch2, pts1, pts2);
+        const auto intvT = linearCHIntersect(ch1, ch2, pts1, pts2, upperTime);
 		if(SHOWANS) std::cout<<intvT.transpose()<<"\n";
 		if(DEBUG) std::cin.get();
         if(intvT[0]!=-1)feasibleIntvs.push_back(intvT);
+		// else if(intvT[0]==0&&intvT[1]==upperTime)return -1;
 	};
 
     for(const auto& axis:axes){
@@ -155,14 +123,15 @@ static double primitiveCheck(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1,
 		[](const Array2d& intv1, const Array2d& intv2){
 			return (intv1(0)<intv2(0));
 		});
-	if(feasibleIntvs[0](0)>0) return 0;
+	if(feasibleIntvs[0](0)>0) return lowerTime;
+	// for(const auto&l:feasibleIntvs)std::cout<<"intv:"<<l.transpose()<<"\n";
 	double minT = feasibleIntvs[0](1);
 	for(int i=1;i<feasibleIntvs.size();i++)
 		if(feasibleIntvs[i](0)<minT) //不能加等，因为无碰撞给的是开区间，如果有),(的情况加等号会把这个情况漏掉
 			minT=std::max(minT, feasibleIntvs[i](1));
 		else break;
-	
-	if(minT<upperTime)return minT;
+	// std::cout<<minT<<"\n";
+	if(minT<upperTime)return minT+lowerTime;
 	else return -1;
 }
 
@@ -229,16 +198,19 @@ static double solveCCD(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1,
 	std::priority_queue<PatchPair> heap;
 	ParamBound1 initParam1;
 	ParamBound2 initParam2;
-	double colTime = primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, initParam1, initParam2, upperTime);
+	double colTime = primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, initParam1, initParam2,0, upperTime);
 	if (colTime>=0 && colTime<=upperTime)
 		heap.emplace(initParam1, initParam2, colTime);
 	// std::cout<<"done!\n";
-
+	cnt=1;
 	while (!heap.empty()) {
 		auto const cur = heap.top();
 		// std::cout << "patch1 : {" << cur.pb1.pMin.transpose()<<"; "<< cur.pb1.pMax.transpose()<<"; " <<"}\n" 
 		// 	<< " patch2 : {" << cur.pb2.pMin.transpose()<<"; "<< cur.pb2.pMax.transpose()<<"; "<<"}\n";
 		// std::cin.get();
+		// std::cout << cur.pb1.centerParam().transpose() << std::endl;
+		// std::cout << cur.pb2.centerParam().transpose() << std::endl;
+		// std::cout << cur.tLower<< std::endl;
 		heap.pop();
 		cnt++;
 		if(DEBUG) std::cout<<cnt<<"\n";
@@ -252,9 +224,9 @@ static double solveCCD(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1,
 			uv1 = cur.pb1.centerParam();
 			uv2 = cur.pb2.centerParam();
 			const auto endTime = steady_clock::now();
-			// std::cout << "min time: "<<  cur.tLower << "\nused seconds: " <<
-			// 	duration(endTime - initialTime).count()
-			// 	<< std::endl;
+			std::cout << "min time: "<<  cur.tLower 
+				<< "\nused seconds: " << duration(endTime - initialTime).count()
+				<< std::endl;
 			return cur.tLower;
 		}
 
@@ -263,8 +235,10 @@ static double solveCCD(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1,
 			ParamBound1 divUvB1(cur.pb1.interpSubpatchParam(i));
 			for (int j = 0; j < 4; j++) {
 				ParamBound2 divUvB2(cur.pb2.interpSubpatchParam(j));
-				colTime = primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, divUvB1, divUvB2, upperTime);//maybe also need timeLB?
-				if (colTime>=0 && colTime<=upperTime){
+				colTime = primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, divUvB1, divUvB2, cur.tLower, upperTime);//maybe also need timeLB?
+				// std::cout<<"check done! "<<colTime<<"\n";
+				// std::cin.get();
+				if (colTime>=0 && colTime<upperTime){
 					heap.emplace(divUvB1, divUvB2, colTime);
 				}
 			}
@@ -272,17 +246,16 @@ static double solveCCD(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1,
 	}
 
 	const auto endTime = steady_clock::now();
-	// std::cout << "used seconds: " <<
-	// 	duration(endTime - initialTime).count()
-	// 	<< std::endl;
+	std::cout << "used seconds: " << duration(endTime - initialTime).count()
+		<< std::endl;
 	return -1;
 }
 
 // auto triGenerate = generatePatchPair<TriCubicBezier,TriCubicBezier>;
-auto triBezierCCD = solveCCD<TriCubicBezier,TriCubicBezier,TriParamBound,TriParamBound>;
+// auto triBezierCCD = solveCCD<TriCubicBezier,TriCubicBezier,TriParamBound,TriParamBound>;
 
 // auto recGenerate = generatePatchPair<RecCubicBezier,RecCubicBezier>;
-auto recBezierCCD = solveCCD<RecCubicBezier,RecCubicBezier,RecParamBound,RecParamBound>;
+// auto recBezierCCD = solveCCD<RecCubicBezier,RecCubicBezier,RecParamBound,RecParamBound>;
 
 // auto triLinearCCD = solveCCD<TriLinearBezier,TriLinearBezier,TriParamBound,TriParamBound>;
 
