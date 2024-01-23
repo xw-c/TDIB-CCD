@@ -162,45 +162,34 @@ Array2d linearCHIntersect(const std::vector<Line>& ch1, const std::vector<Line>&
 	return Array2d(intvL,intvR);
 }
 
-// Array2d linearCHIntersect(const std::vector<Line>& ch1, const std::vector<Line>& ch2, 
-// 							const std::vector<double>& pts1, const std::vector<double>& pts2,
-// 							const double& upperT = DeltaT) {
-// 	int id1=0, id2=0;
-// 	double intvL=-1, intvR=-1;
-// 	std::vector<double> pts(pts1.size()+pts2.size());
-// 	std::merge(pts1.begin(), pts1.end(), pts2.begin(), pts2.end(), pts.begin());
-// 	pts.erase(std::unique(pts.begin(), pts.end()), pts.end()); // 去重
-// 	pts.erase(pts.begin());
-// 	// for(const auto& pt: pts){std::cout<<pt<<"\n";}
+template<typename ObjType>
+static void generatePatchPair(std::array<Vector3d, ObjType::cntCp> &CpPos1, std::array<Vector3d, ObjType::cntCp> &CpVel1,
+							 std::array<Vector3d, ObjType::cntCp> &CpPos2, std::array<Vector3d, ObjType::cntCp> &CpVel2, const double& denom){
+	Vector3d dir=Vector3d::Random().normalized()/denom;
+	for (int i = 0; i < ObjType::cntCp; i++) {
+		for(int dim=0; dim<3; dim++) CpPos1[i][dim] = randNormal(randGenerator);
+		for(int dim=0; dim<3; dim++) CpVel1[i][dim] = randNormal(randGenerator);
+		for(int dim=0; dim<3; dim++) CpPos2[i][dim] = randNormal(randGenerator);
+		for(int dim=0; dim<3; dim++) CpVel2[i][dim] = randNormal(randGenerator);
+		CpPos1[i]+=dir;
+		CpVel1[i]-=dir;
+		CpPos2[i]-=dir;
+		CpVel2[i]+=dir;
+	}
+}
 
-// 	if(ch1[0].b<ch2[0].b)
-// 		intvL = 0;
-
-// 	for(const auto& pt: pts){
-// 		// std::cout<<pt<<" "<<id1<<" "<<id2<<"\n";
-// 		if(intvL==-1&&ch1[id1].k>ch1[id1].k)break;
-// 		if(pt>pts1[id1+1]&&id1<ch1.size()-1)id1++;
-// 		if(pt>pts2[id1+1]&&id2<ch2.size()-1)id2++;
-// 		double y1=ch1[id1].k*pt+ch1[id1].b;
-// 		double y2=ch2[id2].k*pt+ch2[id2].b;
-// 		if(y1==y2){
-// 			if(intvL==-1)intvL=pt;
-// 			else intvR=std::max(intvL,pt);
-// 			// std::cout<<ch1[id1].k<<" "<<pt<<" "<<ch1[id1].b<<" "<<y1<<"\n";
-// 			// std::cout<<ch2[id2].k<<" "<<pt<<" "<<ch2[id2].b<<" "<<y2<<"\n";
-// 			// std::cerr<<"not implemented!\n";
-// 			// exit(-1);
-// 		}
-// 		else if (intvL!=-1&&y1>y2){
-// 			intvR = std::max(intvL,lineIntersect_x(ch1[id1], ch2[id2]));
-// 			break;
-// 		} // 如果k1==k2，那么必然前一个节点必然已经满足y1<y2了
-// 		else if(intvL==-1&&y1<y2){
-// 			intvL = lineIntersect_x(ch1[id1], ch2[id2]);
-// 		}// 如果k1==k2，那么必然前一个节点必然已经满足y1<y2了
-// 	}
-
-// 	if(intvL!=-1 && intvR==-1)intvR=upperT;
-// 	// std::cout<<intvL<<" "<<intvR<<"\n";
-// 	return Array2d(intvL,intvR);
-// }
+template<typename ObjType>
+static void generatePatchPair(std::array<Vector4d, ObjType::cntCp> &CpPos1, std::array<Vector4d, ObjType::cntCp> &CpVel1,
+							 std::array<Vector4d, ObjType::cntCp> &CpPos2, std::array<Vector4d, ObjType::cntCp> &CpVel2, const double& denom){
+	Vector3d dir=Vector3d::Random().normalized()/denom;
+	for (int i = 0; i < ObjType::cntCp; i++) {
+		for(int dim=0; dim<4; dim++) CpPos1[i][dim] = randNormal(randGenerator);
+		for(int dim=0; dim<4; dim++) CpVel1[i][dim] = randNormal(randGenerator);
+		for(int dim=0; dim<4; dim++) CpPos2[i][dim] = randNormal(randGenerator);
+		for(int dim=0; dim<4; dim++) CpVel2[i][dim] = randNormal(randGenerator);
+		CpPos1[i].segment(0,3)+=dir*CpPos1[i][3];
+		CpVel1[i].segment(0,3)+=dir*CpVel1[i][3];
+		CpPos2[i].segment(0,3)+=dir*CpPos2[i][3];
+		CpVel2[i].segment(0,3)+=dir*CpVel2[i][3];
+	}
+}

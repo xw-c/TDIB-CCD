@@ -1,5 +1,6 @@
-#include"config.h"
+#include"mathOps.h"
 #include"recBezierMesh.h"
+#include"recRatBezierMesh.h"
 #include"triBezier.h"
 #include"utils.h"
 
@@ -153,9 +154,9 @@ static double inclusionCCD(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1,
 			uv1 = cur.pb1.centerParam();
 			uv2 = cur.pb2.centerParam();
 			const auto endTime = steady_clock::now();
-			std::cout << "min time: "<<  cur.tIntv[0] 
-				<< "\nused seconds: " << duration(endTime - initialTime).count()
-				<< std::endl;
+			// std::cout << "min time: "<<  cur.tIntv[0] 
+			// 	<< "\nused seconds: " << duration(endTime - initialTime).count()
+			// 	<< std::endl;
 			return cur.tIntv[0];
 		}
 
@@ -177,9 +178,9 @@ static double inclusionCCD(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1,
 	}
 
 	const auto endTime = steady_clock::now();
-	std::cout << "used seconds: " <<
-		duration(endTime - initialTime).count()
-		<< std::endl;
+	// std::cout << "used seconds: " <<
+	// 	duration(endTime - initialTime).count()
+	// 	<< std::endl;
 	return -1;
 }
 
@@ -214,31 +215,19 @@ static void singleTest(){
 	// obj.writeObj("check-intv.obj");
 }
 template<typename ObjType, typename ParamType>
-static void randomTest(){
+static void randomTest(const double denom){
 	ObjType obj1, obj2, vel1, vel2;
 	std::srand(0);
-	std::default_random_engine randGenerator(0);
-	const int Kase = 100;
 	using steady_clock = std::chrono::steady_clock;
 	using duration = std::chrono::duration<double>;
 	const auto initialTime = steady_clock::now();
 	int hasCol = 0;
 	for(int kase = 0;kase<Kase;kase++){
-		Vector3d dir=Vector3d::Random().normalized()/1.625;
-		for (int i = 0; i < ObjType::cntCp; i++) {
-			for(int dim=0; dim<3; dim++) obj1.ctrlp[i][dim] = randNormal(randGenerator);
-			for(int dim=0; dim<3; dim++) vel1.ctrlp[i][dim] = randNormal(randGenerator);
-			for(int dim=0; dim<3; dim++) obj2.ctrlp[i][dim] = randNormal(randGenerator);
-			for(int dim=0; dim<3; dim++) vel2.ctrlp[i][dim] = randNormal(randGenerator);
-			obj1.ctrlp[i]+=dir;
-			vel1.ctrlp[i]-=dir;
-			obj2.ctrlp[i]-=dir;
-			vel2.ctrlp[i]+=dir;
-		}
+		generatePatchPair<ObjType>(obj1.ctrlp, vel1.ctrlp, obj2.ctrlp, vel2.ctrlp, denom);
 		Array2d uv1,uv2;
 		double t = inclusionCCD<ObjType,ObjType,ParamType,ParamType>
 							(obj1,vel1,obj2,vel2,uv1,uv2, DeltaT);
-		std::cout<<cnt<<"\n";
+		// std::cout<<cnt<<"\n";
 		if(t>=0)hasCol++;
 		// std::cout<<kase<<": "<<duration(steady_clock::now() - initialTime).count()<<"s\n";
 	}
@@ -249,15 +238,12 @@ static void randomTest(){
 		<< std::endl;
 }
 int main(){
-
-	// singleTest<TriLinearBezier, TriParamBound>();
-	randomTest<TriLinearBezier, TriParamBound>();
-	// randomTest<TriQuadBezier, TriParamBound>();
-	// randomTest<TriCubicBezier, TriParamBound>();
-	// randomTest<RecLinearBezier, RecParamBound>();
-	// randomTest<RecQuadBezier, RecParamBound>();
-	// randomTest<RecCubicBezier, RecParamBound>();
-	// randomTest<RecQuadRatBezier, RecParamBound>();
-	// randomTest<RecCubicRatBezier, RecParamBound>();
-
+	randomTest<TriLinearBezier, TriParamBound>(3);
+	randomTest<TriQuadBezier, TriParamBound>(2);
+	randomTest<TriCubicBezier, TriParamBound>(1.625);
+	randomTest<RecLinearBezier, RecParamBound>(3);
+	randomTest<RecQuadBezier, RecParamBound>(2);
+	randomTest<RecCubicBezier, RecParamBound>(1.625);
+	randomTest<RecQuadRatBezier, RecParamBound>(2);
+	randomTest<RecCubicRatBezier, RecParamBound>(1.625);
 }

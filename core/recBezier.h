@@ -187,12 +187,3 @@ public:
 		return divCp;
 	}
 };
-void generatePatches(RecCubicBezier &CpPos1, RecCubicBezier &CpPos2, RecCubicBezier &CpVel1, RecCubicBezier &CpVel2){
-	std::srand(10);
-	for (int i = 0; i < 16; i++) {
-		CpPos1.ctrlp[i] = Vector3d::Random() - Vector3d::Constant(.6);
-		CpVel1.ctrlp[i] = Vector3d::Random()*0.3 + Vector3d::Constant(.6);
-		CpPos2.ctrlp[i] = Vector3d::Random() + Vector3d::Constant(.6);
-		CpVel2.ctrlp[i] = Vector3d::Random()*0.3 - Vector3d::Constant(.6);
-	}
-}

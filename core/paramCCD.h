@@ -3,30 +3,6 @@
 #include "triBezier.h"
 #include "recBezier.h"
 #include "recRationalBezier.h"
-template<typename ParamObj1, typename ParamObj2>
-static void generatePatchPair(ParamObj1 &CpPos1, ParamObj1 &CpVel1, ParamObj2 &CpPos2, ParamObj2 &CpVel2){
-	std::default_random_engine randGenerator(5);
-	// std::default_random_engine randGenerator(std::random_device());
-    Vector3d dir;
-    for(int dim=0; dim<3; dim++) dir[dim] = randNormal(randGenerator);
-    dir.normalize();
-    dir/=1.625;
-    // std::cout<<dir;
-
-    for (int i = 0; i < ParamObj1::cntCp; i++) {
-        for(int dim=0; dim<3; dim++) CpPos1.ctrlp[i][dim] = randNormal(randGenerator);
-        for(int dim=0; dim<3; dim++) CpVel1.ctrlp[i][dim] = randNormal(randGenerator);
-        CpPos1.ctrlp[i]+=dir;
-        CpVel1.ctrlp[i]-=dir;
-	}
-	for (int i = 0; i < ParamObj2::cntCp; i++) {
-        for(int dim=0; dim<3; dim++) CpPos2.ctrlp[i][dim] = randNormal(randGenerator);
-        for(int dim=0; dim<3; dim++) CpVel2.ctrlp[i][dim] = randNormal(randGenerator);
-        CpPos2.ctrlp[i]-=dir;
-        CpVel2.ctrlp[i]+=dir;
-	}
-}
-
 template<typename ParamObj1, typename ParamObj2, typename ParamBound1, typename ParamBound2>
 static double primitiveCheck(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1, 
 						const ParamObj2 &CpPos2, const ParamObj2 &CpVel2,
@@ -224,9 +200,9 @@ static double solveCCD(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1,
 			uv1 = cur.pb1.centerParam();
 			uv2 = cur.pb2.centerParam();
 			const auto endTime = steady_clock::now();
-			std::cout << "min time: "<<  cur.tLower 
-				<< "\nused seconds: " << duration(endTime - initialTime).count()
-				<< std::endl;
+			// std::cout << "min time: "<<  cur.tLower 
+			// 	<< "\nused seconds: " << duration(endTime - initialTime).count()
+			// 	<< std::endl;
 			return cur.tLower;
 		}
 
@@ -246,15 +222,13 @@ static double solveCCD(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1,
 	}
 
 	const auto endTime = steady_clock::now();
-	std::cout << "used seconds: " << duration(endTime - initialTime).count()
-		<< std::endl;
+	// std::cout << "used seconds: " << duration(endTime - initialTime).count()
+	// 	<< std::endl;
 	return -1;
 }
 
-// auto triGenerate = generatePatchPair<TriCubicBezier,TriCubicBezier>;
 // auto triBezierCCD = solveCCD<TriCubicBezier,TriCubicBezier,TriParamBound,TriParamBound>;
 
-// auto recGenerate = generatePatchPair<RecCubicBezier,RecCubicBezier>;
 // auto recBezierCCD = solveCCD<RecCubicBezier,RecCubicBezier,RecParamBound,RecParamBound>;
 
 // auto triLinearCCD = solveCCD<TriLinearBezier,TriLinearBezier,TriParamBound,TriParamBound>;
