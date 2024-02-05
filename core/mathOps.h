@@ -14,7 +14,7 @@ struct Line
 };
 inline double lineIntersect_x(const Line& l1, const Line &l2) {
 	if(l1.k==l2.k){
-				std::cout<<"parallel lines do not intersect at a single point!\n";
+		std::cout<<"parallel lines do not intersect at a single point!\n";
 		exit(-1);
 	}
 	return (l2.b-l1.b)/(l1.k-l2.k);
@@ -27,7 +27,6 @@ void getCH(std::vector<Line>& lines, std::vector<Line>& ch, std::vector<double>&
 	pts.clear();
 	pts.push_back(0);
 	ch.push_back(lines[0]);
-	if(DEBUG) for(const auto&l:lines)std::cout<<"lines:\t"<<l.k<<" "<<l.b<<"\n";
 	double id = 1, intsctX = 0;
 	while(id < lines.size()){
 		// std::cout<<id<<"  "<<pts.size()<<"\n";
@@ -49,8 +48,6 @@ void getCH(std::vector<Line>& lines, std::vector<Line>& ch, std::vector<double>&
 		ch.pop_back();
 	}
 	pts.push_back(upperT);
-	if(DEBUG) for(const auto&l:ch)std::cout<<"ch:\t"<<l.k<<" "<<l.b<<"\n";
-	if(DEBUG) for(const auto&pt:pts)std::cout<<"pt:\t"<<pt<<"\n";
 	if(ch.empty()){
 		std::cout<<"empty CH!\n";
 		exit(-1);
@@ -131,7 +128,6 @@ Array2d linearCHIntersect(const std::vector<Line>& ch1, const std::vector<Line>&
 		// 	if(intvL!=-1) 
 		// 		intvR = sweep;
 		// }
-		if (DEBUG) std::cout<<id1<<"  "<<id2<<" /  "<<y1<<"  "<<y2<<" /  "<<intvL<<" "<<intvR<<"\n";
 		lastsweep = sweep;
 	};
 
@@ -162,34 +158,66 @@ Array2d linearCHIntersect(const std::vector<Line>& ch1, const std::vector<Line>&
 	return Array2d(intvL,intvR);
 }
 
+template<typename ObjType1, typename ObjType2>
+static double calcDist(const ObjType1& CpPos1, const ObjType1& CpVel1,
+					const ObjType2& CpPos2, const ObjType2& CpVel2,
+					const Array2d& uv1, const Array2d& uv2, const double& t){
+	Vector3d const p1 = CpPos1.evaluatePatchPoint(uv1);
+	Vector3d const v1 = CpVel1.evaluatePatchPoint(uv1);
+	Vector3d const p2 = CpPos2.evaluatePatchPoint(uv2);
+	Vector3d const v2 = CpVel2.evaluatePatchPoint(uv2);
+	Vector3d const pt1=(v1*t+p1), pt2=(v2*t+p2);
+	return (pt2-pt1).norm();
+}
 template<typename ObjType>
-static void generatePatchPair(std::array<Vector3d, ObjType::cntCp> &CpPos1, std::array<Vector3d, ObjType::cntCp> &CpVel1,
-							 std::array<Vector3d, ObjType::cntCp> &CpPos2, std::array<Vector3d, ObjType::cntCp> &CpVel2, const double& denom){
-	Vector3d dir=Vector3d::Random().normalized()/denom;
-	for (int i = 0; i < ObjType::cntCp; i++) {
-		for(int dim=0; dim<3; dim++) CpPos1[i][dim] = randNormal(randGenerator);
-		for(int dim=0; dim<3; dim++) CpVel1[i][dim] = randNormal(randGenerator);
-		for(int dim=0; dim<3; dim++) CpPos2[i][dim] = randNormal(randGenerator);
-		for(int dim=0; dim<3; dim++) CpVel2[i][dim] = randNormal(randGenerator);
-		CpPos1[i]+=dir;
-		CpVel1[i]-=dir;
-		CpPos2[i]-=dir;
-		CpVel2[i]+=dir;
+static double calcAAExtent(const std::array<Vector3d, ObjType::cntCp>& ptPos) {
+	double d=0;
+	for(int axis=0;axis<3;axis++){
+		double maxv = ptPos[0][axis], minv=maxv;
+		for(int i = 1; i < ObjType::cntCp; i++) {
+			maxv=std::max(maxv, ptPos[i][axis]);
+			minv=std::min(minv, ptPos[i][axis]);
+		}
+		d=std::max(d,maxv-minv);
 	}
+	return d;
 }
 
 template<typename ObjType>
-static void generatePatchPair(std::array<Vector4d, ObjType::cntCp> &CpPos1, std::array<Vector4d, ObjType::cntCp> &CpVel1,
-							 std::array<Vector4d, ObjType::cntCp> &CpPos2, std::array<Vector4d, ObjType::cntCp> &CpVel2, const double& denom){
-	Vector3d dir=Vector3d::Random().normalized()/denom;
-	for (int i = 0; i < ObjType::cntCp; i++) {
-		for(int dim=0; dim<4; dim++) CpPos1[i][dim] = randNormal(randGenerator);
-		for(int dim=0; dim<4; dim++) CpVel1[i][dim] = randNormal(randGenerator);
-		for(int dim=0; dim<4; dim++) CpPos2[i][dim] = randNormal(randGenerator);
-		for(int dim=0; dim<4; dim++) CpVel2[i][dim] = randNormal(randGenerator);
-		CpPos1[i].segment(0,3)+=dir*CpPos1[i][3];
-		CpVel1[i].segment(0,3)+=dir*CpVel1[i][3];
-		CpPos2[i].segment(0,3)+=dir*CpPos2[i][3];
-		CpVel2[i].segment(0,3)+=dir*CpVel2[i][3];
+static double calcAAExtent_vec(const std::array<Vector3d, ObjType::cntCp>& ptPos) {
+	Vector3d maxv=Vector3d::Constant(-INFT), minv=Vector3d::Constant(INFT);
+	for(const auto& p:ptPos){
+		maxv.cwiseMax(p);
+		minv.cwiseMax(p);
+	}
+	return (maxv-minv).maxCoeff();
+}
+
+template<typename ParamObj1, typename ParamObj2>
+void setAxes(const std::array<Vector3d, ParamObj1::cntCp>& ptPos1, 
+					const std::array<Vector3d, ParamObj2::cntCp>& ptPos2,
+					std::vector<Vector3d>& axes){	
+	if(bbType==BoundingBoxType::AABB){
+		axes = {Vector3d::Unit(0), Vector3d::Unit(1), Vector3d::Unit(2)};
+	}
+	else if(bbType==BoundingBoxType::DOP14){
+		axes = {Vector3d::Unit(0), Vector3d::Unit(1), Vector3d::Unit(2), 
+				Vector3d(1,1,1).normalized(), Vector3d(-1,1,1).normalized(), Vector3d(-1,-1,1).normalized()};
+	}
+	else if(bbType==BoundingBoxType::OBB){
+		Vector3d lu1 = ParamObj1::axisU(ptPos1).normalized();//u延展的方向
+		Vector3d lv1 = ParamObj1::axisV(ptPos1);//v延展的方向
+		lv1 = (lv1-lv1.dot(lu1)*lu1).eval();
+		Vector3d ln1 = lu1.cross(lv1);
+
+		Vector3d lu2 = ParamObj2::axisU(ptPos2).normalized();//u延展的方向
+		Vector3d lv2 = ParamObj2::axisV(ptPos2);//v延展的方向
+		lv2 = (lv2-lv2.dot(lu2)*lu2).eval();
+		Vector3d ln2 = lu2.cross(lv2);
+
+		axes = {lu1,lv1,ln1,lu2,lv2,ln2, 
+			lu1.cross(lu2), lu1.cross(lv2), lu1.cross(ln2), 
+			lv1.cross(lu2), lv1.cross(lv2), lv1.cross(ln2), 
+			ln1.cross(lu2), ln1.cross(lv2), ln1.cross(ln2)};
 	}
 }

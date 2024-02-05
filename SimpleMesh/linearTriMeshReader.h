@@ -60,71 +60,71 @@ public:
 };
 
 
-void testBunny_EE_VF(){
-	SimpleMesh obj1("bunny292.obj");
-	SimpleMesh obj2 = obj1, vel1=obj1, vel2=obj1;
-	Vector3d displace(6,6,0);
-	obj2.moveObj(displace*0.5);
-	obj1.rotateObj(PI, Vector3d(0,1,0)+Vector3d::Random());
-	vel1.setObj(displace);
-	vel2.setObj(Vector3d::Zero());
-	std::cout<<"preprocess done!\n";
-	using steady_clock = std::chrono::steady_clock;
-	using duration = std::chrono::duration<double>;
-	const auto initialTime = steady_clock::now();
+// void testBunny_EE_VF(){
+// 	SimpleMesh obj1("bunny292.obj");
+// 	SimpleMesh obj2 = obj1, vel1=obj1, vel2=obj1;
+// 	Vector3d displace(6,6,0);
+// 	obj2.moveObj(displace*0.5);
+// 	obj1.rotateObj(PI, Vector3d(0,1,0)+Vector3d::Random());
+// 	vel1.setObj(displace);
+// 	vel2.setObj(Vector3d::Zero());
+// 	std::cout<<"preprocess done!\n";
+// 	using steady_clock = std::chrono::steady_clock;
+// 	using duration = std::chrono::duration<double>;
+// 	const auto initialTime = steady_clock::now();
 	
-	double minT = DeltaT;
-	{
-        // std::cin.get();
-        for(int e0=0;e0<obj1.cntV;e0++)
-            for(int e1=0;e1<obj2.cntF;e1++){
-				Point CpPos1 = obj1.verts[e0];
-				Point CpVel1 = vel1.verts[e0];
-				Face CpPos2({obj2.verts[obj2.faces[e1][0]], obj2.verts[obj2.faces[e1][1]], obj2.verts[obj2.faces[e1][2]]});
-				Face CpVel2({vel2.verts[vel2.faces[e1][0]], vel2.verts[vel2.faces[e1][1]], vel2.verts[vel2.faces[e1][2]]});
-                Array2d pb;
-				const double toi = VFTest(CpPos1, CpVel1, CpPos2, CpVel2, pb, minT);
-                if(toi>0)minT=std::min(toi, minT);
-                // std::cout<<res<<": "<<t_max<<"\n";
-            }
-        std::cout<<"VF done!\n";
-		std::cout<<"colTime: "<<minT<<"\n";
-        for(int e0=0;e0<obj2.cntV;e0++)
-            for(int e1=0;e1<obj1.cntF;e1++){
-				Point CpPos1 = obj2.verts[e0];
-				Point CpVel1 = vel2.verts[e0];
-				Face CpPos2({obj1.verts[obj1.faces[e1][0]], obj1.verts[obj1.faces[e1][1]], obj1.verts[obj1.faces[e1][2]]});
-				Face CpVel2({vel1.verts[vel1.faces[e1][0]], vel1.verts[vel1.faces[e1][1]], vel1.verts[vel1.faces[e1][2]]});
-                Array2d pb;
-				const double toi = VFTest(CpPos1, CpVel1, CpPos2, CpVel2, pb, minT);
-                if(toi>0)minT=std::min(toi, minT);
-                // std::cout<<res<<": "<<t_max<<"\n";
-            }
-        std::cout<<"FV done!\n";
-		std::cout<<"colTime: "<<minT<<"\n";
-        // std::cin.get();
-        for(int e0=0;e0<obj1.cntE;e0++)
-            for(int e1=0;e1<obj2.cntE;e1++){
-				Edge CpPos1(obj1.verts[obj1.edges[e0][0]], obj1.verts[obj1.edges[e0][1]]);
-				Edge CpVel1(vel1.verts[obj1.edges[e0][0]], vel1.verts[obj1.edges[e0][1]]);
-				Edge CpPos2(obj2.verts[obj2.edges[e1][0]], obj2.verts[obj1.edges[e1][1]]);
-				Edge CpVel2(vel2.verts[obj1.edges[e1][0]], vel2.verts[obj1.edges[e1][1]]);
-                double u,v;
-				const double toi = EETest(CpPos1, CpVel1, CpPos2, CpVel2, u,v, minT);
-                if(toi>0)minT=std::min(toi, minT);
-            }
-        std::cout<<"EE done!\n";
-		std::cout<<"colTime: "<<minT<<"\n";
-    }
+// 	double minT = DeltaT;
+// 	{
+//         // std::cin.get();
+//         for(int e0=0;e0<obj1.cntV;e0++)
+//             for(int e1=0;e1<obj2.cntF;e1++){
+// 				Point CpPos1 = obj1.verts[e0];
+// 				Point CpVel1 = vel1.verts[e0];
+// 				Face CpPos2({obj2.verts[obj2.faces[e1][0]], obj2.verts[obj2.faces[e1][1]], obj2.verts[obj2.faces[e1][2]]});
+// 				Face CpVel2({vel2.verts[vel2.faces[e1][0]], vel2.verts[vel2.faces[e1][1]], vel2.verts[vel2.faces[e1][2]]});
+//                 Array2d pb;
+// 				const double toi = VFTest(CpPos1, CpVel1, CpPos2, CpVel2, pb, minT);
+//                 if(toi>0)minT=std::min(toi, minT);
+//                 // std::cout<<res<<": "<<t_max<<"\n";
+//             }
+//         std::cout<<"VF done!\n";
+// 		std::cout<<"colTime: "<<minT<<"\n";
+//         for(int e0=0;e0<obj2.cntV;e0++)
+//             for(int e1=0;e1<obj1.cntF;e1++){
+// 				Point CpPos1 = obj2.verts[e0];
+// 				Point CpVel1 = vel2.verts[e0];
+// 				Face CpPos2({obj1.verts[obj1.faces[e1][0]], obj1.verts[obj1.faces[e1][1]], obj1.verts[obj1.faces[e1][2]]});
+// 				Face CpVel2({vel1.verts[vel1.faces[e1][0]], vel1.verts[vel1.faces[e1][1]], vel1.verts[vel1.faces[e1][2]]});
+//                 Array2d pb;
+// 				const double toi = VFTest(CpPos1, CpVel1, CpPos2, CpVel2, pb, minT);
+//                 if(toi>0)minT=std::min(toi, minT);
+//                 // std::cout<<res<<": "<<t_max<<"\n";
+//             }
+//         std::cout<<"FV done!\n";
+// 		std::cout<<"colTime: "<<minT<<"\n";
+//         // std::cin.get();
+//         for(int e0=0;e0<obj1.cntE;e0++)
+//             for(int e1=0;e1<obj2.cntE;e1++){
+// 				Edge CpPos1(obj1.verts[obj1.edges[e0][0]], obj1.verts[obj1.edges[e0][1]]);
+// 				Edge CpVel1(vel1.verts[obj1.edges[e0][0]], vel1.verts[obj1.edges[e0][1]]);
+// 				Edge CpPos2(obj2.verts[obj2.edges[e1][0]], obj2.verts[obj1.edges[e1][1]]);
+// 				Edge CpVel2(vel2.verts[obj1.edges[e1][0]], vel2.verts[obj1.edges[e1][1]]);
+//                 double u,v;
+// 				const double toi = EETest(CpPos1, CpVel1, CpPos2, CpVel2, u,v, minT);
+//                 if(toi>0)minT=std::min(toi, minT);
+//             }
+//         std::cout<<"EE done!\n";
+// 		std::cout<<"colTime: "<<minT<<"\n";
+//     }
 
 
-	const auto endTime = steady_clock::now();
-	std::cout<<"colTime: "<<minT<<"\n";
-	std::cout << "used seconds: " <<
-		duration(endTime - initialTime).count()
-		<< std::endl;
+// 	const auto endTime = steady_clock::now();
+// 	std::cout<<"colTime: "<<minT<<"\n";
+// 	std::cout << "used seconds: " <<
+// 		duration(endTime - initialTime).count()
+// 		<< std::endl;
 
-	obj1.moveObj(displace*minT);
-	// obj1.writeObj("bunnyCol1.obj");
-	// obj2.writeObj("bunnyCol2.obj");
-}
+// 	obj1.moveObj(displace*minT);
+// 	// obj1.writeObj("bunnyCol1.obj");
+// 	// obj2.writeObj("bunnyCol2.obj");
+// }

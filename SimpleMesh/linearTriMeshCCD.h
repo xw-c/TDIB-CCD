@@ -40,14 +40,14 @@ static double primitiveCheck(const std::array<Vector3d,PrimType1::cntCp> &ptPos1
 	// std::cout<<"done!\n";
 	std::array<Vector3d,3> axes = {Vector3d::Unit(0), Vector3d::Unit(1), Vector3d::Unit(2)};
 	// axes.clear();
-	// if(bbtype==BoundingBoxType::AABB){
+	// if(bbType==BoundingBoxType::AABB){
 	// 	axes = {Vector3d::Unit(0), Vector3d::Unit(1), Vector3d::Unit(2)};
 	// }
-	// else if(bbtype==BoundingBoxType::DOP14){
+	// else if(bbType==BoundingBoxType::DOP14){
 	// 	axes = {Vector3d::Unit(0), Vector3d::Unit(1), Vector3d::Unit(2), 
 	// 			Vector3d(1,1,1).normalized(), Vector3d(-1,1,1).normalized(), Vector3d(-1,-1,1).normalized()};
 	// }
-	// else if(bbtype==BoundingBoxType::OBB){
+	// else if(bbType==BoundingBoxType::OBB){
 	// 	Vector3d lu1 = (ptPos1[Edge::cornerId(2)]-ptPos1[Edge::cornerId(0)]).normalized();//u延展的方向
 	// 	Vector3d lv1 = (ptPos1[Edge::cornerId(1)]-ptPos1[Edge::cornerId(0)]);//v延展的方向
 	// 	lv1 = (lv1-lv1.dot(lu1)*lu1).eval();
@@ -272,72 +272,6 @@ static double VFTest(const Point &CpPos1, const Point &CpVel1,
 	return -1;
 }
 
-
-static double EETest(const Edge &CpPos1, const Edge &CpVel1, 
-						const Edge &CpPos2, const Edge &CpVel2,
-						double& u1, double& u2, 
-						const double upperTime = DeltaT) {
-	struct PatchPair{
-		Array2d pb1;
-		Array2d pb2;
-		double tLower;
-		PatchPair(const Array2d& c1, const Array2d& c2, 
-				double t = std::numeric_limits<double>::infinity()): pb1(c1), pb2(c2), tLower(t) {}
-		bool operator<(PatchPair const &o) const { return tLower > o.tLower; }
-		double calcL1Dist(const Edge &CpPos1, const Edge &CpVel1, 
-						const Edge &CpPos2, const Edge &CpVel2) const{
-			double d1=std::abs((pb1[1]-pb1[0]))*((CpPos1.e1-CpPos1.e2).cwiseAbs().maxCoeff());
-			double d2=std::abs((pb2[1]-pb2[0]))*((CpPos2.e1-CpPos2.e2).cwiseAbs().maxCoeff());
-			return std::max(d1,d2);
-		}
-	};
-
-	using steady_clock = std::chrono::steady_clock;
-	using duration = std::chrono::duration<double>;
-	const auto initialTime = steady_clock::now();
-
-	std::priority_queue<PatchPair> heap;
-	Array2d initParam(0,1);
-	auto const ptPos1 = CpPos1.dividePatch(initParam);
-	auto const ptVel1 = CpVel1.dividePatch(initParam);
-	auto const ptPos2 = CpPos2.dividePatch(initParam);
-	auto const ptVel2 = CpVel2.dividePatch(initParam);
-	double colTime = primitiveCheck<Edge,Edge>(ptPos1, ptVel1, ptPos2, ptVel2, upperTime);
-	if (colTime>=0 && colTime<=upperTime)
-		heap.emplace(initParam, initParam, colTime);
-
-	while (!heap.empty()) {
-		auto const cur = heap.top();
-		heap.pop();
-		cnt++;
-		double mid1 = (cur.pb1[0]+cur.pb1[1])*0.5, mid2 = (cur.pb2[0]+cur.pb2[1])*0.5;
-		if (cur.calcL1Dist(CpPos1, CpVel1, CpPos2, CpVel2) < MinL1Dist) {
-			const auto endTime = steady_clock::now();
-			u1=mid1, u2=mid2;
-			return cur.tLower;
-		}
-
-		for (int i = 0; i < 2; i++) {
-			Array2d divUvB1[2]={Array2d(cur.pb1[0],mid1), Array2d(mid1, cur.pb1[1])};
-			for (int j = 0; j < 2; j++) {
-				Array2d divUvB2[2]={Array2d(cur.pb2[0],mid2), Array2d(mid2, cur.pb2[1])};
-
-				auto const ptPos1 = CpPos1.dividePatch(divUvB1[i]);
-				auto const ptVel1 = CpVel1.dividePatch(divUvB1[i]);
-				auto const ptPos2 = CpPos2.dividePatch(divUvB2[j]);
-				auto const ptVel2 = CpVel2.dividePatch(divUvB2[j]);
-				colTime = primitiveCheck<Edge,Edge>(ptPos1, ptVel1, ptPos2, ptVel2, upperTime);//maybe also need timeLB?
-				if (colTime>=0 && colTime<=upperTime){
-					heap.emplace(divUvB1[i], divUvB2[j], colTime);
-				}
-			}
-		}
-	}
-
-	const auto endTime = steady_clock::now();
-	return -1;
-}
-
 static double modifiedEETest(const Vector3d &CpPos10, const Vector3d &CpPos11,
 						const Vector3d &CpVel10, const Vector3d &CpVel11,
 						const Vector3d &CpPos20, const Vector3d &CpPos21,
@@ -386,17 +320,16 @@ static double modifiedEETest(const Vector3d &CpPos10, const Vector3d &CpPos11,
 			Array2d divUvB1[2]={Array2d(cur.pb1[0],mid1), Array2d(mid1, cur.pb1[1])};
 			for (int j = 0; j < 2; j++) {
 				Array2d divUvB2[2]={Array2d(cur.pb2[0],mid2), Array2d(mid2, cur.pb2[1])};
-
-				auto const ptPos10 = (1-divUvB1[i][0])*CpPos10+divUvB1[i][0]*CpPos11;
-				auto const ptPos11 = (1-divUvB1[i][1])*CpPos10+divUvB1[i][1]*CpPos11;
-				auto const ptPos20 = (1-divUvB2[j][0])*CpPos20+divUvB2[j][0]*CpPos21;
-				auto const ptPos21 = (1-divUvB2[j][1])*CpPos20+divUvB2[j][1]*CpPos21;
 				auto const ptVel10 = (1-divUvB1[i][0])*CpVel10+divUvB1[i][0]*CpVel11;
 				auto const ptVel11 = (1-divUvB1[i][1])*CpVel10+divUvB1[i][1]*CpVel11;
 				auto const ptVel20 = (1-divUvB2[j][0])*CpVel20+divUvB2[j][0]*CpVel21;
 				auto const ptVel21 = (1-divUvB2[j][1])*CpVel20+divUvB2[j][1]*CpVel21;
-				colTime = primitiveEECheck(ptPos10, ptPos11, ptVel10, ptVel11, 
-										ptPos20, ptPos21, ptVel20, ptVel21, upperTime);
+				auto const ptPos10 = (1-divUvB1[i][0])*CpPos10+divUvB1[i][0]*CpPos11+cur.tLower*ptVel10;
+				auto const ptPos11 = (1-divUvB1[i][1])*CpPos10+divUvB1[i][1]*CpPos11+cur.tLower*ptVel11;
+				auto const ptPos20 = (1-divUvB2[j][0])*CpPos20+divUvB2[j][0]*CpPos21+cur.tLower*ptVel20;
+				auto const ptPos21 = (1-divUvB2[j][1])*CpPos20+divUvB2[j][1]*CpPos21+cur.tLower*ptVel21;
+				colTime = cur.tLower + primitiveEECheck(ptPos10, ptPos11, ptVel10, ptVel11, 
+										ptPos20, ptPos21, ptVel20, ptVel21, upperTime-cur.tLower);
 				if (colTime>=0 && colTime<=upperTime){
 					heap.emplace(divUvB1[i], divUvB2[j], colTime);
 				}

@@ -95,7 +95,7 @@ static double greedyIntersect(Func &&checkIntersect, Array2d &intsctUV)
 template <typename ParamObj2, typename ParamBound2>
 static double point2patch(const Vector3d& p1, const Vector3d& v1, 
 						const ParamObj2 &CpPos2, const ParamObj2 &CpVel2,
-						Array2d &intsctUV, const BoundingBoxType bbtype) {
+						Array2d &intsctUV, const BoundingBoxType bbType) {
 
 	auto checkIntersection = [&](const ParamBound2 &b) {
 		const auto cpPosB = CpPos2.divideBezierPatch(b);
@@ -103,14 +103,14 @@ static double point2patch(const Vector3d& p1, const Vector3d& v1,
 		// Get the coefficients of inequalities.
 
 		auto setAxes = [&] (std::vector<Vector3d>& axes) {
-			if(bbtype==BoundingBoxType::AABB){
+			if(bbType==BoundingBoxType::AABB){
 				axes = {Vector3d::Unit(0), Vector3d::Unit(1), Vector3d::Unit(2)};
 			}
-			else if(bbtype==BoundingBoxType::DOP14){
+			else if(bbType==BoundingBoxType::DOP14){
 				axes = {Vector3d::Unit(0), Vector3d::Unit(1), Vector3d::Unit(2), 
 						Vector3d(1,1,1).normalized(), Vector3d(-1,1,1).normalized(), Vector3d(1,-1,1).normalized(), Vector3d(1,1,-1).normalized()};
 			}
-			else if(bbtype==BoundingBoxType::OBB){
+			else if(bbType==BoundingBoxType::OBB){
 				Vector3d lu = (cpPosB[9]-cpPosB[0]).normalized();
 				Vector3d lv = (cpPosB[9]-cpPosB[3]+cpPosB[0]-cpPosB[3]);
 				lv = (lv-lv.dot(lu)*lu).normalized().eval();
@@ -149,7 +149,7 @@ template<typename ParamObj1, typename ParamObj2, typename ParamBound2>
 static double sampleCCD(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1, 
 						const ParamObj2 &CpPos2, const ParamObj2 &CpVel2,
 						Array2d& uv1, Array2d& uv2, 
-						const BoundingBoxType bbtype) {
+						const BoundingBoxType bbType) {
 	using steady_clock = std::chrono::steady_clock;
 	using duration = std::chrono::duration<double>;
 	const auto initialTime = steady_clock::now();
@@ -163,7 +163,7 @@ static double sampleCCD(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1,
 			Vector3d const p1 = CpPos1.evaluatePatchPoint({ x1, y1 });
 			Vector3d const v1 = CpVel1.evaluatePatchPoint({ x1, y1 });
 			
-			double temptT = point2patch<ParamObj2, ParamBound2>(p1, v1, CpPos2, CpVel2, temptUV, bbtype);
+			double temptT = point2patch<ParamObj2, ParamBound2>(p1, v1, CpPos2, CpVel2, temptUV, bbType);
 			if(temptT >= 0 && temptT <= minT) minT=temptT, ap1={ x1, y1 }, ap2=temptUV;
 		}
 	}
