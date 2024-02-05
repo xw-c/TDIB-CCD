@@ -5,7 +5,6 @@
 #include"solverTD.h"
 #include"solverBase.h"
 #include"utilOps.h"
-#include"paramCCD.h"
 
 template<typename ObjType, typename ParamType>
 void randomTest(const double denom){
