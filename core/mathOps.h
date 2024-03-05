@@ -1,6 +1,18 @@
 # pragma once
 #include"config.h"
 
+struct CCDRoot
+{
+	Array2d uv1, uv2;
+	std::array<Vector3d, 2> aabb1, aabb2;
+	double t;
+	int pid1 = -1, pid2 = -1;
+	CCDRoot(const Array2d& _uv1, const Array2d& _uv2, const std::array<Vector3d, 2>& _aabb1, const std::array<Vector3d, 2>& _aabb2, const double& _t):
+			uv1(_uv1), uv2(_uv2), aabb1(_aabb1), aabb2(_aabb2), t(_t){}
+	void stampPatchID(int i,int j) { pid1 = i, pid2 = j; }
+	bool operator<(const CCDRoot &o) const { return t > o.t; }
+};
+
 struct Line
 {
 	double k, b;
@@ -169,6 +181,7 @@ static double calcDist(const ObjType1& CpPos1, const ObjType1& CpVel1,
 	Vector3d const pt1=(v1*t+p1), pt2=(v2*t+p2);
 	return (pt2-pt1).norm();
 }
+
 template<typename ObjType>
 static double calcAAExtent(const std::array<Vector3d, ObjType::cntCp>& ptPos) {
 	double d=0;

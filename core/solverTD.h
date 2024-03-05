@@ -1,8 +1,5 @@
 # pragma once
 #include "mathOps.h"
-#include "triBezier.h"
-#include "recBezier.h"
-#include "recRationalBezier.h"
 template<typename ParamObj1, typename ParamObj2, typename ParamBound1, typename ParamBound2>
 class SolverTD{
 public:
@@ -91,7 +88,7 @@ public:
 				auto const ptPos1 = CpPos1.divideBezierPatch(pb1);
 				auto const ptPos2 = CpPos2.divideBezierPatch(pb2);
 				double d1=calcAAExtent<ParamObj1>(ptPos1);
-				double d2=calcAAExtent<ParamObj1>(ptPos2);
+				double d2=calcAAExtent<ParamObj2>(ptPos2);
 				return std::max(d1, d2);
 			}
 		};

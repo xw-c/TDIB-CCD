@@ -1,48 +1,5 @@
 # pragma once
-#include <Eigen/Dense>
-
-using Eigen::Array2d;
-using Eigen::Vector3d;
-using Eigen::MatrixXd;
-
-#include <iostream>
-#include <span>
-
-class RecParamBound {
-public:
-	Array2d pMin, pMax;
-
-	// RecParamBound() = default;
-	RecParamBound(Array2d const &p1 = Array2d(0,0), Array2d const &p2 = Array2d(1,1)) :
-		pMin { std::min(p1[0], p2[0]), std::min(p1[1], p2[1]) },
-		pMax { std::max(p1[0], p2[0]), std::max(p1[1], p2[1]) } {
-	}
-
-	Array2d operator[](int i) const { return i == 0 ? pMin : pMax; }
-
-	RecParamBound operator&(RecParamBound const &o) const {
-		RecParamBound ret;
-		ret.pMin = pMin.max(o.pMin);
-		ret.pMax = pMax.min(o.pMax);
-		return ret;
-	}
-
-	bool isDegenerate() const { return pMin.x() > pMax.x() || pMin.y() > pMax.y(); }
-	bool isInside(Array2d const &o) const { return (o.x() >= pMin.x() && o.x() <= pMax.x() && o.y() >= pMin.y() && o.y() <= pMax.y()); }
-
-	Array2d diagonal() const { return pMax - pMin; }
-	Array2d corner(int i) const { return Array2d((*this)[(i & 1)][0], (*this)[(i & 2) ? 1 : 0][1]); }
-
-	RecParamBound interpSubpatchParam(const int id) const {
-		Array2d pMid = 0.5 * (pMin + pMax);
-		return RecParamBound(corner(id), pMid);
-	}
-
-	Array2d centerParam() const { return 0.5 * (pMin + pMax); }
-	double diameter() const {
-		return (pMax - pMin).maxCoeff();
-	}
-};
+#include"paramBound.h"
 
 class RecLinearBezier{
 public:

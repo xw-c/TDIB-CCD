@@ -1,54 +1,56 @@
 #pragma once
-#include"triMesh.h"
-#include"recBezierMesh.h"
-#include"recRatBezierMesh.h"
+#include"paramMesh.h"
 #include"solverTD.h"
 #include"solverBase.h"
+#include"solverManifold.h"
 #include"utilOps.h"
+#include "triBezier.h"
+#include "triRatBezier.h"
+#include "recBezier.h"
+#include "recRatBezier.h"
+// template<typename ObjType, typename ParamType>
+// void randomTest(const double denom){
+// 	// std::ofstream fp("posDiff.txt");
+// 	// std::ofstream ft("timeDiff.txt");
+// 	ObjType obj1, obj2, vel1, vel2;
+// 	std::srand(0);
+// 	int hasCol = 0;
+// 	double t;
+// 	Array2d uv1,uv2;
 
-template<typename ObjType, typename ParamType>
-void randomTest(const double denom){
-	// std::ofstream fp("posDiff.txt");
-	// std::ofstream ft("timeDiff.txt");
-	ObjType obj1, obj2, vel1, vel2;
-	std::srand(0);
-	int hasCol = 0;
-	double t;
-	Array2d uv1,uv2;
-
-	using steady_clock = std::chrono::steady_clock;
-	using duration = std::chrono::duration<double>;
-	const auto initialTime = steady_clock::now();
-	for(int kase = 0;kase<Kase;kase++){
-		generatePatchPair<ObjType>(obj1.ctrlp, vel1.ctrlp, obj2.ctrlp, vel2.ctrlp, denom);
-		switch(solverType){
-			case SolverType::TDIntv:
-				t = SolverTD<ObjType,ObjType,ParamType,ParamType>::solveCCD(obj1,vel1,obj2,vel2,uv1,uv2,DeltaT);
-				break;
-			case SolverType::BaseIntv:
-				t = SolverBase<ObjType,ObjType,ParamType,ParamType>::solveCCD(obj1,vel1,obj2,vel2,uv1,uv2,DeltaT);
-				break;
-			default:
-				std::cerr<<"solver not implemented!\n";
-				exit(-1);
-		}
-		if(t>=0)hasCol++;
-		// if(kase==21){
-		// 	saveDoFs<ObjType>(obj1.ctrlp, vel1.ctrlp, obj2.ctrlp, vel2.ctrlp);
-		// 	break;
-		// }
-		// ft<<t<<"\n";
-		if(SHOWANS) std::cout<<calcDist(obj1,vel1,obj2,vel2,uv1,uv2,t)<<"\n";
-		// std::cout<<kase<<": "<<duration(steady_clock::now() - initialTime).count()<<"s\n";
-	}
-	const auto endTime = steady_clock::now();
-	std::cout << hasCol<<" pairs have collided.\n";
-	std::cout << "used seconds: " <<
-		duration(endTime - initialTime).count()/Kase
-		<< std::endl;
-	// fp.close();
-	// ft.close();
-}
+// 	using steady_clock = std::chrono::steady_clock;
+// 	using duration = std::chrono::duration<double>;
+// 	const auto initialTime = steady_clock::now();
+// 	for(int kase = 0;kase<Kase;kase++){
+// 		generatePatchPair<ObjType>(obj1.ctrlp, vel1.ctrlp, obj2.ctrlp, vel2.ctrlp, denom);
+// 		switch(solverType){
+// 			case SolverType::TDIntv:
+// 				t = SolverTD<ObjType,ObjType,ParamType,ParamType>::solveCCD(obj1,vel1,obj2,vel2,uv1,uv2,DeltaT);
+// 				break;
+// 			case SolverType::BaseIntv:
+// 				t = SolverBase<ObjType,ObjType,ParamType,ParamType>::solveCCD(obj1,vel1,obj2,vel2,uv1,uv2,DeltaT);
+// 				break;
+// 			default:
+// 				std::cerr<<"solver not implemented!\n";
+// 				exit(-1);
+// 		}
+// 		if(t>=0)hasCol++;
+// 		// if(kase==21){
+// 		// 	saveDoFs<ObjType>(obj1.ctrlp, vel1.ctrlp, obj2.ctrlp, vel2.ctrlp);
+// 		// 	break;
+// 		// }
+// 		// ft<<t<<"\n";
+// 		if(SHOWANS) std::cout<<calcDist(obj1,vel1,obj2,vel2,uv1,uv2,t)<<"\n";
+// 		// std::cout<<kase<<": "<<duration(steady_clock::now() - initialTime).count()<<"s\n";
+// 	}
+// 	const auto endTime = steady_clock::now();
+// 	std::cout << hasCol<<" pairs have collided.\n";
+// 	std::cout << "used seconds: " <<
+// 		duration(endTime - initialTime).count()/Kase
+// 		<< std::endl;
+// 	// fp.close();
+// 	// ft.close();
+// }
 
 template<typename Mesh1, typename Mesh2, typename Func>
 double ccd(const Mesh1& mesh1, const Mesh1& vel1,
@@ -58,7 +60,7 @@ double ccd(const Mesh1& mesh1, const Mesh1& vel1,
 	double minTime = upperTime;
 	Array2d uv1, uv2;
 	if(mesh1.cntPatches!=vel1.cntPatches||mesh2.cntPatches!=vel2.cntPatches){
-		std::cerr<<"dofs donot match!\n";
+		std::cerr<<"dofs do not match!\n";
 		exit(-1);
 	}
 	//问一下gpt：1、两个for auto patch同时遍历，2、为什么Func后面有两个&，3、为什么传参不能不写DeltaT
@@ -66,13 +68,235 @@ double ccd(const Mesh1& mesh1, const Mesh1& vel1,
 		for(int j = 0; j < mesh2.cntPatches; j++){
 			double t = paramCCD(mesh1.patches[i], vel1.patches[i], mesh2.patches[j], vel2.patches[j], 
 								uv1, uv2, minTime);
-			// std::cout<<i<<" "<<j<<": "<<t<<"\n";
+			std::cout<<i<<" "<<j<<": "<<t<<"\n";
 			if(t>=0){
 				if(t==0)return 0;
 				minTime = std::min(minTime, t);
 			}
 		}
+	// double t = paramCCD(mesh1.patches[22], vel1.patches[22], mesh2.patches[2], vel2.patches[2], 
+	// 							uv1, uv2, minTime);
+	// std::cout<<t;
 	return minTime;
+}
+
+
+template<typename ParamObj1, typename ParamObj2, typename ParamBound1, typename ParamBound2>
+double ccd_ratBezier_manifold(const RatParamMesh<ParamObj1>& mesh1, const RatParamMesh<ParamObj1>& vel1,
+			const RatParamMesh<ParamObj2>& mesh2, const RatParamMesh<ParamObj2>& vel2,
+			const double upperTime = DeltaT){
+	double minTime = upperTime;
+	SolverManifold<ParamObj1,ParamObj2,ParamBound1, ParamBound2> solver;
+	std::multiset<CCDRoot> solutSet;
+	solutSet.clear();
+	for(int i = 0; i < mesh1.cntPatches; i++)
+		for(int j = 0; j < mesh2.cntPatches; j++){
+			// if(i==10&&j==1)DEBUG=1;
+			double t = solver.solveCCD(mesh1.patches[i], vel1.patches[i], mesh2.patches[j], vel2.patches[j], 
+								solutSet, minTime + MeantimeEpsilon);
+			std::cout<<i<<" "<<j<<": "<<t<<solutSet.size()<<"\n";
+			if(t>=0){
+				if(t==0)return 0;
+				minTime = std::min(minTime, t);
+			}
+		}
+	std::ofstream output("manifold_solutions.txt");
+	// output<<solutSet.size()<<" solutions\n";
+	// for(const auto& r:solutSet){
+	// 	output<<"time = "<<r.t<<"\npatch 1: "<<((r.aabb1[0]+r.aabb1[1])/2.).transpose()
+	// 			<<"\npatch 2:"<<((r.aabb2[0]+r.aabb2[1])/2.).transpose()<<"\n";
+	// }
+	output<<solutSet.size()<<"\n";
+	for(const auto& r:solutSet){
+		auto v=(r.aabb1[0]+r.aabb1[1])/2.;
+		output<<v[0]<<" "<<v[1]<<"\n";
+	}
+	auto primitiveMaxDist = [&](const CCDRoot& r1, const CCDRoot&r2){
+		Vector3d aaExtent1 = (r1.aabb1[1]-r2.aabb1[0]).cwiseMax(r2.aabb1[1]-r1.aabb1[0]),
+		aaExtent2 = (r1.aabb2[1]-r2.aabb2[0]).cwiseMax(r2.aabb2[1]-r1.aabb2[0]);
+		return std::max(aaExtent1.maxCoeff(), aaExtent2.maxCoeff());
+	};
+	int i=0;
+	for(const auto& r1:solutSet){
+		int j=0;
+		for(const auto& r2:solutSet)
+			output<<i<<", "<<j++<<"  "<<primitiveMaxDist(r1, r2)<<"\n";
+		i++;
+	}
+
+	// for(const auto& r1:solutSet){
+	// 	for(const auto& r2:solutSet){
+	// 		Vector3d aaExtent1 = (r1.aabb1[1]-r2.aabb1[0]).cwiseMax(r2.aabb1[1]-r1.aabb1[0]),
+	// 		aaExtent2 = (r1.aabb2[1]-r2.aabb2[0]).cwiseMax(r2.aabb2[1]-r1.aabb2[0]);
+	// 		std::cout<<std::max(aaExtent1.maxCoeff(), aaExtent2.maxCoeff())<<"\n";
+	// 	}
+	// }
+	return minTime;
+	// double t = solver.solveCCD(mesh1.patches[2], vel1.patches[2], mesh2.patches[0], vel2.patches[0], 
+	// 				solutSet, minTime);
+	// std::cout<<"\ngt: r="<<2-2./sqrt(5)<<"  z="<<4./sqrt(5)<<"\n\n";
+	// std::cout<<solutSet.size()<<" solutions\n";
+	// for(const auto& r:solutSet){
+	// 	std::cout<<"time = "<<r.t<<"\npatch 1: "<<((r.aabb1[0]+r.aabb1[1])/2.).transpose()
+	// 			<<"\npatch 2:"<<((r.aabb2[0]+r.aabb2[1])/2.).transpose()<<"\n";
+	// }
+	// return t;
+}
+
+// typedef RatParamMesh<RecQuadRatBezier> RatParamMesh<RecQuadRatBezier>;
+// typedef RatParamMesh<TriQuadRatBezier> RatParamMesh<TriQuadRatBezier>;
+
+void generateTorus(RatParamMesh<RecQuadRatBezier>& torus, RatParamMesh<RecQuadRatBezier>& vel){
+	double r=2, a=1;
+	//顶点位置没有乘权重
+	// std::array<double, 9> weight = {1,1,2,1,1,2,2,2,4};
+	std::array<double, 9> weight = {1,1./sqrt(2),1,1./sqrt(2),0.5,1./sqrt(2),1,1./sqrt(2),1};
+	std::array<Vector3d, 9> pos1 = { Vector3d(r+a,0,0), Vector3d(r+a,0,a), Vector3d(r,0,a), 
+				Vector3d(r+a,r+a,0), Vector3d(r+a,r+a,a), Vector3d(r,r,a), 
+				Vector3d(0,r+a,0), Vector3d(0,r+a,a), Vector3d(0,r,a)	},
+
+	pos2 = { Vector3d(r-a,0,0), Vector3d(r-a,0,a), Vector3d(r,0,a), 
+				Vector3d(r-a,r-a,0), Vector3d(r-a,r-a,a), Vector3d(r,r,a), 
+				Vector3d(0,r-a,0), Vector3d(0,r-a,a), Vector3d(0,r,a)	},
+
+	pos3 = { Vector3d(r-a,0,0), Vector3d(r-a,0,-a), Vector3d(r,0,-a), 
+				Vector3d(r-a,r-a,0), Vector3d(r-a,r-a,-a), Vector3d(r,r,-a), 
+				Vector3d(0,r-a,0), Vector3d(0,r-a,-a), Vector3d(0,r,-a)	},
+
+	pos4 = { Vector3d(r+a,0,0), Vector3d(r+a,0,-a), Vector3d(r,0,-a), 
+				Vector3d(r+a,r+a,0), Vector3d(r+a,r+a,-a), Vector3d(r,r,-a), 
+				Vector3d(0,r+a,0), Vector3d(0,r+a,-a), Vector3d(0,r,-a)	};
+
+	torus.patches.clear();
+	torus.patches.emplace_back(pos1,weight);
+	torus.patches.emplace_back(pos2,weight);
+	torus.patches.emplace_back(pos3,weight);
+	torus.patches.emplace_back(pos4,weight);
+	RatParamMesh<RecQuadRatBezier> torus2=torus;
+	for(int i=0;i<3;i++){
+		torus2.rotateObj(PI*0.5, Vector3d::Unit(2));
+		torus.patches.insert(torus.patches.end(),torus2.patches.begin(),torus2.patches.end());
+	}
+	torus.cntPatches = 16;
+	vel = RatParamMesh<RecQuadRatBezier>(16, weight);
+}
+
+void generateCone(RatParamMesh<TriQuadRatBezier>& cone, RatParamMesh<TriQuadRatBezier>& vel){
+	double r=2, h=4;
+	//顶点位置没有乘权重
+	std::array<double, 6> weight = {1,1./sqrt(2),1, 1,1,1};
+	std::array<Vector3d, 6> pos1 = { Vector3d(r,0,0), Vector3d(r,r,0), Vector3d(0,r,0), 
+				Vector3d(r/2.,0,h/2.), Vector3d(0,r/2.,h/2.), Vector3d(0,0,h)},
+
+	pos2 = { Vector3d(0,r,0), Vector3d(-r,r,0), Vector3d(-r,0,0), 
+				Vector3d(0,r/2.,h/2.), Vector3d(-r/2.,0,h/2.), Vector3d(0,0,h)},
+
+	pos3 = { Vector3d(-r,0,0), Vector3d(-r,-r,0), Vector3d(0,-r,0), 
+				Vector3d(-r/2.,0,h/2.), Vector3d(0,-r/2.,h/2.), Vector3d(0,0,h)},
+
+	pos4 = { Vector3d(0,-r,0), Vector3d(r,-r,0), Vector3d(r,0,0), 
+				Vector3d(0,-r/2.,h/2.), Vector3d(r/2.,0,h/2.), Vector3d(0,0,h)};
+
+	cone.patches.clear();
+	cone.patches.emplace_back(pos1,weight);
+	cone.patches.emplace_back(pos2,weight);
+	cone.patches.emplace_back(pos3,weight);
+	cone.patches.emplace_back(pos4,weight);
+
+	cone.cntPatches = 4;
+
+	vel = RatParamMesh<TriQuadRatBezier>(4, weight);
+}
+void simpleTest(){
+	const std::array<Vector3d, 6> pos2 = {
+		Vector3d(0,0,2), Vector3d(0,1,2), Vector3d(0,2,2),
+		Vector3d(1,0,2), Vector3d(1,1,2), Vector3d(2,0,2)}, 
+	vel2 = {Vector3d(0,0,-5), Vector3d(0,0,-5), Vector3d(0,0,-5), 
+		Vector3d(0,0,-5), Vector3d(0,0,-5), Vector3d(0,0,-5)};
+	const std::array<double, 6> weight2 = {1,1,1,1,1,1};
+
+	const std::array<Vector3d, 9> pos1 = {
+		Vector3d(0,0,0), Vector3d(0,1,0), Vector3d(0,2,0),
+		Vector3d(1,0,0), Vector3d(1,1,0), Vector3d(1,2,0),
+		Vector3d(2,0,0), Vector3d(2,1,0), Vector3d(2,2,0)
+	}, 
+	vel1 = {Vector3d(0,0,0), Vector3d(0,0,0), Vector3d(0,0,0), 
+		Vector3d(0,0,0), Vector3d(0,0,0), Vector3d(0,0,0),
+		Vector3d(0,0,0), Vector3d(0,0,0), Vector3d(0,0,0)};
+	const std::array<double, 9> weight1 = {1,1,1,1,1,1,1,1,1};
+
+	// gt:0.4s
+	RecQuadRatBezier mesh1(pos1, weight1), meshvel1(vel1, weight1);
+	TriQuadRatBezier mesh2(pos2, weight2), meshvel2(vel2, weight2);
+
+	using steady_clock = std::chrono::steady_clock;
+	using duration = std::chrono::duration<double>;
+	const auto initialTime = steady_clock::now();
+	SolverManifold<RecQuadRatBezier,TriQuadRatBezier,RecParamBound, TriParamBound> solver;
+	std::multiset<CCDRoot> solutSet;
+	solutSet.clear();
+	double t = solver.solveCCD(mesh1, meshvel1, mesh2, meshvel2, solutSet, DeltaT);
+	std::cout<<solutSet.size()<<" solutions\n";
+	for(const auto& r:solutSet){
+		std::cout<<"time = "<<r.t<<"\npatch 1: "<<((r.aabb1[0]+r.aabb1[1])/2.).transpose()
+				<<"\npatch 2:"<<((r.aabb2[0]+r.aabb2[1])/2.).transpose()<<"\n";
+	}
+	const auto endTime = steady_clock::now();
+	std::cout<<"colTime: "<<t<<"\n";
+	std::cout << "used seconds: " <<
+		duration(endTime - initialTime).count()
+		<< std::endl;
+}
+
+void torusTest(){
+	RatParamMesh<RecQuadRatBezier> torusPos, torusVel;
+	generateTorus(torusPos,torusVel);
+
+	RatParamMesh<RecQuadRatBezier> torusPos2=torusPos, torusVel2= torusVel;
+	torusPos2.moveObj(Vector3d(0,0,6));
+	torusVel2.moveObj(Vector3d(0,0,-5));// gt: 0.8s
+
+	using steady_clock = std::chrono::steady_clock;
+	using duration = std::chrono::duration<double>;
+	const auto initialTime = steady_clock::now();
+	// double t=ccd(torusPos, torusVel, conePos, coneVel, 
+	// 			SolverBase<RecQuadRatBezier,TriQuadRatBezier,RecParamBound, TriParamBound>::solveCCD);
+	double t=ccd_ratBezier_manifold<RecQuadRatBezier,RecQuadRatBezier,RecParamBound, RecParamBound>(torusPos, torusVel, torusPos2, torusVel2);
+	const auto endTime = steady_clock::now();
+	std::cout<<"colTime: "<<t<<"\n";
+	std::cout << "used seconds: " <<
+		duration(endTime - initialTime).count()
+		<< std::endl;
+}
+
+//这个圆锥有点问题，这应该不是一个圆锥而是曲四棱锥
+void manifoldTest(){
+	RatParamMesh<TriQuadRatBezier> conePos, coneVel;
+	generateCone(conePos,coneVel);
+	conePos.writeObj("cone.obj", 0.1,0.1);
+	RatParamMesh<RecQuadRatBezier> torusPos, torusVel;
+	generateTorus(torusPos,torusVel);
+	torusPos.writeObj("torus.obj");
+
+	// // gt: 0.5s
+	// torusPos.moveObj(Vector3d(0,0,2.5+sqrt(5)));
+	// torusVel.moveObj(Vector3d(0,0,-5));
+
+	// gt: 0.2s
+	torusPos.moveObj(Vector3d(2,0,6));
+	torusVel.moveObj(Vector3d(0,0,-5));
+
+	using steady_clock = std::chrono::steady_clock;
+	using duration = std::chrono::duration<double>;
+	const auto initialTime = steady_clock::now();
+	// double t=ccd(torusPos, torusVel, conePos, coneVel, 
+	// 			SolverBase<RecQuadRatBezier,TriQuadRatBezier,RecParamBound, TriParamBound>::solveCCD);
+	double t=ccd_ratBezier_manifold<RecQuadRatBezier,TriQuadRatBezier,RecParamBound, TriParamBound>(torusPos, torusVel, conePos, coneVel);
+	const auto endTime = steady_clock::now();
+	std::cout<<"colTime: "<<t<<"\n";
+	std::cout << "used seconds: " <<
+		duration(endTime - initialTime).count()
+		<< std::endl;
 }
 
 // // take down the case settings
@@ -114,11 +338,11 @@ double ccd(const Mesh1& mesh1, const Mesh1& vel1,
 
 // }
 // void testTorus(){
-// 	RecRatBezierMesh obj1, vel1;
+// 	RatParamMesh<RecQuadRatBezier> obj1, vel1;
 // 	generateTorusComponent(obj1, vel1);
 // 	obj1.writeObj("torus.obj");
 
-// 	RecRatBezierMesh obj2 = obj1, vel2 = vel1;
+// 	RatParamMesh<RecQuadRatBezier> obj2 = obj1, vel2 = vel1;
 // 	// obj.writeObj("teapot32.obj");
 // 	Vector3d displace(6,6,0);
 // 	obj2.moveObj(displace);
@@ -204,7 +428,7 @@ double ccd(const Mesh1& mesh1, const Mesh1& vel1,
 // void parabolaBunnyTorus(){
 // 	// read in torus, bunny, both zero weights
 // 	TriLinearMesh bunnyPos("bunny292.obj"), bunnyVel(bunnyPos.cntPatches);
-// 	RecRatBezierMesh torusPos, torusVel;
+// 	RatParamMesh<RecQuadRatBezier> torusPos, torusVel;
 // 	generateTorusComponent(torusPos, torusVel);
 // 	// torusPos.writeObj("bunny-torus/0.obj");
 
@@ -232,7 +456,7 @@ double ccd(const Mesh1& mesh1, const Mesh1& vel1,
 // 	double firstCol = totalTime;
 	
 // 	TriLinearMesh newBunnyPos = bunnyPos;
-// 	RecRatBezierMesh newTorusPos = torusPos;
+// 	RatParamMesh<RecQuadRatBezier> newTorusPos = torusPos;
 // 	std::unique_ptr<SolverType> solver = std::make_unique<SolverTD>();
 // 	for(int fr = 0; fr < totalFrame; fr++){
 // 		Vector3d accel = (fr+1)*deltaT*Vector3d(0,-9.8,0);

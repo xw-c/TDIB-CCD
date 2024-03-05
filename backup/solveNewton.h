@@ -1,12 +1,73 @@
 # pragma once
 #include "mathOps.h"
+#include "triBezier.h"
+#include "recBezier.h"
+#include "recRatBezier.h"
 template<typename ParamObj1, typename ParamObj2, typename ParamBound1, typename ParamBound2>
-class SolverBase{
+class SolverNewton{
+	struct Interval1d{
+		Array2d intv;
+		Interval1d(): intv(0,1) {}
+		Interval1d(const Array2d& a): intv(a) {}
+		Interval1d(const double& a1, const double& a2): intv(a1,a2) {}
+		double operator[](int i) const { return i == 0 ? intv[0] : intv[1]; }
+		double mid() const { return 0.5 * (intv[0] + intv[1]); }
+		Interval1d operator*(const Interval1d& i) const {
+			Vector4d mltp(intv[0] * i[0], intv[0] * i[1], intv[1] * i[0], intv[1] * i[1]);
+			return Interval1d(mltp.minCoeff(), mltp.maxCoeff());
+		}
+		Interval1d operator+(const Interval1d& i) const {
+			return Interval1d(intv[0] + i[0], intv[1] + i[1]);
+		}
+		Interval1d operator-(const Interval1d& i) const {
+			return Interval1d(intv[0] - i[1], intv[1] - i[0]);
+		}
+		Interval1d operator/(const Interval1d& i) const {
+			if(i[0] <= 0 && i[1] >= 0){
+				std::cerr<<"denominator intv includes 0!\n";
+				exit(-1);
+			}
+			Interval1d intvInverse(1/i[1], 1/i[0]);
+			return (*this) * intvInverse;
+		}
+	};
+	template<int dim>
+	struct IntervalXd{
+		std::array<Interval1d, dim> intvs;
+		Interval1d operator[](const int i) const { 
+			if(i < 0 || i >= dim){
+				std::cerr<<"IntervalXd out of range!\n";
+				exit(-1);
+			}
+			return intvs[i];
+		}
+	};
+	struct PatchPair{
+		ParamBound1 pb1;
+		ParamBound2 pb2;
+		Array2d tIntv;
+		PatchPair(const ParamBound1& c1, const ParamBound2& c2, 
+				Array2d t = Array2d(0,DeltaT)): pb1(c1), pb2(c2), tIntv(t) {}
+		bool operator<(PatchPair const &o) const { return tIntv[0] > o.tIntv[0]; }
+		double calcL1Dist(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1, 
+						const ParamObj2 &CpPos2, const ParamObj2 &CpVel2) const{
+			auto const ptPos1 = CpPos1.divideBezierPatch(pb1);
+			auto const ptPos2 = CpPos2.divideBezierPatch(pb2);
+			double d1=calcAAExtent<ParamObj1>(ptPos1);
+			double d2=calcAAExtent<ParamObj1>(ptPos2);
+			return std::max(d1, d2);
+		}
+		void bisectInterval(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1, 
+						const ParamObj2 &CpPos2, const ParamObj2 &CpVel2, 
+						PatchPair& subp1, PatchPair& subp2) const{
+			//算一下
+			
+		}
+	};
 public:
 	static bool primitiveCheck(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1, 
 							const ParamObj2 &CpPos2, const ParamObj2 &CpVel2,
-							const ParamBound1 &divUvB1, const ParamBound2 &divUvB2,
-							const Array2d divTime = Array2d(0,DeltaT)) {
+							const PatchPair& patchPair) {
 		auto posStart1 = CpPos1.divideBezierPatch(divUvB1), posEnd1 = posStart1;
 		auto ptVel1 = CpVel1.divideBezierPatch(divUvB1);
 		auto posStart2 = CpPos2.divideBezierPatch(divUvB2), posEnd2 = posStart2;
@@ -51,23 +112,6 @@ public:
 						const ParamObj2 &CpPos2, const ParamObj2 &CpVel2,
 						Array2d& uv1, Array2d& uv2, 
 						const double upperTime = DeltaT) {
-		struct PatchPair{
-			ParamBound1 pb1;
-			ParamBound2 pb2;
-			Array2d tIntv;
-			PatchPair(const ParamBound1& c1, const ParamBound2& c2, 
-					Array2d t = Array2d(0,DeltaT)): pb1(c1), pb2(c2), tIntv(t) {}
-			bool operator<(PatchPair const &o) const { return tIntv[0] > o.tIntv[0]; }
-			double calcL1Dist(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1, 
-							const ParamObj2 &CpPos2, const ParamObj2 &CpVel2) const{
-				auto const ptPos1 = CpPos1.divideBezierPatch(pb1);
-				auto const ptPos2 = CpPos2.divideBezierPatch(pb2);
-				double d1=calcAAExtent<ParamObj1>(ptPos1);
-				double d2=calcAAExtent<ParamObj2>(ptPos2);
-				return std::max(d1, d2);
-			}
-		};
-
 		using steady_clock = std::chrono::steady_clock;
 		using duration = std::chrono::duration<double>;
 		const auto initialTime = steady_clock::now();
@@ -75,7 +119,7 @@ public:
 		std::priority_queue<PatchPair> heap;
 		ParamBound1 initParam1;
 		ParamBound2 initParam2;
-		if (primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, initParam1, initParam2))
+		if (primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, PatchPair(initParam1, initParam2)))
 			heap.emplace(initParam1, initParam2);
 		// cnt=1;
 		while (!heap.empty()) {
@@ -94,20 +138,14 @@ public:
 				return cur.tIntv[0];
 			}
 
-			// Divide the current patch into two sets of four-to-four pieces
-			double tMid = (cur.tIntv[0]+cur.tIntv[1])*0.5;
-			Array2d divTime1(cur.tIntv[0],tMid), divTime2(tMid, cur.tIntv[1]);
-			for (int i = 0; i < 4; i++) {
-				ParamBound1 divUvB1(cur.pb1.interpSubpatchParam(i));
-				for (int j = 0; j < 4; j++) {
-					ParamBound2 divUvB2(cur.pb2.interpSubpatchParam(j));
-					if (primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, divUvB1, divUvB2, divTime1)){
-						heap.emplace(divUvB1, divUvB2, divTime1);
-					}
-					if (primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, divUvB1, divUvB2, divTime2)){
-						heap.emplace(divUvB1, divUvB2, divTime2);
-					}
-				}
+			// Bisect the current param interval
+			PatchPair subp1(cur), subp2(cur);
+			cur.bisectInterval(CpPos1, CpVel1, CpPos2, CpVel2, subp1, subp2);
+			if (primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, subp1)){
+				heap.push(subp1);
+			}
+			if (primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, subp2)){
+				heap.push(subp2);
 			}
 		}
 

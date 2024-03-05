@@ -1,13 +1,5 @@
 # pragma once
-#include <Eigen/Dense>
-
-using Eigen::Array2d;
-using Eigen::Vector3d;
-using Eigen::Vector4d;
-
-#include <iostream>
-#include <span>
-#include "recBezier.h"
+#include"paramBound.h"
 
 class RecQuadRatBezier{
 public:
@@ -16,11 +8,19 @@ public:
 	RecQuadRatBezier(){}
 	RecQuadRatBezier(const std::array<Vector3d, 9>& pos, const std::array<double, 9>& weight){
 		for(int i = 0; i < 9; i++){
+			if(weight[i]==0){
+				std::cerr<<"zero weight!\n";
+				exit(-1);
+			}
 			ctrlp[i] = Vector4d(pos[i][0]*weight[i], pos[i][1]*weight[i], pos[i][2]*weight[i], weight[i]);
 		}
 	}
 	RecQuadRatBezier(const std::array<double, 9>& weight){
 		for(int i = 0; i < 9; i++){
+			if(weight[i]==0){
+				std::cerr<<"zero weight!\n";
+				exit(-1);
+			}
 			ctrlp[i] = Vector4d(0, 0, 0, weight[i]);
 		}
 	}
@@ -38,12 +38,14 @@ public:
 		return blossomQuadBezier(q, uv0.x(), uv1.x());
 	}
 
-	Vector3d get3dPos(const Vector4d& pt) const { return Vector3d(pt[0]/pt[3], pt[1]/pt[3], pt[2]/pt[3]); }
-	Vector3d evaluatePatchPoint(Array2d const &uv) const {
-		Vector4d pt = blossomBiquadBezier(ctrlp, uv, uv);
+	Vector3d get3dPos(const Vector4d& pt) const { 
 		if(pt[3]==0){
 			std::cout<<"why zero weight?\n";exit(-1);
 		}
+		return Vector3d(pt[0]/pt[3], pt[1]/pt[3], pt[2]/pt[3]); 
+	}
+	Vector3d evaluatePatchPoint(Array2d const &uv) const {
+		Vector4d pt = blossomBiquadBezier(ctrlp, uv, uv);
 		return get3dPos(pt);
 	}
 

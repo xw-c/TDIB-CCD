@@ -9,6 +9,7 @@
 #include <fstream>
 #include <limits>
 #include <queue>
+#include <set>
 #include <span>
 #include <chrono>
 #include <cmath>
@@ -28,7 +29,10 @@ static constexpr double MinDist = 1e-4;
 static constexpr double MinSquaredDist = 1e-8;
 static constexpr double MinL1Dist = 1e-2;
 static constexpr double Epsilon = 1e-6;
+static constexpr double MeantimeEpsilon = 1e-2;
+static constexpr double SeparationDist = 1e-0;
 static constexpr double DeltaT = 1;
+bool DEBUG = 0;
 bool SHOWANS = 0;
 enum class BoundingBoxType { AABB, OBB, DOP14 };
 enum class SolverType { TDIntv, BaseIntv, NewtonIntv }; //sampling, linearization
@@ -37,5 +41,5 @@ std::normal_distribution<double> randNormal(0.0, 1.0); // 均值为0，标准差
 std::default_random_engine randGenerator(0);
 
 std::uint64_t cnt;
-const BoundingBoxType bbType = BoundingBoxType::AABB;
+const BoundingBoxType bbType = BoundingBoxType::OBB;
 const SolverType solverType = SolverType::TDIntv;
