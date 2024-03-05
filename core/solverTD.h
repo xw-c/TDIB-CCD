@@ -2,7 +2,6 @@
 #include "mathOps.h"
 template<typename ParamObj1, typename ParamObj2, typename ParamBound1, typename ParamBound2>
 class SolverTD{
-public:
 	static bool primitiveCheck(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1, 
 						const ParamObj2 &CpPos2, const ParamObj2 &CpVel2,
 						const ParamBound1 &divUvB1, const ParamBound2 &divUvB2,
@@ -72,6 +71,7 @@ public:
 		else {colTime = -1;return false;}
 	}
 						
+public:
 	static double solveCCD(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1, 
 						const ParamObj2 &CpPos2, const ParamObj2 &CpVel2,
 						Array2d& uv1, Array2d& uv2, 
@@ -85,8 +85,16 @@ public:
 			bool operator<(PatchPair const &o) const { return tLower > o.tLower; }
 			double calcL1Dist(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1, 
 							const ParamObj2 &CpPos2, const ParamObj2 &CpVel2) const{
-				auto const ptPos1 = CpPos1.divideBezierPatch(pb1);
-				auto const ptPos2 = CpPos2.divideBezierPatch(pb2);
+				auto ptPos1 = CpPos1.divideBezierPatch(pb1);
+				auto ptVel1 = CpVel1.divideBezierPatch(pb1);
+				auto ptPos2 = CpPos2.divideBezierPatch(pb2);
+				auto ptVel2 = CpVel2.divideBezierPatch(pb2);
+				for(int i=0;i<ParamObj1::cntCp;i++){
+					ptPos1[i]+=ptVel1[i]*tLower;
+				}
+				for(int i=0;i<ParamObj2::cntCp;i++){
+					ptPos2[i]+=ptVel2[i]*tLower;
+				}
 				double d1=calcAAExtent<ParamObj1>(ptPos1);
 				double d2=calcAAExtent<ParamObj2>(ptPos2);
 				return std::max(d1, d2);
