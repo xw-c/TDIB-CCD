@@ -6,7 +6,7 @@ class SolverManifold{
 	std::array<Vector3d, ParamObj2::cntCp> posStart2, posEnd2;
 	std::array<Vector3d, 2> aabb1, aabb2;
 
-	bool calcPatches(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1, 
+	void calcPatches(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1, 
 							const ParamObj2 &CpPos2, const ParamObj2 &CpVel2,
 							const ParamBound1 &divUvB1, const ParamBound2 &divUvB2,
 							const Array2d divTime = Array2d(0,DeltaT)) {
@@ -24,7 +24,7 @@ class SolverManifold{
 			posEnd2[i]+=ptVel2[i]*divTime[1];
 		}
 	}
-	double calcAABBs(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1, 
+	void calcAABBs(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1, 
 							const ParamObj2 &CpPos2, const ParamObj2 &CpVel2,
 							const ParamBound1 &divUvB1, const ParamBound2 &divUvB2,
 							const Array2d divTime = Array2d(0,DeltaT)){
@@ -120,7 +120,8 @@ public:
 	double solveCCD(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1, 
 						const ParamObj2 &CpPos2, const ParamObj2 &CpVel2,
 						std::multiset<CCDRoot> & solutSet,
-						const double upperTime = DeltaT) {
+						const double upperTime = DeltaT,
+						const double deltaDist = MinL1Dist) {
 		struct PatchPair{
 			ParamBound1 pb1;
 			ParamBound2 pb2;
@@ -168,7 +169,7 @@ public:
 				if (discard) continue;
 			}
 
-			if (cur.calcL1Dist(aabb1, aabb2) < MinL1Dist) {
+			if (cur.calcL1Dist(aabb1, aabb2) < deltaDist) {
 				if(cur.tIntv[1]<leastUb + MeantimeEpsilon){
 					Array2d uv1 = cur.pb1.centerParam();
 					Array2d uv2 = cur.pb2.centerParam();

@@ -75,7 +75,8 @@ public:
 	static double solveCCD(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1, 
 						const ParamObj2 &CpPos2, const ParamObj2 &CpVel2,
 						Array2d& uv1, Array2d& uv2, 
-						const double upperTime = DeltaT) {
+						const double upperTime = DeltaT,
+						const double deltaDist = MinL1Dist) {
 		struct PatchPair{
 			ParamBound1 pb1;
 			ParamBound2 pb2;
@@ -119,7 +120,7 @@ public:
 			// if(SHOWANS) std::cout<<cnt<<"\n";
 
 			// Decide whether the algorithm converges
-			if (cur.calcL1Dist(CpPos1, CpVel1, CpPos2, CpVel2) < MinL1Dist) {
+			if (cur.calcL1Dist(CpPos1, CpVel1, CpPos2, CpVel2) < deltaDist) {
 				uv1 = cur.pb1.centerParam();
 				uv2 = cur.pb2.centerParam();
 				const auto endTime = steady_clock::now();

@@ -210,14 +210,14 @@ template<typename ParamObj1, typename ParamObj2>
 void setAxes(const std::array<Vector3d, ParamObj1::cntCp>& ptPos1, 
 					const std::array<Vector3d, ParamObj2::cntCp>& ptPos2,
 					std::vector<Vector3d>& axes){	
-	if(bbType==BoundingBoxType::AABB){
+	if(BBDefault==BoundingBoxType::AABB){
 		axes = {Vector3d::Unit(0), Vector3d::Unit(1), Vector3d::Unit(2)};
 	}
-	else if(bbType==BoundingBoxType::DOP14){
+	else if(BBDefault==BoundingBoxType::DOP14){
 		axes = {Vector3d::Unit(0), Vector3d::Unit(1), Vector3d::Unit(2), 
 				Vector3d(1,1,1).normalized(), Vector3d(-1,1,1).normalized(), Vector3d(-1,-1,1).normalized()};
 	}
-	else if(bbType==BoundingBoxType::OBB){
+	else if(BBDefault==BoundingBoxType::OBB){
 		Vector3d lu1 = ParamObj1::axisU(ptPos1).normalized();//u延展的方向
 		Vector3d lv1 = ParamObj1::axisV(ptPos1);//v延展的方向
 		lv1 = (lv1-lv1.dot(lu1)*lu1).eval();

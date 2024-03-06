@@ -23,23 +23,25 @@ using Eigen::Vector4d;
 using Eigen::MatrixXd;
 const double INFT = std::numeric_limits<double>::infinity();
 const double PI = std::acos(-1);
-static constexpr int Kase = 10;
+static constexpr int KaseDefault = 100;
 static constexpr double MinDeltaUV = 1e-6;
 static constexpr double MinDist = 1e-4;
 static constexpr double MinSquaredDist = 1e-8;
-static constexpr double MinL1Dist = 1e-2;
+static constexpr double MinL1Dist = 1e-4;
+static constexpr double PullVelocity = 1;
+static constexpr double DeltaT = 1;
+
 static constexpr double Epsilon = 1e-6;
+
 static constexpr double MeantimeEpsilon = 1e-2;
 static constexpr double SeparationDist = 1e-0;
-static constexpr double DeltaT = 1;
-bool DEBUG = 0;
-bool SHOWANS = 0;
-enum class BoundingBoxType { AABB, OBB, DOP14 };
-enum class SolverType { TDIntv, BaseIntv, NewtonIntv }; //sampling, linearization
 
 std::normal_distribution<double> randNormal(0.0, 1.0); // 均值为0，标准差为1的正态分布
 std::default_random_engine randGenerator(0);
-
 std::uint64_t cnt;
-const BoundingBoxType bbType = BoundingBoxType::OBB;
-const SolverType solverType = SolverType::TDIntv;
+
+bool SHOWANS = 1;
+enum class BoundingBoxType { AABB, OBB, DOP14 };
+enum class SolverType { TDIntv, BaseIntv, ManifoldBase, ManifoldTD }; //sampling, linearization
+const BoundingBoxType BBDefault = BoundingBoxType::OBB;
+const SolverType SolverDefault = SolverType::BaseIntv;
