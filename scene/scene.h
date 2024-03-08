@@ -58,7 +58,7 @@ void randomTest(const std::string& solverType, const double& deltaDist, const in
 	int hasCol = 0;
 	double t;
 	Array2d uv1,uv2;
-	std::ofstream file("validation"+outputFile+".txt");
+	std::ofstream file("validation/"+outputFile+".txt");
 	file << std::fixed << std::setprecision(10);
 
 	using steady_clock = std::chrono::steady_clock;
