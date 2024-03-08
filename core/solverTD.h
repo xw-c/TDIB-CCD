@@ -67,7 +67,7 @@ class SolverTD{
 				minT=std::max(minT, feasibleIntvs[i](1));
 			else break;
 		// std::cout<<minT<<"\n";
-		if(minT<=upperTime){colTime= minT+lowerTime;return true;}
+		if(minT<upperTime){colTime= minT+lowerTime;return true;}
 		else {colTime = -1;return false;}
 	}
 						
@@ -110,12 +110,12 @@ public:
 		double colTime;
 		if (primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, initParam1, initParam2, colTime, 0, upperTime))
 			heap.emplace(initParam1, initParam2, colTime);
-		cnt=1;
+		// cnt=1;
 		while (!heap.empty()) {
 			auto const cur = heap.top();
 			heap.pop();
-			cnt++;
-			if(SHOWANS) std::cout<<cnt<<"\n";
+			// cnt++;
+			// if(SHOWANS) std::cout<<cnt<<"\n";
 
 			// Decide whether the algorithm converges
 			if (cur.calcL1Dist(CpPos1, CpVel1, CpPos2, CpVel2) < deltaDist) {

@@ -58,7 +58,8 @@ void randomTest(const std::string& solverType, const double& deltaDist, const in
 	int hasCol = 0;
 	double t;
 	Array2d uv1,uv2;
-	// std::ofstream file("validation"+outputFile+".txt");
+	std::ofstream file("validation"+outputFile+".txt");
+	file << std::fixed << std::setprecision(10);
 
 	using steady_clock = std::chrono::steady_clock;
 	using duration = std::chrono::duration<double>;
@@ -90,7 +91,9 @@ void randomTest(const std::string& solverType, const double& deltaDist, const in
 		// 	break;
 		// }
 		// ft<<t<<"\n";
+		if(t>0)file<<t<<"  "<<uv1[0]<<"  "<<uv1[1]<<"  "<<uv2[0]<<"  "<<uv2[1]<<"\n";
 		if(SHOWANS) std::cout<<"case "<<k<<" done "<<calcDist(obj1,vel1,obj2,vel2,uv1,uv2,t)<<"\n";
+		
 		// std::cout<<kase<<": "<<duration(steady_clock::now() - initialTime).count()<<"s\n";
 	}
 	const auto endTime = steady_clock::now();
@@ -98,6 +101,7 @@ void randomTest(const std::string& solverType, const double& deltaDist, const in
 	std::cout << "used seconds: " <<
 		duration(endTime - initialTime).count()/kase
 		<< std::endl;
+	file.close();
 	// fp.close();
 	// ft.close();
 }
