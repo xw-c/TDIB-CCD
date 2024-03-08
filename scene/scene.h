@@ -52,7 +52,7 @@
 // }
 
 template<typename ObjType, typename ParamType>
-void randomTest(/*const SolverType& solverType, */const double& deltaDist, const int& kase, const double& velMag, const std::string& outputFile){
+void randomTest(const std::string& solverType, const double& deltaDist, const int& kase, const double& velMag, const std::string& outputFile){
 	ObjType obj1, obj2, vel1, vel2;
 	std::srand(0);
 	int hasCol = 0;
@@ -65,16 +65,24 @@ void randomTest(/*const SolverType& solverType, */const double& deltaDist, const
 	const auto initialTime = steady_clock::now();
 	for(int k = 0; k < kase; k ++){
 		generatePatchPair_uniform<ObjType>(obj1.ctrlp, vel1.ctrlp, obj2.ctrlp, vel2.ctrlp, velMag);
-		switch(SolverDefault){
-			case SolverType::TDIntv:
-				t = SolverTD<ObjType,ObjType,ParamType,ParamType>::solveCCD(obj1,vel1,obj2,vel2,uv1,uv2,DeltaT,deltaDist);
-				break;
-			case SolverType::BaseIntv:
-				t = SolverBase<ObjType,ObjType,ParamType,ParamType>::solveCCD(obj1,vel1,obj2,vel2,uv1,uv2,DeltaT,deltaDist);
-				break;
-			default:
-				std::cerr<<"solver not implemented!\n";
-				exit(-1);
+		// switch(SolverDefault){
+		// 	case SolverType::TDIntv:
+		// 		t = SolverTD<ObjType,ObjType,ParamType,ParamType>::solveCCD(obj1,vel1,obj2,vel2,uv1,uv2,DeltaT,deltaDist);
+		// 		break;
+		// 	case SolverType::BaseIntv:
+		// 		t = SolverBase<ObjType,ObjType,ParamType,ParamType>::solveCCD(obj1,vel1,obj2,vel2,uv1,uv2,DeltaT,deltaDist);
+		// 		break;
+		// 	default:
+		// 		std::cerr<<"solver not implemented!\n";
+		// 		exit(-1);
+		// }
+		if(solverType=="td")
+			t = SolverTD<ObjType,ObjType,ParamType,ParamType>::solveCCD(obj1,vel1,obj2,vel2,uv1,uv2,DeltaT,deltaDist);
+		else if(solverType=="base")
+			t = SolverBase<ObjType,ObjType,ParamType,ParamType>::solveCCD(obj1,vel1,obj2,vel2,uv1,uv2,DeltaT,deltaDist);
+		else{
+			std::cerr<<"solver not implemented!\n";
+			exit(-1);
 		}
 		if(t>=0)hasCol++;
 		// if(kase==21){
@@ -89,6 +97,60 @@ void randomTest(/*const SolverType& solverType, */const double& deltaDist, const
 	std::cout << hasCol<<" pairs have collided.\n";
 	std::cout << "used seconds: " <<
 		duration(endTime - initialTime).count()/kase
+		<< std::endl;
+	// fp.close();
+	// ft.close();
+}
+
+
+template<typename ObjType, typename ParamType>
+void planeTest(const std::string& solverType, const double& deltaDist, const int& kase, const double& velMag, const std::string& outputFile){
+	ObjType obj1, obj2, vel1, vel2;
+	int hasCol = 0;
+	double t;
+	Array2d uv1,uv2;
+	obj1.ctrlp = {
+		Vector3d(0,0,0), Vector3d(0,1,0), Vector3d(0,2,0), Vector3d(0,3,0),
+		Vector3d(1,0,0), Vector3d(1,1,0), Vector3d(1,2,0), Vector3d(1,3,0),
+		Vector3d(2,0,0), Vector3d(2,1,0), Vector3d(2,2,0), Vector3d(2,3,0),
+		Vector3d(3,0,0), Vector3d(3,1,0), Vector3d(3,2,0), Vector3d(3,3,0)
+	}, 
+	vel1.ctrlp = {Vector3d(0,0,1), Vector3d(0,0,1), Vector3d(0,0,1), Vector3d(0,0,1), 
+		Vector3d(0,0,1), Vector3d(0,0,1), Vector3d(0,0,1), Vector3d(0,0,1),
+		Vector3d(0,0,1), Vector3d(0,0,1), Vector3d(0,0,1), Vector3d(0,0,1),
+		Vector3d(0,0,1), Vector3d(0,0,1), Vector3d(0,0,1), Vector3d(0,0,1)};
+	obj2.ctrlp = {
+		Vector3d(0,0,1.1), Vector3d(0,1,1.1), Vector3d(0,2,1.1), Vector3d(0,3,1.1),
+		Vector3d(1,0,1.1), Vector3d(1,1,1.1), Vector3d(1,2,1.1), Vector3d(1,3,1.1),
+		Vector3d(2,0,1.1), Vector3d(2,1,1.1), Vector3d(2,2,1.1), Vector3d(2,3,1.1),
+		Vector3d(3,0,1.1), Vector3d(3,1,1.1), Vector3d(3,2,1.1), Vector3d(3,3,1.1)
+	}, 
+	vel2.ctrlp = {Vector3d(0,0,-1), Vector3d(0,0,-1), Vector3d(0,0,-1), Vector3d(0,0,-1),
+		Vector3d(0,0,-1), Vector3d(0,0,-1), Vector3d(0,0,-1), Vector3d(0,0,-1),
+		Vector3d(0,0,-1), Vector3d(0,0,-1), Vector3d(0,0,-1), Vector3d(0,0,-1),
+		Vector3d(0,0,-1), Vector3d(0,0,-1), Vector3d(0,0,-1), Vector3d(0,0,-1)};
+	using steady_clock = std::chrono::steady_clock;
+	using duration = std::chrono::duration<double>;
+	const auto initialTime = steady_clock::now();
+	if(solverType=="td")
+		t = SolverTD<ObjType,ObjType,ParamType,ParamType>::solveCCD(obj1,vel1,obj2,vel2,uv1,uv2,DeltaT,deltaDist);
+	else if(solverType=="base")
+		t = SolverBase<ObjType,ObjType,ParamType,ParamType>::solveCCD(obj1,vel1,obj2,vel2,uv1,uv2,DeltaT,deltaDist);
+	else{
+		std::cerr<<"solver not implemented!\n";
+		exit(-1);
+	}
+	if(SHOWANS) std::cout<<" done "<<calcDist(obj1,vel1,obj2,vel2,uv1,uv2,t)<<"\n";
+	Vector3d const p1 = obj1.evaluatePatchPoint(uv1);
+	Vector3d const v1 = vel1.evaluatePatchPoint(uv1);
+	Vector3d const p2 = obj2.evaluatePatchPoint(uv2);
+	Vector3d const v2 = vel2.evaluatePatchPoint(uv2);
+	Vector3d const pt1=(v1*t+p1), pt2=(v2*t+p2);
+	std::cout<<"uv at:"<<uv1.transpose()<<"     "<<uv2.transpose()<<"\npos at: "<<p1.transpose()<<"     "<<p2.transpose()<<"\n";
+	std::cout<<"delta: "<<(pt2-pt1).norm()<<"\n";
+	const auto endTime = steady_clock::now();
+	std::cout << "used seconds: " <<
+		duration(endTime - initialTime).count()
 		<< std::endl;
 	// fp.close();
 	// ft.close();

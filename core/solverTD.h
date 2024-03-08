@@ -24,7 +24,7 @@ class SolverTD{
 
 		std::vector<Array2d> feasibleIntvs;
 		feasibleIntvs.clear();
-
+		
 		auto AxisCheck=[&](std::vector<Line> lines1, std::vector<Line> lines2){
 			std::vector<Line> ch1, ch2;
 			std::vector<double> pts1, pts2;
@@ -67,7 +67,7 @@ class SolverTD{
 				minT=std::max(minT, feasibleIntvs[i](1));
 			else break;
 		// std::cout<<minT<<"\n";
-		if(minT<upperTime){colTime= minT+lowerTime;return true;}
+		if(minT<=upperTime){colTime= minT+lowerTime;return true;}
 		else {colTime = -1;return false;}
 	}
 						
@@ -90,12 +90,10 @@ public:
 				auto ptVel1 = CpVel1.divideBezierPatch(pb1);
 				auto ptPos2 = CpPos2.divideBezierPatch(pb2);
 				auto ptVel2 = CpVel2.divideBezierPatch(pb2);
-				for(int i=0;i<ParamObj1::cntCp;i++){
+				for(int i=0;i<ParamObj1::cntCp;i++)
 					ptPos1[i]+=ptVel1[i]*tLower;
-				}
-				for(int i=0;i<ParamObj2::cntCp;i++){
+				for(int i=0;i<ParamObj2::cntCp;i++)
 					ptPos2[i]+=ptVel2[i]*tLower;
-				}
 				double d1=calcAAExtent<ParamObj1>(ptPos1);
 				double d2=calcAAExtent<ParamObj2>(ptPos2);
 				return std::max(d1, d2);
@@ -112,12 +110,12 @@ public:
 		double colTime;
 		if (primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, initParam1, initParam2, colTime, 0, upperTime))
 			heap.emplace(initParam1, initParam2, colTime);
-		// cnt=1;
+		cnt=1;
 		while (!heap.empty()) {
 			auto const cur = heap.top();
 			heap.pop();
-			// cnt++;
-			// if(SHOWANS) std::cout<<cnt<<"\n";
+			cnt++;
+			if(SHOWANS) std::cout<<cnt<<"\n";
 
 			// Decide whether the algorithm converges
 			if (cur.calcL1Dist(CpPos1, CpVel1, CpPos2, CpVel2) < deltaDist) {

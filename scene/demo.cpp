@@ -3,7 +3,7 @@
 inline std::unique_ptr<ArgsParser> BuildArgsParser()
 {
 	auto parser = std::make_unique<ArgsParser>();
-	// parser->addArgument<std::string>("solver", 's', "type of ccd solver", SolverDefault);
+	parser->addArgument<std::string>("solver", 's', "type of ccd solver (base, td)", "base");
 	// parser->addArgument<BoundingBoxType>("bb", 'b', "type of bounding box", BBDefault);
 	// parser->addArgument<bool>("process", 'p', "show details of solving process", SHOWANS);
 	parser->addArgument<double>("delta", 'd', "distance for convergence criterion", MinL1Dist);
@@ -20,13 +20,14 @@ int main(int argc, char *argv[]){
 	auto parser = BuildArgsParser();
 	parser->parse(argc, argv);
 
-    // const SolverType solverType = std::any_cast<SolverType>(parser->getValueByName("solver"));	
+    const auto solverType = std::any_cast<std::string>(parser->getValueByName("solver"));	
     const auto deltaDist = std::any_cast<double>(parser->getValueByName("delta"));
     const auto kase = std::any_cast<int>(parser->getValueByName("kase"));
     const auto velMag = std::any_cast<double>(parser->getValueByName("velocity"));
     const auto outputFile = std::any_cast<std::string>(parser->getValueByName("output"));
 
-	randomTest<RecCubicBezier, RecParamBound>(deltaDist, kase, velMag, outputFile);
+	// planeTest<RecCubicBezier, RecParamBound>(solverType, deltaDist, kase, velMag, outputFile);
+	randomTest<RecCubicBezier, RecParamBound>(solverType, deltaDist, kase, velMag, outputFile);
 
 	// parabolaPotCup();
 	// parabolaBunnyTorus();
