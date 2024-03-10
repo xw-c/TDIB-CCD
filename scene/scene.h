@@ -1,8 +1,9 @@
 #pragma once
 #include"paramMesh.h"
-#include"solverTD.h"
 #include"solverBase.h"
-#include"solverManifold.h"
+#include"solverBaseManifold.h"
+#include"solverTD.h"
+// #include"solverTDManifold.h"
 #include"utilOps.h"
 #include "triBezier.h"
 #include "triRatBezier.h"
@@ -125,14 +126,14 @@ double ccd_ratBezier_manifold(const RatParamMesh<ParamObj1>& mesh1, const RatPar
 			const RatParamMesh<ParamObj2>& mesh2, const RatParamMesh<ParamObj2>& vel2,
 			const double upperTime = DeltaT){
 	double minTime = upperTime;
-	SolverManifold<ParamObj1,ParamObj2,ParamBound1, ParamBound2> solver;
+	SolverBaseManifold<ParamObj1,ParamObj2,ParamBound1, ParamBound2> solver;
 	std::multiset<CCDRoot> solutSet;
 	solutSet.clear();
 	for(int i = 0; i < mesh1.cntPatches; i++)
 		for(int j = 0; j < mesh2.cntPatches; j++){
 			// if(i==10&&j==1)DEBUG=1;
 			double t = solver.solveCCD(mesh1.patches[i], vel1.patches[i], mesh2.patches[j], vel2.patches[j], 
-								solutSet, minTime + MeantimeEpsilon);
+								solutSet);
 			std::cout<<i<<" "<<j<<": "<<t<<solutSet.size()<<"\n";
 			if(t>=0){
 				if(t==0)return 0;
@@ -145,23 +146,23 @@ double ccd_ratBezier_manifold(const RatParamMesh<ParamObj1>& mesh1, const RatPar
 	// 	output<<"time = "<<r.t<<"\npatch 1: "<<((r.aabb1[0]+r.aabb1[1])/2.).transpose()
 	// 			<<"\npatch 2:"<<((r.aabb2[0]+r.aabb2[1])/2.).transpose()<<"\n";
 	// }
-	output<<solutSet.size()<<"\n";
+	// output<<solutSet.size()<<"\n";
 	for(const auto& r:solutSet){
 		auto v=(r.aabb1[0]+r.aabb1[1])/2.;
-		output<<v[0]<<" "<<v[1]<<"\n";
+		output<<r.t<<" "<<v[0]<<" "<<v[1]<<"\n";
 	}
-	auto primitiveMaxDist = [&](const CCDRoot& r1, const CCDRoot&r2){
-		Vector3d aaExtent1 = (r1.aabb1[1]-r2.aabb1[0]).cwiseMax(r2.aabb1[1]-r1.aabb1[0]),
-		aaExtent2 = (r1.aabb2[1]-r2.aabb2[0]).cwiseMax(r2.aabb2[1]-r1.aabb2[0]);
-		return std::max(aaExtent1.maxCoeff(), aaExtent2.maxCoeff());
-	};
-	int i=0;
-	for(const auto& r1:solutSet){
-		int j=0;
-		for(const auto& r2:solutSet)
-			output<<i<<", "<<j++<<"  "<<primitiveMaxDist(r1, r2)<<"\n";
-		i++;
-	}
+	// auto primitiveMaxDist = [&](const CCDRoot& r1, const CCDRoot&r2){
+	// 	Vector3d aaExtent1 = (r1.aabb1[1]-r2.aabb1[0]).cwiseMax(r2.aabb1[1]-r1.aabb1[0]),
+	// 	aaExtent2 = (r1.aabb2[1]-r2.aabb2[0]).cwiseMax(r2.aabb2[1]-r1.aabb2[0]);
+	// 	return std::max(aaExtent1.maxCoeff(), aaExtent2.maxCoeff());
+	// };
+	// int i=0;
+	// for(const auto& r1:solutSet){
+	// 	int j=0;
+	// 	for(const auto& r2:solutSet)
+	// 		output<<i<<", "<<j++<<"  "<<primitiveMaxDist(r1, r2)<<"\n";
+	// 	i++;
+	// }
 
 	// for(const auto& r1:solutSet){
 	// 	for(const auto& r2:solutSet){
@@ -270,7 +271,7 @@ void simpleTest(){
 	using steady_clock = std::chrono::steady_clock;
 	using duration = std::chrono::duration<double>;
 	const auto initialTime = steady_clock::now();
-	SolverManifold<RecQuadRatBezier,TriQuadRatBezier,RecParamBound, TriParamBound> solver;
+	SolverBaseManifold<RecQuadRatBezier,TriQuadRatBezier,RecParamBound, TriParamBound> solver;
 	std::multiset<CCDRoot> solutSet;
 	solutSet.clear();
 	double t = solver.solveCCD(mesh1, meshvel1, mesh2, meshvel2, solutSet, DeltaT);

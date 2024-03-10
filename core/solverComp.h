@@ -1,12 +1,12 @@
 # pragma once
 #include "mathOps.h"
 template<typename ParamObj1, typename ParamObj2, typename ParamBound1, typename ParamBound2>
-class SolverBaseManifold{
+class SolverManifold{
 	std::array<Vector3d, ParamObj1::cntCp> posStart1, posEnd1;
 	std::array<Vector3d, ParamObj2::cntCp> posStart2, posEnd2;
 	std::array<Vector3d, 2> aabb1, aabb2;
 
-	void calcPatches(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1, 
+	bool calcPatches(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1, 
 							const ParamObj2 &CpPos2, const ParamObj2 &CpVel2,
 							const ParamBound1 &divUvB1, const ParamBound2 &divUvB2,
 							const Array2d divTime = Array2d(0,DeltaT)) {
@@ -24,7 +24,7 @@ class SolverBaseManifold{
 			posEnd2[i]+=ptVel2[i]*divTime[1];
 		}
 	}
-	void calcAABBs(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1, 
+	double calcAABBs(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1, 
 							const ParamObj2 &CpPos2, const ParamObj2 &CpVel2,
 							const ParamBound1 &divUvB1, const ParamBound2 &divUvB2,
 							const Array2d divTime = Array2d(0,DeltaT)){
@@ -47,6 +47,7 @@ class SolverBaseManifold{
 		return std::max(aaExtent1.maxCoeff(), aaExtent2.maxCoeff());
 	}
 
+public:
 	// static bool primitiveCheck(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1, 
 	// 						const ParamObj2 &CpPos2, const ParamObj2 &CpVel2,
 	// 						const ParamBound1 &divUvB1, const ParamBound2 &divUvB2,
@@ -116,13 +117,10 @@ class SolverBaseManifold{
 		}
 		return true;
 	}
-	
-public:
 	double solveCCD(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1, 
 						const ParamObj2 &CpPos2, const ParamObj2 &CpVel2,
 						std::multiset<CCDRoot> & solutSet,
-						const double upperTime = DeltaT,
-						const double deltaDist = MinL1Dist) {
+						const double upperTime = DeltaT) {
 		struct PatchPair{
 			ParamBound1 pb1;
 			ParamBound2 pb2;
@@ -146,12 +144,10 @@ public:
 		std::priority_queue<PatchPair> heap;
 		ParamBound1 initParam1;
 		ParamBound2 initParam2;
-		Array2d initTimeIntv(0,upperTime);
-		if (primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, initParam1, initParam2, initTimeIntv))
-			heap.emplace(initParam1, initParam2, initTimeIntv);
+		if (primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, initParam1, initParam2))
+			heap.emplace(initParam1, initParam2);
 
 		// cnt=1;
-		// u得作为上限，不能用下限，会慢一个数量级
 		double leastUb = upperTime;//solutSet.empty() ? upperTime : solutSet.rbegin()->t;
 		while (!heap.empty()) {
 			auto const cur = heap.top();

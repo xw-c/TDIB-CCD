@@ -27,7 +27,7 @@ static constexpr int KaseDefault = 100;
 static constexpr double MinDeltaUV = 1e-6;
 static constexpr double MinDist = 1e-4;
 static constexpr double MinSquaredDist = 1e-8;
-static constexpr double MinL1Dist = 1e-4;
+static constexpr double MinL1Dist = 1e-2;
 static constexpr double PullVelocity = 1;
 static constexpr double DeltaT = 1;
 

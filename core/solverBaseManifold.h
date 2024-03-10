@@ -5,6 +5,7 @@ class SolverBaseManifold{
 	std::array<Vector3d, ParamObj1::cntCp> posStart1, posEnd1;
 	std::array<Vector3d, ParamObj2::cntCp> posStart2, posEnd2;
 	std::array<Vector3d, 2> aabb1, aabb2;
+	std::array<Vector3d, 2> aabbEnd1, aabbEnd2;
 
 	void calcPatches(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1, 
 							const ParamObj2 &CpPos2, const ParamObj2 &CpVel2,
@@ -40,11 +41,23 @@ class SolverBaseManifold{
 			aabb2[0] = pos.cwiseMin(aabb2[0]);
 			aabb2[1] = pos.cwiseMax(aabb2[1]);
 		}
+		aabbEnd1[0] = aabbEnd2[0] = Vector3d::Constant(INFT),
+		aabbEnd1[1] = aabbEnd2[1] = Vector3d::Constant(-INFT); 
+		for(const auto& pos:posEnd1){
+			aabbEnd1[0] = pos.cwiseMin(aabbEnd1[0]);
+			aabbEnd1[1] = pos.cwiseMax(aabbEnd1[1]);
+		}
+		for(const auto& pos:posEnd2){
+			aabbEnd2[0] = pos.cwiseMin(aabbEnd2[0]);
+			aabbEnd2[1] = pos.cwiseMax(aabbEnd2[1]);
+		}
 	}
 	double primitiveMaxDist(const CCDRoot& r){
-		Vector3d aaExtent1 = (r.aabb1[1]-aabb1[0]).cwiseMax(aabb1[1]-r.aabb1[0]),
-		aaExtent2 = (r.aabb2[1]-aabb2[0]).cwiseMax(aabb2[1]-r.aabb2[0]);
-		return std::max(aaExtent1.maxCoeff(), aaExtent2.maxCoeff());
+		Vector3d maxPos1 = aabb1[1].cwiseMax(aabbEnd1[1]), maxPos2 = aabb2[1].cwiseMax(aabbEnd2[1]);
+		Vector3d minPos1 = aabb1[0].cwiseMin(aabbEnd1[0]), minPos2 = aabb2[0].cwiseMin(aabbEnd2[0]);
+		Vector3d aaExtent1 = (r.aabb1[1]-minPos1).cwiseMax(maxPos1-r.aabb1[0]),
+		aaExtent2 = (r.aabb2[1]-minPos2).cwiseMax(maxPos2-r.aabb2[0]);
+		return std::max(aaExtent1.norm(), aaExtent2.norm());
 	}
 
 	// static bool primitiveCheck(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1, 
@@ -152,7 +165,8 @@ public:
 
 		// cnt=1;
 		// u得作为上限，不能用下限，会慢一个数量级
-		double leastUb = upperTime;//solutSet.empty() ? upperTime : solutSet.rbegin()->t;
+		// 我发现所有patch pair测试都是deltaT的上界才能显示出一些框架的bug
+		double leastUb = solutSet.empty() ? upperTime : solutSet.rbegin()->t;
 		while (!heap.empty()) {
 			auto const cur = heap.top();
 			heap.pop();
@@ -173,10 +187,10 @@ public:
 			}
 
 			if (cur.calcL1Dist(aabb1, aabb2) < MinL1Dist) {
-				if(cur.tIntv[1]<leastUb + MeantimeEpsilon){
+				// if(cur.tIntv[0]<leastUb + MeantimeEpsilon){
 					Array2d uv1 = cur.pb1.centerParam();
 					Array2d uv2 = cur.pb2.centerParam();
-					leastUb = std::min(leastUb, cur.tIntv[1]);
+					leastUb = std::min(leastUb, cur.tIntv[0]);
 					while(!solutSet.empty() && solutSet.begin()->t > leastUb + MeantimeEpsilon)
 						solutSet.erase(solutSet.begin());
 
@@ -200,7 +214,7 @@ public:
 					// if (discard) continue;
 					// else 
 					solutSet.insert(CCDRoot(uv1, uv2, aabb1, aabb2, cur.tIntv[0]));
-				}
+				// }
 				continue;
 			}
 
