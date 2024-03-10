@@ -28,6 +28,7 @@ static void saveDoFs(const std::array<Vector3d, ObjType1::cntCp>& CpPos1,
 					const std::array<Vector3d, ObjType2::cntCp>& CpVel2,
 					const std::string& filename="DoFs.txt"){
 	std::ofstream f(filename);
+	f<< std::fixed << std::setprecision(10);
 	for(auto item : CpPos1)
 		f<<item.transpose()<<"\n";
 	for(auto item : CpVel1)
@@ -57,7 +58,7 @@ static void generatePatchPair(std::array<Vector3d, ObjType::cntCp> &CpPos1, std:
 template<typename ObjType>
 static void generatePatchPair_uniform(std::array<Vector3d, ObjType::cntCp> &CpPos1, std::array<Vector3d, ObjType::cntCp> &CpVel1,
 									std::array<Vector3d, ObjType::cntCp> &CpPos2, std::array<Vector3d, ObjType::cntCp> &CpVel2, const double& velMagnitude){
-	Vector3d dir=Vector3d::Random().normalized() * velMagnitude;//控制拉开的距离，或许还有角度
+	Vector3d dir=Vector3d::Random().normalized() * velMagnitude;
 	for (int i = 0; i < ObjType::cntCp; i++) {
 		CpPos1[i] = Vector3d::Random() - dir;
 		CpVel1[i] = Vector3d::Random() + dir;

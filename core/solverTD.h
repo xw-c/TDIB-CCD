@@ -24,7 +24,7 @@ class SolverTD{
 
 		std::vector<Array2d> feasibleIntvs;
 		feasibleIntvs.clear();
-
+		
 		auto AxisCheck=[&](std::vector<Line> lines1, std::vector<Line> lines2){
 			std::vector<Line> ch1, ch2;
 			std::vector<double> pts1, pts2;
@@ -90,12 +90,10 @@ public:
 				auto ptVel1 = CpVel1.divideBezierPatch(pb1);
 				auto ptPos2 = CpPos2.divideBezierPatch(pb2);
 				auto ptVel2 = CpVel2.divideBezierPatch(pb2);
-				for(int i=0;i<ParamObj1::cntCp;i++){
+				for(int i=0;i<ParamObj1::cntCp;i++)
 					ptPos1[i]+=ptVel1[i]*tLower;
-				}
-				for(int i=0;i<ParamObj2::cntCp;i++){
+				for(int i=0;i<ParamObj2::cntCp;i++)
 					ptPos2[i]+=ptVel2[i]*tLower;
-				}
 				double d1=calcAAExtent<ParamObj1>(ptPos1);
 				double d2=calcAAExtent<ParamObj2>(ptPos2);
 				return std::max(d1, d2);
