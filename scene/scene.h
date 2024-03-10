@@ -3,7 +3,7 @@
 #include"solverBase.h"
 #include"solverBaseManifold.h"
 #include"solverTD.h"
-// #include"solverTDManifold.h"
+#include"solverTDManifold.h"
 #include"utilOps.h"
 #include "triBezier.h"
 #include "triRatBezier.h"
