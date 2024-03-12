@@ -82,7 +82,7 @@ public:
 			ParamBound2 pb2;
 			double tLower;
 			PatchPair(const ParamBound1& c1, const ParamBound2& c2, 
-					double t = std::numeric_limits<double>::infinity()): pb1(c1), pb2(c2), tLower(t) {}
+					const double& t = std::numeric_limits<double>::infinity()): pb1(c1), pb2(c2), tLower(t) {}
 			bool operator<(PatchPair const &o) const { return tLower > o.tLower; }
 			double calcL1Dist(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1, 
 							const ParamObj2 &CpPos2, const ParamObj2 &CpVel2) const{

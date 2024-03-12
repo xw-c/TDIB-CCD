@@ -114,6 +114,12 @@ void planeTest(const std::string& solverType, const double& deltaDist, const int
 	int hasCol = 0;
 	double t;
 	Array2d uv1,uv2;
+	std::multiset<CCDIntv<ParamType, ParamType> > solutSet;
+	solutSet.clear();
+
+	std::ofstream file("validation/"+outputFile+".txt");
+	file << std::fixed << std::setprecision(10);
+	
 	obj1.ctrlp = {
 		Vector3d(0,0,0), Vector3d(0,1,0), Vector3d(0,2,0), Vector3d(0,3,0),
 		Vector3d(1,0,0), Vector3d(1,1,0), Vector3d(1,2,0), Vector3d(1,3,0),
@@ -137,10 +143,12 @@ void planeTest(const std::string& solverType, const double& deltaDist, const int
 	using steady_clock = std::chrono::steady_clock;
 	using duration = std::chrono::duration<double>;
 	const auto initialTime = steady_clock::now();
-	if(solverType=="td")
-		t = SolverTD<ObjType,ObjType,ParamType,ParamType>::solveCCD(obj1,vel1,obj2,vel2,uv1,uv2,DeltaT,deltaDist);
-	else if(solverType=="base")
-		t = SolverBase<ObjType,ObjType,ParamType,ParamType>::solveCCD(obj1,vel1,obj2,vel2,uv1,uv2,DeltaT,deltaDist);
+	if(solverType=="td"){
+		SolverTDManifold<ObjType,ObjType,ParamType,ParamType> solver;
+		t = solver.solveCCD(obj1,vel1,obj2,vel2,solutSet,DeltaT,deltaDist);
+	}else if(solverType=="base"){
+		SolverBaseManifold<ObjType,ObjType,ParamType,ParamType> solver;
+		t = solver.solveCCD(obj1,vel1,obj2,vel2,solutSet,DeltaT,deltaDist);}
 	else{
 		std::cerr<<"solver not implemented!\n";
 		exit(-1);
@@ -157,9 +165,69 @@ void planeTest(const std::string& solverType, const double& deltaDist, const int
 	std::cout << "used seconds: " <<
 		duration(endTime - initialTime).count()
 		<< std::endl;
+	
+	for(const auto& r:solutSet){
+		auto v=(r.aabb1[0]+r.aabb1[1])/2.;
+		file<<r.t<<" "<<v[0]<<" "<<v[1]<<"\n";
+	}
+	file.close();
 	// fp.close();
 	// ft.close();
 }
+
+
+// template<typename ObjType, typename ParamType>
+// void planeTest(const std::string& solverType, const double& deltaDist, const int& kase, const double& velMag, const std::string& outputFile){
+// 	ObjType obj1, obj2, vel1, vel2;
+// 	int hasCol = 0;
+// 	double t;
+// 	Array2d uv1,uv2;
+// 	obj1.ctrlp = {
+// 		Vector3d(0,0,0), Vector3d(0,1,0), Vector3d(0,2,0), Vector3d(0,3,0),
+// 		Vector3d(1,0,0), Vector3d(1,1,0), Vector3d(1,2,0), Vector3d(1,3,0),
+// 		Vector3d(2,0,0), Vector3d(2,1,0), Vector3d(2,2,0), Vector3d(2,3,0),
+// 		Vector3d(3,0,0), Vector3d(3,1,0), Vector3d(3,2,0), Vector3d(3,3,0)
+// 	}, 
+// 	vel1.ctrlp = {Vector3d(0,0,1), Vector3d(0,0,1), Vector3d(0,0,1), Vector3d(0,0,1), 
+// 		Vector3d(0,0,1), Vector3d(0,0,1), Vector3d(0,0,1), Vector3d(0,0,1),
+// 		Vector3d(0,0,1), Vector3d(0,0,1), Vector3d(0,0,1), Vector3d(0,0,1),
+// 		Vector3d(0,0,1), Vector3d(0,0,1), Vector3d(0,0,1), Vector3d(0,0,1)};
+// 	obj2.ctrlp = {
+// 		Vector3d(0,0,1.1), Vector3d(0,1,1.1), Vector3d(0,2,1.1), Vector3d(0,3,1.1),
+// 		Vector3d(1,0,1.1), Vector3d(1,1,1.1), Vector3d(1,2,1.1), Vector3d(1,3,1.1),
+// 		Vector3d(2,0,1.1), Vector3d(2,1,1.1), Vector3d(2,2,1.1), Vector3d(2,3,1.1),
+// 		Vector3d(3,0,1.1), Vector3d(3,1,1.1), Vector3d(3,2,1.1), Vector3d(3,3,1.1)
+// 	}, 
+// 	vel2.ctrlp = {Vector3d(0,0,-1), Vector3d(0,0,-1), Vector3d(0,0,-1), Vector3d(0,0,-1),
+// 		Vector3d(0,0,-1), Vector3d(0,0,-1), Vector3d(0,0,-1), Vector3d(0,0,-1),
+// 		Vector3d(0,0,-1), Vector3d(0,0,-1), Vector3d(0,0,-1), Vector3d(0,0,-1),
+// 		Vector3d(0,0,-1), Vector3d(0,0,-1), Vector3d(0,0,-1), Vector3d(0,0,-1)};
+// 	using steady_clock = std::chrono::steady_clock;
+// 	using duration = std::chrono::duration<double>;
+// 	const auto initialTime = steady_clock::now();
+// 	if(solverType=="td")
+// 		t = SolverTD<ObjType,ObjType,ParamType,ParamType>::solveCCD(obj1,vel1,obj2,vel2,uv1,uv2,DeltaT,deltaDist);
+// 	else if(solverType=="base")
+// 		t = SolverBase<ObjType,ObjType,ParamType,ParamType>::solveCCD(obj1,vel1,obj2,vel2,uv1,uv2,DeltaT,deltaDist);
+// 	else{
+// 		std::cerr<<"solver not implemented!\n";
+// 		exit(-1);
+// 	}
+// 	if(SHOWANS) std::cout<<" done "<<calcDist(obj1,vel1,obj2,vel2,uv1,uv2,t)<<"\n";
+// 	Vector3d const p1 = obj1.evaluatePatchPoint(uv1);
+// 	Vector3d const v1 = vel1.evaluatePatchPoint(uv1);
+// 	Vector3d const p2 = obj2.evaluatePatchPoint(uv2);
+// 	Vector3d const v2 = vel2.evaluatePatchPoint(uv2);
+// 	Vector3d const pt1=(v1*t+p1), pt2=(v2*t+p2);
+// 	std::cout<<"uv at:"<<uv1.transpose()<<"     "<<uv2.transpose()<<"\npos at: "<<p1.transpose()<<"     "<<p2.transpose()<<"\n";
+// 	std::cout<<"delta: "<<(pt2-pt1).norm()<<"\n";
+// 	const auto endTime = steady_clock::now();
+// 	std::cout << "used seconds: " <<
+// 		duration(endTime - initialTime).count()
+// 		<< std::endl;
+// 	// fp.close();
+// 	// ft.close();
+// }
 
 template<typename Mesh1, typename Mesh2, typename Func>
 double ccd(const Mesh1& mesh1, const Mesh1& vel1,
@@ -188,25 +256,38 @@ double ccd(const Mesh1& mesh1, const Mesh1& vel1,
 
 
 template<typename ParamObj1, typename ParamObj2, typename ParamBound1, typename ParamBound2>
-double ccd_ratBezier_manifold(const RatParamMesh<ParamObj1>& mesh1, const RatParamMesh<ParamObj1>& vel1,
+double ccd_ratBezier_manifold(const std::string& solverType, const std::string& outputFile,
+			const RatParamMesh<ParamObj1>& mesh1, const RatParamMesh<ParamObj1>& vel1,
 			const RatParamMesh<ParamObj2>& mesh2, const RatParamMesh<ParamObj2>& vel2,
-			const double upperTime = DeltaT){
-	double minTime = upperTime;
-	SolverBaseManifold<ParamObj1,ParamObj2,ParamBound1, ParamBound2> solver;
-	std::multiset<CCDRoot> solutSet;
+			const double upperTime, const double& deltaDist){
+	double minTimeUB = upperTime;
+	std::multiset<CCDIntv<ParamBound1, ParamBound2> > solutSet;
 	solutSet.clear();
 	for(int i = 0; i < mesh1.cntPatches; i++)
 		for(int j = 0; j < mesh2.cntPatches; j++){
 			// if(i==10&&j==1)DEBUG=1;
-			double t = solver.solveCCD(mesh1.patches[i], vel1.patches[i], mesh2.patches[j], vel2.patches[j], 
-								solutSet);
+			double t;
+			if(solverType=="td"){
+				SolverTDManifold<ParamObj1,ParamObj2,ParamBound1,ParamBound2> solver;
+				t = solver.solveCCD(mesh1.patches[i], vel1.patches[i], mesh2.patches[j], vel2.patches[j], 
+								solutSet, minTimeUB, deltaDist);
+			}
+			else if(solverType=="base"){
+				SolverBaseManifold<ParamObj1,ParamObj2,ParamBound1,ParamBound2> solver;
+				t = solver.solveCCD(mesh1.patches[i], vel1.patches[i], mesh2.patches[j], vel2.patches[j], 
+								solutSet, minTimeUB, deltaDist);
+			}
+			else{
+				std::cerr<<"solver not implemented!\n";
+				exit(-1);
+			}
 			std::cout<<i<<" "<<j<<": "<<t<<solutSet.size()<<"\n";
 			if(t>=0){
 				if(t==0)return 0;
-				minTime = std::min(minTime, t);
+				minTimeUB = std::min(minTimeUB, t);
 			}
 		}
-	std::ofstream output("manifold_solutions.txt");
+	std::ofstream output("manifold/"+outputFile+".txt");
 	// output<<solutSet.size()<<" solutions\n";
 	// for(const auto& r:solutSet){
 	// 	output<<"time = "<<r.t<<"\npatch 1: "<<((r.aabb1[0]+r.aabb1[1])/2.).transpose()
@@ -215,7 +296,8 @@ double ccd_ratBezier_manifold(const RatParamMesh<ParamObj1>& mesh1, const RatPar
 	// output<<solutSet.size()<<"\n";
 	for(const auto& r:solutSet){
 		auto v=(r.aabb1[0]+r.aabb1[1])/2.;
-		output<<r.t<<" "<<v[0]<<" "<<v[1]<<"\n";
+		output<<r.tIntv.transpose()<<" "<<v[0]<<" "<<v[1]<<"\n";
+		// output<<r.tIntv.transpose()<<": "<<v.transpose()<<", "<<((r.aabb2[0]+r.aabb2[1])/2.).transpose()<<"\n";
 	}
 	// auto primitiveMaxDist = [&](const CCDRoot& r1, const CCDRoot&r2){
 	// 	Vector3d aaExtent1 = (r1.aabb1[1]-r2.aabb1[0]).cwiseMax(r2.aabb1[1]-r1.aabb1[0]),
@@ -237,7 +319,8 @@ double ccd_ratBezier_manifold(const RatParamMesh<ParamObj1>& mesh1, const RatPar
 	// 		std::cout<<std::max(aaExtent1.maxCoeff(), aaExtent2.maxCoeff())<<"\n";
 	// 	}
 	// }
-	return minTime;
+	output.close();
+	return minTimeUB;
 	// double t = solver.solveCCD(mesh1.patches[2], vel1.patches[2], mesh2.patches[0], vel2.patches[0], 
 	// 				solutSet, minTime);
 	// std::cout<<"\ngt: r="<<2-2./sqrt(5)<<"  z="<<4./sqrt(5)<<"\n\n";
@@ -312,47 +395,7 @@ void generateCone(RatParamMesh<TriQuadRatBezier>& cone, RatParamMesh<TriQuadRatB
 
 	vel = RatParamMesh<TriQuadRatBezier>(4, weight);
 }
-void simpleTest(){
-	const std::array<Vector3d, 6> pos2 = {
-		Vector3d(0,0,2), Vector3d(0,1,2), Vector3d(0,2,2),
-		Vector3d(1,0,2), Vector3d(1,1,2), Vector3d(2,0,2)}, 
-	vel2 = {Vector3d(0,0,-5), Vector3d(0,0,-5), Vector3d(0,0,-5), 
-		Vector3d(0,0,-5), Vector3d(0,0,-5), Vector3d(0,0,-5)};
-	const std::array<double, 6> weight2 = {1,1,1,1,1,1};
-
-	const std::array<Vector3d, 9> pos1 = {
-		Vector3d(0,0,0), Vector3d(0,1,0), Vector3d(0,2,0),
-		Vector3d(1,0,0), Vector3d(1,1,0), Vector3d(1,2,0),
-		Vector3d(2,0,0), Vector3d(2,1,0), Vector3d(2,2,0)
-	}, 
-	vel1 = {Vector3d(0,0,0), Vector3d(0,0,0), Vector3d(0,0,0), 
-		Vector3d(0,0,0), Vector3d(0,0,0), Vector3d(0,0,0),
-		Vector3d(0,0,0), Vector3d(0,0,0), Vector3d(0,0,0)};
-	const std::array<double, 9> weight1 = {1,1,1,1,1,1,1,1,1};
-
-	// gt:0.4s
-	RecQuadRatBezier mesh1(pos1, weight1), meshvel1(vel1, weight1);
-	TriQuadRatBezier mesh2(pos2, weight2), meshvel2(vel2, weight2);
-
-	using steady_clock = std::chrono::steady_clock;
-	using duration = std::chrono::duration<double>;
-	const auto initialTime = steady_clock::now();
-	SolverBaseManifold<RecQuadRatBezier,TriQuadRatBezier,RecParamBound, TriParamBound> solver;
-	std::multiset<CCDRoot> solutSet;
-	solutSet.clear();
-	double t = solver.solveCCD(mesh1, meshvel1, mesh2, meshvel2, solutSet, DeltaT);
-	std::cout<<solutSet.size()<<" solutions\n";
-	for(const auto& r:solutSet){
-		std::cout<<"time = "<<r.t<<"\npatch 1: "<<((r.aabb1[0]+r.aabb1[1])/2.).transpose()
-				<<"\npatch 2:"<<((r.aabb2[0]+r.aabb2[1])/2.).transpose()<<"\n";
-	}
-	const auto endTime = steady_clock::now();
-	std::cout<<"colTime: "<<t<<"\n";
-	std::cout << "used seconds: " <<
-		duration(endTime - initialTime).count()
-		<< std::endl;
-}
-void torusTest(){
+void torusTest(const std::string& solverType, const double& deltaDist, const std::string& outputFile){
 	RatParamMesh<RecQuadRatBezier> torusPos, torusVel;
 	generateTorus(torusPos,torusVel);
 
@@ -365,42 +408,42 @@ void torusTest(){
 	const auto initialTime = steady_clock::now();
 	// double t=ccd(torusPos, torusVel, conePos, coneVel, 
 	// 			SolverBase<RecQuadRatBezier,TriQuadRatBezier,RecParamBound, TriParamBound>::solveCCD);
-	double t=ccd_ratBezier_manifold<RecQuadRatBezier,RecQuadRatBezier,RecParamBound, RecParamBound>(torusPos, torusVel, torusPos2, torusVel2);
+	double t = ccd_ratBezier_manifold<RecQuadRatBezier,RecQuadRatBezier,RecParamBound, RecParamBound>(solverType, outputFile, torusPos, torusVel, torusPos2, torusVel2, DeltaT, deltaDist);
 	const auto endTime = steady_clock::now();
 	std::cout<<"colTime: "<<t<<"\n";
 	std::cout << "used seconds: " <<
 		duration(endTime - initialTime).count()
 		<< std::endl;
 }
-//这个圆锥有点问题，这应该不是一个圆锥而是曲四棱锥
-void manifoldTest(){
-	RatParamMesh<TriQuadRatBezier> conePos, coneVel;
-	generateCone(conePos,coneVel);
-	conePos.writeObj("cone.obj", 0.1,0.1);
-	RatParamMesh<RecQuadRatBezier> torusPos, torusVel;
-	generateTorus(torusPos,torusVel);
-	torusPos.writeObj("torus.obj");
+// 这个圆锥有点问题，这应该不是一个圆锥而是曲四棱锥
+// void manifoldTest(){
+// 	RatParamMesh<TriQuadRatBezier> conePos, coneVel;
+// 	generateCone(conePos,coneVel);
+// 	conePos.writeObj("cone.obj", 0.1,0.1);
+// 	RatParamMesh<RecQuadRatBezier> torusPos, torusVel;
+// 	generateTorus(torusPos,torusVel);
+// 	torusPos.writeObj("torus.obj");
 
-	// // gt: 0.5s
-	// torusPos.moveObj(Vector3d(0,0,2.5+sqrt(5)));
-	// torusVel.moveObj(Vector3d(0,0,-5));
+// 	// // gt: 0.5s
+// 	// torusPos.moveObj(Vector3d(0,0,2.5+sqrt(5)));
+// 	// torusVel.moveObj(Vector3d(0,0,-5));
 
-	// gt: 0.2s
-	torusPos.moveObj(Vector3d(2,0,6));
-	torusVel.moveObj(Vector3d(0,0,-5));
+// 	// gt: 0.2s
+// 	torusPos.moveObj(Vector3d(2,0,6));
+// 	torusVel.moveObj(Vector3d(0,0,-5));
 
-	using steady_clock = std::chrono::steady_clock;
-	using duration = std::chrono::duration<double>;
-	const auto initialTime = steady_clock::now();
-	// double t=ccd(torusPos, torusVel, conePos, coneVel, 
-	// 			SolverBase<RecQuadRatBezier,TriQuadRatBezier,RecParamBound, TriParamBound>::solveCCD);
-	double t=ccd_ratBezier_manifold<RecQuadRatBezier,TriQuadRatBezier,RecParamBound, TriParamBound>(torusPos, torusVel, conePos, coneVel);
-	const auto endTime = steady_clock::now();
-	std::cout<<"colTime: "<<t<<"\n";
-	std::cout << "used seconds: " <<
-		duration(endTime - initialTime).count()
-		<< std::endl;
-}
+// 	using steady_clock = std::chrono::steady_clock;
+// 	using duration = std::chrono::duration<double>;
+// 	const auto initialTime = steady_clock::now();
+// 	// double t=ccd(torusPos, torusVel, conePos, coneVel, 
+// 	// 			SolverBase<RecQuadRatBezier,TriQuadRatBezier,RecParamBound, TriParamBound>::solveCCD);
+// 	double t=ccd_ratBezier_manifold<RecQuadRatBezier,TriQuadRatBezier,RecParamBound, TriParamBound>(torusPos, torusVel, conePos, coneVel);
+// 	const auto endTime = steady_clock::now();
+// 	std::cout<<"colTime: "<<t<<"\n";
+// 	std::cout << "used seconds: " <<
+// 		duration(endTime - initialTime).count()
+// 		<< std::endl;
+// }
 
 // take down the case settings
 /*

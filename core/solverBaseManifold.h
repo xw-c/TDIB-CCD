@@ -5,7 +5,6 @@ class SolverBaseManifold{
 	std::array<Vector3d, ParamObj1::cntCp> posStart1, posEnd1;
 	std::array<Vector3d, ParamObj2::cntCp> posStart2, posEnd2;
 	std::array<Vector3d, 2> aabb1, aabb2;
-	std::array<Vector3d, 2> aabbEnd1, aabbEnd2;
 
 	void calcPatches(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1, 
 							const ParamObj2 &CpPos2, const ParamObj2 &CpVel2,
@@ -41,61 +40,21 @@ class SolverBaseManifold{
 			aabb2[0] = pos.cwiseMin(aabb2[0]);
 			aabb2[1] = pos.cwiseMax(aabb2[1]);
 		}
-		aabbEnd1[0] = aabbEnd2[0] = Vector3d::Constant(INFT),
-		aabbEnd1[1] = aabbEnd2[1] = Vector3d::Constant(-INFT); 
 		for(const auto& pos:posEnd1){
-			aabbEnd1[0] = pos.cwiseMin(aabbEnd1[0]);
-			aabbEnd1[1] = pos.cwiseMax(aabbEnd1[1]);
+			aabb1[0] = pos.cwiseMin(aabb1[0]);
+			aabb1[1] = pos.cwiseMax(aabb1[1]);
 		}
 		for(const auto& pos:posEnd2){
-			aabbEnd2[0] = pos.cwiseMin(aabbEnd2[0]);
-			aabbEnd2[1] = pos.cwiseMax(aabbEnd2[1]);
+			aabb2[0] = pos.cwiseMin(aabb2[0]);
+			aabb2[1] = pos.cwiseMax(aabb2[1]);
 		}
 	}
-	double primitiveMaxDist(const CCDRoot& r){
-		Vector3d maxPos1 = aabb1[1].cwiseMax(aabbEnd1[1]), maxPos2 = aabb2[1].cwiseMax(aabbEnd2[1]);
-		Vector3d minPos1 = aabb1[0].cwiseMin(aabbEnd1[0]), minPos2 = aabb2[0].cwiseMin(aabbEnd2[0]);
-		Vector3d aaExtent1 = (r.aabb1[1]-minPos1).cwiseMax(maxPos1-r.aabb1[0]),
-		aaExtent2 = (r.aabb2[1]-minPos2).cwiseMax(maxPos2-r.aabb2[0]);
-		return std::max(aaExtent1.norm(), aaExtent2.norm());
+	bool separationCheck(const CCDIntv<ParamBound1, ParamBound2> & r){
+		Vector3d aaExtent1 = (r.aabb1[1]-aabb1[0]).cwiseMax(aabb1[1]-r.aabb1[0]),
+		aaExtent2 = (r.aabb2[1]-aabb2[0]).cwiseMax(aabb2[1]-r.aabb2[0]);
+		if(std::max(aaExtent1.norm(), aaExtent2.norm()) < SeparationEucDist) return false;
+		return true;
 	}
-
-	// static bool primitiveCheck(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1, 
-	// 						const ParamObj2 &CpPos2, const ParamObj2 &CpVel2,
-	// 						const ParamBound1 &divUvB1, const ParamBound2 &divUvB2,
-	// 						const Array2d divTime = Array2d(0,DeltaT)) {
-	// 	initInclusions(CpPos1, CpVel1,CpPos2, CpVel2, divUvB1, divUvB2, divTime);
-	// 	if(bbType==BoundingBoxType::AABB){
-	// 		for(int i=0;i<3;i++){
-	// 			if(bb2[1][i] < bb1[0][i] || bb1[1][i] < bb2[0][i]) return false;
-	// 		}
-	// 		return true;
-	// 	}
-	// 	else if(bbType==BoundingBoxType::OBB){
-	// 		for(int i=0;i<3;i++){
-	// 			double proj[2] = {bb1[0].dot(axes2[i]), bb1[1].dot(axes2[i])};
-	// 			if(std::max(proj[0], proj[1]) < bb2[0][i] || std::min(proj[0], proj[1]) < bb2[1][i])
-	// 				return false;
-	// 		}
-	// 		for(int i=0;i<3;i++){
-	// 			double proj[2] = {bb2[0].dot(axes1[i]), bb2[1].dot(axes1[i])};
-	// 			if(std::max(proj[0], proj[1]) < bb1[0][i] || std::min(proj[0], proj[1]) < bb1[1][i])
-	// 				return false;
-	// 		}
-	// 		for(int i=0;i<3;i++)
-	// 			for(int j=0;j<3;j++){
-	// 				Vector3d axis = axes1[i].cross(axes2[i]);
-	// 				double proj1[2] = {bb1[0].dot(axis), bb1[1].dot(axis)},
-	// 				proj2[2] = {bb2[0].dot(axis), bb2[1].dot(axis)};
-	// 				double maxProj1 = std::max(proj1[0], proj1[1]),
-	// 				minProj1 = std::min(proj1[0], proj1[1]),
-	// 				maxProj2 = std::max(proj2[0], proj2[1]),
-	// 				minProj2 = std::min(proj2[0], proj2[1]);
-	// 				if(maxProj2<minProj1 || maxProj1<minProj2) return false;
-	// 			}
-	// 		return true;
-	// 	}
-	// }
 	bool primitiveCheck(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1, 
 							const ParamObj2 &CpPos2, const ParamObj2 &CpVel2,
 							const ParamBound1 &divUvB1, const ParamBound2 &divUvB2,
@@ -133,7 +92,7 @@ class SolverBaseManifold{
 public:
 	double solveCCD(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1, 
 						const ParamObj2 &CpPos2, const ParamObj2 &CpVel2,
-						std::multiset<CCDRoot> & solutSet,
+						std::multiset<CCDIntv<ParamBound1, ParamBound2> > & solutSet,
 						const double upperTime = DeltaT,
 						const double deltaDist = MinL1Dist) {
 		struct PatchPair{
@@ -166,20 +125,20 @@ public:
 		// cnt=1;
 		// u得作为上限，不能用下限，会慢一个数量级
 		// 我发现所有patch pair测试都是deltaT的上界才能显示出一些框架的bug
-		double leastUb = solutSet.empty() ? upperTime : solutSet.rbegin()->t;
+		double leastUB = upperTime;//solutSet.empty() ? upperTime : solutSet.rbegin()->t;
 		while (!heap.empty()) {
 			auto const cur = heap.top();
 			heap.pop();
 			// cnt++;
 			// if(SHOWANS) std::cout<<cnt<<"\n";
-			if (cur.tIntv[0] > leastUb + MeantimeEpsilon)
+			if (cur.tIntv[0] > leastUB + MeantimeEpsilon)
 				continue;
 
 			calcAABBs(CpPos1, CpVel1, CpPos2, CpVel2, cur.pb1, cur.pb2, cur.tIntv);
-			if(cur.tIntv[1] > leastUb - MeantimeEpsilon && !solutSet.empty()){
+			if(/*cur.tIntv[0] > leastUB - MeantimeEpsilon && */!solutSet.empty()){
 				bool discard = false;
 				for(const auto& r:solutSet)
-					if (primitiveMaxDist(r) < SeparationDist){
+					if (!separationCheck(r)){
 						discard = true;
 						break;
 					}
@@ -187,12 +146,23 @@ public:
 			}
 
 			if (cur.calcL1Dist(aabb1, aabb2) < MinL1Dist) {
-				// if(cur.tIntv[0]<leastUb + MeantimeEpsilon){
+				// if(cur.tIntv[0]<leastUB + MeantimeEpsilon){
+					// std::cout<<cur.calcL1Dist(aabb1, aabb2)<<"\n";
+					// bool discard = false;
+					// if(!solutSet.empty()){
+					// 	for(const auto& r:solutSet)
+					// 		if (primitiveMaxDist(r) < SeparationEucDist){
+					// 			discard = true;
+					// 			break;
+					// 		}
+					// }
+					// if(!discard){
 					Array2d uv1 = cur.pb1.centerParam();
 					Array2d uv2 = cur.pb2.centerParam();
-					leastUb = std::min(leastUb, cur.tIntv[0]);
-					while(!solutSet.empty() && solutSet.begin()->t > leastUb + MeantimeEpsilon)
+					leastUB = std::min(leastUB, cur.tIntv[1]);
+					while(!solutSet.empty() && solutSet.begin()->tIntv[0] > leastUB + MeantimeEpsilon)
 						solutSet.erase(solutSet.begin());
+					solutSet.insert(CCDIntv<ParamBound1, ParamBound2>(cur.pb1, cur.pb2, cur.tIntv, aabb1, aabb2));
 
 					// bool discard = false;
 					// for(const auto& r:solutSet){
@@ -203,7 +173,7 @@ public:
 					// 	// std::cout<<aabb2[0].transpose()<<"\n"<<aabb2[1].transpose()<<"\n";
 					// 	// std::cout<<r.aabb2[0].transpose()<<"\n"<<r.aabb2[1].transpose()<<"\n";
 					// 	}
-					// 	if (primitiveMaxDist(r) < SeparationDist){
+					// 	if (primitiveMaxDist(r) < SeparationEucDist){
 					// 		discard = true;
 					// 		break;
 					// 	}
@@ -213,7 +183,8 @@ public:
 					// // std::cin.get();}
 					// if (discard) continue;
 					// else 
-					solutSet.insert(CCDRoot(uv1, uv2, aabb1, aabb2, cur.tIntv[0]));
+					// solutSet.insert(CCDRoot(uv1, uv2, cur.tIntv[0], aabb1, aabb2));
+					// }
 				// }
 				continue;
 			}
@@ -226,10 +197,10 @@ public:
 				for (int j = 0; j < 4; j++) {
 					ParamBound2 divUvB2(cur.pb2.interpSubpatchParam(j));
 					calcPatches(CpPos1, CpVel1, CpPos2, CpVel2, divUvB1, divUvB2, divTime1);
-					if (divTime1[0]<leastUb + MeantimeEpsilon && primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, divUvB1, divUvB2, divTime1)){
+					if (divTime1[0]<leastUB + MeantimeEpsilon && primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, divUvB1, divUvB2, divTime1)){
 						heap.emplace(divUvB1, divUvB2, divTime1);
 					}
-					if (divTime2[0]<leastUb + MeantimeEpsilon && primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, divUvB1, divUvB2, divTime2)){
+					if (divTime2[0]<leastUB + MeantimeEpsilon && primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, divUvB1, divUvB2, divTime2)){
 						heap.emplace(divUvB1, divUvB2, divTime2);
 					}
 				}
@@ -241,7 +212,8 @@ public:
 			std::cout << "used seconds: " <<
 				duration(endTime - initialTime).count()
 				<< std::endl;
+		std::cout<<leastUB<<"\n";
 		if(solutSet.empty()) return -1;
-		else return solutSet.rbegin()->t;
+		else return leastUB;
 	}
 };

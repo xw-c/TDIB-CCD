@@ -40,11 +40,21 @@ class SolverTDManifold{
 			aabb2[0] = pos.cwiseMin(aabb2[0]);
 			aabb2[1] = pos.cwiseMax(aabb2[1]);
 		}
+		for(const auto& pos:posEnd1){
+			aabb1[0] = pos.cwiseMin(aabb1[0]);
+			aabb1[1] = pos.cwiseMax(aabb1[1]);
+		}
+		for(const auto& pos:posEnd2){
+			aabb2[0] = pos.cwiseMin(aabb2[0]);
+			aabb2[1] = pos.cwiseMax(aabb2[1]);
+		}
 	}
-	double primitiveMaxDist(const CCDRoot& r){
+	bool separationCheck(const CCDIntv<ParamBound1, ParamBound2>& r){
+		// TBD: uv criterion?
 		Vector3d aaExtent1 = (r.aabb1[1]-aabb1[0]).cwiseMax(aabb1[1]-r.aabb1[0]),
 		aaExtent2 = (r.aabb2[1]-aabb2[0]).cwiseMax(aabb2[1]-r.aabb2[0]);
-		return std::max(aaExtent1.maxCoeff(), aaExtent2.maxCoeff());
+		if(std::max(aaExtent1.norm(), aaExtent2.norm())<SeparationEucDist) return false;
+		return true;
 	}
 
 public:
@@ -64,6 +74,8 @@ public:
 			ptPos2[i]+=ptVel2[i]*timeIntv[0];
 		}
 		const double upperTime = timeIntv[1] - timeIntv[0];
+		// std::cout<<"start iter "<<timeIntv.transpose()<<" " <<upperTime<<"\n";
+		// if(upperTime<=0)std::cin.get();
 		std::vector<Vector3d> axes;
 		setAxes<ParamObj1, ParamObj2>(ptPos1, ptPos2, axes);
 		
@@ -77,9 +89,22 @@ public:
 			ch1.clear(); ch2.clear();
 			pts1.clear(); pts2.clear();
 
-			getCH(lines1, ch1, pts1, true, upperTime);
-			getCH(lines2, ch2, pts2, false, upperTime);
-			const auto intvT = linearCHIntersect(ch1, ch2, pts1, pts2, upperTime);
+			// std::cout<<lines1.size();
+			// if(lines1.size()>20)exit(-1);
+			// for(const auto l:lines1)std::cout<<"lines1 "<<l.k<<" "<<l.b<<"\n";
+			getCH(lines1, ch1, pts1, true, upperTime+MeantimeEpsilon);
+			// std::cout<<ch1.size();
+			// if(ch1.size()>20)exit(-1);
+			// for(const auto l:ch1)std::cout<<"ch1 "<<l.k<<" "<<l.b<<"\n";
+
+			// std::cout<<lines2.size();
+			// if(lines2.size()>20)exit(-1);
+			// for(const auto l:lines2)std::cout<<"lines1 "<<l.k<<" "<<l.b<<"\n";
+			getCH(lines2, ch2, pts2, false, upperTime+MeantimeEpsilon);
+			// std::cout<<ch2.size();
+			// if(ch2.size()>20)exit(-1);
+			// for(const auto l:ch2)std::cout<<"ch2 "<<l.k<<" "<<l.b<<"\n";
+			const auto intvT = linearCHIntersect(ch1, ch2, pts1, pts2, upperTime+MeantimeEpsilon);
 			if(intvT[0]!=-1)feasibleIntvs.push_back(intvT);
 		};
 
@@ -116,7 +141,7 @@ public:
 					minT=std::max(minT, feasibleIntvs[i](1));
 				else break;
 		}
-		if(minT >= upperTime){ colTime = Array2d(-1,-1); return false; }
+		if(minT > maxT){ colTime = Array2d(-1,-1); return false; }
 		
 		std::sort(feasibleIntvs.begin(), feasibleIntvs.end(), 
 			[](const Array2d& intv1, const Array2d& intv2){
@@ -130,15 +155,17 @@ public:
 					maxT=std::min(maxT, feasibleIntvs[i](0));
 				else break;
 		}
-		if(minT >= upperTime){ colTime = Array2d(-1,-1); return false; }
+		if(minT > maxT){ colTime = Array2d(-1,-1); return false; }
 
 		// std::cout<<minT<<"\n";
 		colTime = Array2d(minT + timeIntv[0], maxT + timeIntv[0]); 
+		// std::cout<<minT<<" "<<maxT<<"  "<<maxT-minT<<",     "<<colTime.transpose()<<"\n";
+		// if(maxT-minT<=0)std::cin.get();
 		return true;
 	}
 	double solveCCD(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1, 
 						const ParamObj2 &CpPos2, const ParamObj2 &CpVel2,
-						std::multiset<CCDRoot> & solutSet,
+						std::multiset<CCDIntv<ParamBound1, ParamBound2> > & solutSet,
 						const double upperTime = DeltaT,
 						const double deltaDist = MinL1Dist) {
 		struct PatchPair{
@@ -146,7 +173,7 @@ public:
 			ParamBound2 pb2;
 			Array2d tIntv;
 			PatchPair(const ParamBound1& c1, const ParamBound2& c2, 
-					Array2d t = Array2d(0,DeltaT)): pb1(c1), pb2(c2), tIntv(t) {}
+					const Array2d& t = Array2d(0,DeltaT)): pb1(c1), pb2(c2), tIntv(t) {}
 			bool operator<(PatchPair const &o) const { return tIntv[1] > o.tIntv[1]; }
 			double calcL1Dist(const std::array<Vector3d, 2> &aabb1, 
 							const std::array<Vector3d, 2> &aabb2) const{
@@ -169,20 +196,20 @@ public:
 		// if (primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, initParam1, initParam2, colTime, 0, upperTime))
 		// 	heap.emplace(initParam1, initParam2, colTime);
 
-		double leastUb = upperTime;
+		double leastUB = upperTime;
 		while (!heap.empty()) {
 			auto const cur = heap.top();
 			heap.pop();
 			// cnt++;
 			// if(SHOWANS) std::cout<<cnt<<"\n";
-			if (cur.tIntv[0] > leastUb + MeantimeEpsilon)
+			if (cur.tIntv[0] > leastUB + MeantimeEpsilon)
 				continue;
 
 			calcAABBs(CpPos1, CpVel1, CpPos2, CpVel2, cur.pb1, cur.pb2, cur.tIntv);
-			if(cur.tIntv[1] > leastUb - MeantimeEpsilon && !solutSet.empty()){
+			if(/*cur.tIntv[0] > leastUB - MeantimeEpsilon && */!solutSet.empty()){
 				bool discard = false;
 				for(const auto& r:solutSet)
-					if (primitiveMaxDist(r) < SeparationDist){
+					if (!separationCheck(r)){
 						discard = true;
 						break;
 					}
@@ -190,12 +217,10 @@ public:
 			}
 
 			if (cur.calcL1Dist(aabb1, aabb2) < deltaDist) {
-					Array2d uv1 = cur.pb1.centerParam();
-					Array2d uv2 = cur.pb2.centerParam();
-					leastUb = std::min(leastUb, cur.tIntv[0]);
-					while(!solutSet.empty() && solutSet.begin()->t > leastUb + MeantimeEpsilon)
+					leastUB = std::min(leastUB, cur.tIntv[0]);
+					while(!solutSet.empty() && solutSet.begin()->tIntv[0] > leastUB + MeantimeEpsilon)
 						solutSet.erase(solutSet.begin());
-					solutSet.insert(CCDRoot(uv1, uv2, aabb1, aabb2, cur.tIntv[0]));
+					solutSet.insert(CCDIntv<ParamBound1, ParamBound2>(cur.pb1, cur.pb2, cur.tIntv, aabb1, aabb2));
 				continue;
 			}
 
@@ -204,7 +229,7 @@ public:
 				ParamBound1 divUvB1(cur.pb1.interpSubpatchParam(i));
 				for (int j = 0; j < 4; j++) {
 					ParamBound2 divUvB2(cur.pb2.interpSubpatchParam(j));
-					if (cur.tIntv[0] < leastUb + MeantimeEpsilon && primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, divUvB1, divUvB2, colTime, cur.tIntv)){
+					if (cur.tIntv[0] < leastUB + MeantimeEpsilon && primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, divUvB1, divUvB2, colTime, cur.tIntv)){
 						heap.emplace(divUvB1, divUvB2, colTime);
 					}
 				}
@@ -217,6 +242,6 @@ public:
 				duration(endTime - initialTime).count()
 				<< std::endl;
 		if(solutSet.empty()) return -1;
-		else return solutSet.rbegin()->t;
+		else return leastUB;
 	}
 };

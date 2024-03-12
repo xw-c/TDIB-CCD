@@ -1,14 +1,29 @@
 # pragma once
 #include"config.h"
-
+template<typename ParamBound1, typename ParamBound2>
+struct CCDIntv
+{
+	ParamBound1 pb1;
+	ParamBound2 pb2;
+	Array2d tIntv;
+	std::array<Vector3d, 2> aabb1, aabb2;
+	int pid1 = -1, pid2 = -1;
+	CCDIntv(const ParamBound1& _pb1, const ParamBound2& _pb2, const Array2d& _tIntv,
+			const std::array<Vector3d, 2>& _aabb1, const std::array<Vector3d, 2>& _aabb2):
+			pb1(_pb1), pb2(_pb2), tIntv(_tIntv), aabb1(_aabb1), aabb2(_aabb2){}
+	void stampPatchID(int i,int j) { pid1 = i, pid2 = j; }
+	bool operator<(const CCDIntv &o) const { return tIntv[0] > o.tIntv[0]; }
+};
 struct CCDRoot
 {
 	Array2d uv1, uv2;
-	std::array<Vector3d, 2> aabb1, aabb2;
 	double t;
+	std::array<Vector3d, 2> aabb1, aabb2;
+	// Array2d tIntv;
 	int pid1 = -1, pid2 = -1;
-	CCDRoot(const Array2d& _uv1, const Array2d& _uv2, const std::array<Vector3d, 2>& _aabb1, const std::array<Vector3d, 2>& _aabb2, const double& _t):
-			uv1(_uv1), uv2(_uv2), aabb1(_aabb1), aabb2(_aabb2), t(_t){}
+	CCDRoot(const Array2d& _uv1, const Array2d& _uv2, const double& _t, 
+			const std::array<Vector3d, 2>& _aabb1, const std::array<Vector3d, 2>& _aabb2):
+			uv1(_uv1), uv2(_uv2), t(_t), aabb1(_aabb1), aabb2(_aabb2){}
 	void stampPatchID(int i,int j) { pid1 = i, pid2 = j; }
 	bool operator<(const CCDRoot &o) const { return t > o.t; }
 };
@@ -26,8 +41,9 @@ struct Line
 };
 inline double lineIntersect_x(const Line& l1, const Line &l2) {
 	if(l1.k==l2.k){
+		std::cout<<l1.k<<"  "<<l2.k<<"  "<<l1.k-l2.k;
 		std::cout<<"parallel lines do not intersect at a single point!\n";
-		exit(-1);
+		return -INFT;
 	}
 	return (l2.b-l1.b)/(l1.k-l2.k);
 }
@@ -35,6 +51,7 @@ void getCH(std::vector<Line>& lines, std::vector<Line>& ch, std::vector<double>&
 			 const bool getUpperCH = true, const double& upperT = DeltaT) {
 	if(!getUpperCH)std::reverse(lines.begin(),lines.end());
 	lines.erase(std::unique(lines.begin(), lines.end()), lines.end()); // 去重
+	// std::cout<<lines.size()<<"\n";
 	ch.clear();
 	pts.clear();
 	pts.push_back(0);
@@ -44,7 +61,13 @@ void getCH(std::vector<Line>& lines, std::vector<Line>& ch, std::vector<double>&
 		// std::cout<<id<<"  "<<pts.size()<<"\n";
 		while(!ch.empty()){
 			intsctX = lineIntersect_x(lines[id], ch.back());
-                if(intsctX<=pts.back()){
+			if(intsctX==-INFT){
+				for(const auto l:lines)std::cout<<"lines1 "<<l.k<<" "<<l.b<<"\n";
+				for(const auto l:ch)std::cout<<"ch1 "<<l.k<<" "<<l.b<<"\n";
+				std::cout<<"???\n";
+				exit(-1);
+			}
+			if(intsctX<=pts.back()){
 			// if(ch.back().k*pts.back()+ch.back().b<=lines[id].k*pts.back()+lines[id].b){
 				pts.pop_back();
 				ch.pop_back();
@@ -55,10 +78,12 @@ void getCH(std::vector<Line>& lines, std::vector<Line>& ch, std::vector<double>&
 		pts.push_back(std::max(0.,intsctX));
 		id++;
 	}
-	while(pts.back()>=upperT){
+	// std::cout<<ch.size()<<"\n";
+	while(ch.size()>1&&pts.back()>=upperT){
 		pts.pop_back();
 		ch.pop_back();
 	}
+	// std::cout<<ch.size()<<"\n";
 	pts.push_back(upperT);
 	if(ch.empty()){
 		std::cout<<"empty CH!\n";
@@ -127,12 +152,30 @@ Array2d linearCHIntersect(const std::vector<Line>& ch1, const std::vector<Line>&
 		double y1=ch1[id1].k*sweep+ch1[id1].b;
 		double y2=ch2[id2].k*sweep+ch2[id2].b;
 		if (y1>y2){
-			if(intvL!=-1)
+			if(intvL!=-1){
 				intvR = lineIntersect_x(ch1[id1], ch2[id2]);
+				if(intvR==-INFT){
+					std::cout<<"y1>y2"<<intvL<<"\n";
+					for(const auto l:ch1)
+						std::cout<<"ch1 "<<l.k<<" "<<l.b<<"\n";
+					for(const auto l:ch2)
+						std::cout<<"ch2 "<<l.k<<" "<<l.b<<"\n";
+					exit(-1);
+				}
+			}
 		} // 如果k1==k2，那么必然前一个节点必然已经满足y1<y2了
 		else if(y1<y2){
-			if(intvL==-1)
+			if(intvL==-1){
 				intvL = lineIntersect_x(ch1[id1], ch2[id2]); 
+				if(intvL==-INFT){
+					std::cout<<"y1>y2"<<intvL<<"\n";
+					for(const auto l:ch1)
+						std::cout<<"ch1 "<<l.k<<" "<<l.b<<"\n";
+					for(const auto l:ch2)
+						std::cout<<"ch2 "<<l.k<<" "<<l.b<<"\n";
+					exit(-1);
+				}
+			}
 		}// 如果k1==k2，那么必然前一个节点必然已经满足y1<y2了
 		// else{
 		// 	//y1==y2
@@ -142,7 +185,6 @@ Array2d linearCHIntersect(const std::vector<Line>& ch1, const std::vector<Line>&
 		// }
 		lastsweep = sweep;
 	};
-
 	if(ch1[0].b<ch2[0].b)
 		intvL = 0;
 	// else if(ch1[0].b==ch2[0].b)
