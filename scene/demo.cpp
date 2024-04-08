@@ -26,12 +26,12 @@ int main(int argc, char *argv[]){
     const auto velMag = std::any_cast<double>(parser->getValueByName("velocity"));
     const auto outputFile = std::any_cast<std::string>(parser->getValueByName("output"));
 
-	// planeTest<RecCubicBezier, RecParamBound>(solverType, deltaDist, kase, velMag, outputFile);
-	// randomTest<RecCubicBezier, RecParamBound>(solverType, deltaDist, kase, velMag, outputFile);
+	// validate<RecCubicBezier, RecParamBound>(solverType, deltaDist, kase, velMag, outputFile);
+	randomTest<RecCubicBezier, RecParamBound>(solverType, deltaDist, kase, velMag, outputFile);
 
 	// parabolaPotCup();
 	// parabolaBunnyTorus();
-	torusTest(solverType, deltaDist, outputFile);
+	// torusTest(solverType, deltaDist, outputFile);
 	// randomTest<TriLinearBezier, TriParamBound>(3);
 	// randomTest<TriQuadBezier, TriParamBound>(2);
 	// randomTest<TriCubicBezier, TriParamBound>(1.625);

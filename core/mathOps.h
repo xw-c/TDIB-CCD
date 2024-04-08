@@ -47,16 +47,17 @@ inline double lineIntersect_x(const Line& l1, const Line &l2) {
 	}
 	return (l2.b-l1.b)/(l1.k-l2.k);
 }
+
 void getCH(std::vector<Line>& lines, std::vector<Line>& ch, std::vector<double>& pts,
-			 const bool getUpperCH = true, const double& upperT = DeltaT) {
+			 const bool getUpperCH = true, const Array2d& tIntv = Array2d(0, DeltaT)) {
 	if(!getUpperCH)std::reverse(lines.begin(),lines.end());
 	lines.erase(std::unique(lines.begin(), lines.end()), lines.end()); // 去重
 	// std::cout<<lines.size()<<"\n";
 	ch.clear();
 	pts.clear();
-	pts.push_back(0);
+	pts.push_back(tIntv[0]);
 	ch.push_back(lines[0]);
-	double id = 1, intsctX = 0;
+	double id = 1, intsctX;
 	while(id < lines.size()){
 		// std::cout<<id<<"  "<<pts.size()<<"\n";
 		while(!ch.empty()){
@@ -79,12 +80,12 @@ void getCH(std::vector<Line>& lines, std::vector<Line>& ch, std::vector<double>&
 		id++;
 	}
 	// std::cout<<ch.size()<<"\n";
-	while(ch.size()>1&&pts.back()>=upperT){
+	while(ch.size()>1&&pts.back()>=tIntv[1]){
 		pts.pop_back();
 		ch.pop_back();
 	}
 	// std::cout<<ch.size()<<"\n";
-	pts.push_back(upperT);
+	pts.push_back(tIntv[1]);
 	if(ch.empty()){
 		std::cout<<"empty CH!\n";
 		exit(-1);
@@ -94,6 +95,12 @@ void getCH(std::vector<Line>& lines, std::vector<Line>& ch, std::vector<double>&
 		exit(-1);
 	}
 }
+
+void getCH(std::vector<Line>& lines, std::vector<Line>& ch, std::vector<double>& pts,
+			const bool getUpperCH = true, const double& upperT = DeltaT) {
+	return getCH(lines, ch, pts, getUpperCH, Array2d(0,upperT));
+}
+
 // void getCH(std::vector<Line>& lines, std::vector<Line>& ch, std::vector<double>& pts,
 // 			 const bool getUpperCH = true, const double& upperT = DeltaT) {
 // 	if(!getUpperCH)std::reverse(lines.begin(),lines.end());
@@ -151,6 +158,7 @@ Array2d linearCHIntersect(const std::vector<Line>& ch1, const std::vector<Line>&
 	auto checkSweepLine = [&] (const int id1, const int id2) {
 		double y1=ch1[id1].k*sweep+ch1[id1].b;
 		double y2=ch2[id2].k*sweep+ch2[id2].b;
+		// std::cout<<sweep<<": "<<y1<<", "<<y2<<"\n";
 		if (y1>y2){
 			if(intvL!=-1){
 				intvR = lineIntersect_x(ch1[id1], ch2[id2]);

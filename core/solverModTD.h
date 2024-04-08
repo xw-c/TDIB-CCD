@@ -2,7 +2,8 @@
 #include "mathOps.h"
 #define DEbug 0
 template<typename ParamObj1, typename ParamObj2, typename ParamBound1, typename ParamBound2>
-class SolverTD{
+class SolverRobustTD{
+public:
 	static bool primitiveCheck(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1, 
 						const ParamObj2 &CpPos2, const ParamObj2 &CpVel2,
 						const ParamBound1 &divUvB1, const ParamBound2 &divUvB2,
@@ -28,15 +29,13 @@ class SolverTD{
 		
 		auto AxisCheck=[&](std::vector<Line> lines1, std::vector<Line> lines2){
 			std::vector<Line> ch1, ch2;
-			std::vector<double> pts1, pts2;
 			ch1.clear(); ch2.clear();
-			pts1.clear(); pts2.clear();
 
-			getCH(lines1, ch1, pts1, true, upperTime);
+			robustCH(lines1, ch1, true, Array2d(0,upperTime));
 			if(DEbug)for(const auto& l:ch1)std::cout<<"ch1:  "<<l.k<<" "<<l.b<<"\n";
-			getCH(lines2, ch2, pts2, false, upperTime);
+			robustCH(lines2, ch2, false, Array2d(0,upperTime));
 			if(DEbug)for(const auto& l:ch2)std::cout<<"ch2:  "<<l.k<<" "<<l.b<<"\n";
-			const auto intvT = linearCHIntersect(ch1, ch2, pts1, pts2, upperTime);
+			const auto intvT = robustHullIntersect(ch1, ch2, Array2d(0,upperTime));
 			if(DEbug)std::cout<<intvT<<"\n";
 			if(intvT[0]!=-1)feasibleIntvs.push_back(intvT);
 		};
@@ -66,7 +65,6 @@ class SolverTD{
 		}
 		// for(const auto&l:feasibleIntvs)std::cout<<"intv:"<<l.transpose()<<"\n";
 		// std::cin.get();
-		// for(const auto&l:feasibleIntvs)std::cout<<"intv:"<<l.transpose()<<"\n";
 		double minT = feasibleIntvs[0](1);
 		for(int i=1;i<feasibleIntvs.size();i++)
 			if(feasibleIntvs[i](0)<minT) //不能加等，因为无碰撞给的是开区间，如果有),(的情况加等号会把这个情况漏掉
@@ -76,7 +74,149 @@ class SolverTD{
 		if(minT<upperTime){colTime= minT+lowerTime;return true;}
 		else {colTime = -1;return false;}
 	}
-						
+	static void robustCH(std::vector<Line>& lines, std::vector<Line>& ch, 
+				const bool getMaxCH, const Array2d& tIntv) {
+		if(!getMaxCH)std::reverse(lines.begin(),lines.end());
+		lines.erase(std::unique(lines.begin(), lines.end()), lines.end()); // 去重
+		// std::cout<<lines.size()<<"\n";
+		ch.clear();
+		ch.push_back(lines[0]);
+		int alpha = 1;
+		while(alpha < lines.size()){
+			// std::cout<<id<<"  "<<pts.size()<<"\n";
+			int beta = ch.size()-1;
+			while(beta > 0){
+				double chfp = (ch[beta].k-ch[beta-1].k)*(lines[alpha].b-ch[beta-1].b)
+							-(lines[alpha].k-ch[beta-1].k)*(ch[beta].b-ch[beta-1].b);
+				if(chfp>=0){
+					ch.pop_back();
+					beta--;
+				}
+				else break;
+				
+			}
+			if(beta==0){
+				double chStart = tIntv[0]*(lines[alpha].k-ch[0].k)+(lines[alpha].b-ch[0].b);
+				if((getMaxCH&&chStart>0)||(!getMaxCH&&chStart<0))
+					ch.pop_back();
+			}
+			if(ch.empty())ch.push_back(lines[alpha]);
+			else{
+				double chEnd = tIntv[1]*(lines[alpha].k-ch[beta].k)+(lines[alpha].b-ch[beta].b);
+				if((getMaxCH&&chEnd>0)||(!getMaxCH&&chEnd<0))
+					ch.push_back(lines[alpha]);
+			}
+			alpha++;
+		}
+		// TBD: intersect point \in [0,deltaT];
+		if(ch.empty()){
+			std::cout<<"empty CH!\n";
+			exit(-1);
+		}
+	}
+	static Array2d robustHullIntersect(const std::vector<Line>& ch1, const std::vector<Line>& ch2, 
+							const Array2d& tIntv) {
+		int id1=0, id2=0;
+		double intvL=-1, intvR=-1;
+		if(ch1[0].b<ch2[0].b)intvL=tIntv[0];
+		else{
+		//寻找intersection左端点
+			while(id1<ch1.size()&&id2<ch2.size()){
+				if(ch1[id1].k>=ch2[id2].k){
+					break;
+				}
+				double hifp1, hifp2;
+				if(id1<ch1.size()-1)
+					hifp1=-((ch1[id1].k-ch1[id1+1].k)*(ch1[id1].b-ch2[id2].b)
+							-(ch1[id1].k-ch2[id2].k)*(ch1[id1].b-ch1[id1+1].b));
+				else 
+					hifp1=tIntv[1]*(ch1[id1].k-ch2[id2].k)+(ch1[id1].b-ch2[id2].b);
+				if(id2<ch2.size()-1)
+					hifp2=(ch2[id2].k-ch2[id2+1].k)*(ch1[id1].b-ch2[id2].b)
+							-(ch1[id1].k-ch2[id2].k)*(ch2[id2].b-ch2[id2+1].b);
+				else
+					hifp2=tIntv[1]*(ch1[id1].k-ch2[id2].k)+(ch1[id1].b-ch2[id2].b);
+				// std::cout<<"finding intvL "<<id1<<" "<<id2<<", hifp1="<<hifp1<<"  hifp2="<<hifp2<<"\n";
+				if(hifp1<0){
+					if(hifp2<0){
+						intvL = -(ch1[id1].b-ch2[id2].b)/(ch1[id1].k-ch2[id2].k);
+						break;
+					}
+					else id2++;
+				}
+				else {
+					id1++;
+					if(hifp2<0);
+					else id2++;
+				}
+			}
+			// std::cout<<"left: "<<id1<<"  "<<id2<<"  "<<intvL<<'\n';
+			if(intvL==-1)return Array2d(-1,-1);
+		}
+		while(id1<ch1.size()&&id2<ch2.size()){
+			if(ch1[id1].k<=ch2[id2].k){
+				if(id1<ch1.size()-1){
+					if(id2<ch2.size()-1){
+						double hiCmp=(ch2[id2].k-ch2[id2+1].k)*(ch1[id1].b-ch1[id1+1].b)
+									-(ch1[id1].k-ch1[id1+1].k)*(ch2[id2].b-ch2[id2+1].b);
+						if(hiCmp<0)id1++;
+						else id2++;
+					}
+					else id1++;
+				}
+				else{
+					if(id2<ch2.size()-1) id2++; 
+					else { intvR = tIntv[1]; break; }
+				}
+				continue;
+			}
+			double hifp1, hifp2;
+			if(id1<ch1.size()-1)
+				hifp1=-((ch1[id1].k-ch1[id1+1].k)*(ch1[id1].b-ch2[id2].b)
+						-(ch1[id1].k-ch2[id2].k)*(ch1[id1].b-ch1[id1+1].b));
+			else 
+				hifp1=tIntv[1]*(ch1[id1].k-ch2[id2].k)+(ch1[id1].b-ch2[id2].b);
+			if(id2<ch2.size()-1)
+				hifp2=(ch2[id2].k-ch2[id2+1].k)*(ch1[id1].b-ch2[id2].b)
+						-(ch1[id1].k-ch2[id2].k)*(ch2[id2].b-ch2[id2+1].b);
+			else
+				hifp2=tIntv[1]*(ch1[id1].k-ch2[id2].k)+(ch1[id1].b-ch2[id2].b);
+			// std::cout<<"finding intvR "<<id1<<" "<<id2<<", hifp1="<<hifp1<<"  hifp2="<<hifp2<<"\n";
+			if(hifp1>0){
+				if(hifp2>0){
+					intvR = -(ch1[id1].b-ch2[id2].b)/(ch1[id1].k-ch2[id2].k);
+					break;
+				}
+				else id2++;
+			}
+			else {
+				if(hifp2>0) id1++;
+				else{
+					if(id1<ch1.size()-1){
+						if(id2<ch2.size()-1){
+							double hiCmp=(ch2[id2].k-ch2[id2+1].k)*(ch1[id1].b-ch1[id1+1].b)
+										-(ch1[id1].k-ch1[id1+1].k)*(ch2[id2].b-ch2[id2+1].b);
+							if(hiCmp<0)id1++;
+							else id2++;
+						}
+						else id1++;
+					}
+					else id2++;
+				}
+			}
+		}
+		// if(DEbug)std::cout<<"right: "<<id1<<"  "<<id2<<"  "<<intvR<<'\n';
+		// if(DEbug)std::cin.get();
+		// intvL = std::max(tIntv[0],intvL);
+		// intvR = std::min(tIntv[1],intvR);
+		// if(intvL>=intvR)return Array2d(-1,-1);
+		if(intvR==-1)intvR = tIntv[1];
+		if(intvL>=intvR||intvL<tIntv[0]||intvR>tIntv[1]){
+			std::cout<<"error intersection!\n";
+			exit(-1);
+		}
+		else return Array2d(intvL,intvR);
+	}			
 public:
 	static double solveCCD(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1, 
 						const ParamObj2 &CpPos2, const ParamObj2 &CpVel2,

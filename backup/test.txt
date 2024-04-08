@@ -1,259 +1,32 @@
-min time: 0.488827
-used seconds: 0.0222574
-26
-used seconds: 0.000960845
-2
-min time: 0.216472
-used seconds: 0.0305427
-32
-used seconds: 0.00470522
-6
-used seconds: 0.00102944
-2
-used seconds: 0.00101172
-2
-min time: 0.217388
-used seconds: 0.0507901
-51
-min time: 0.991907
-used seconds: 0.0221577
-26
-min time: 0.984041
-used seconds: 0.0238712
-28
-used seconds: 6.3231e-05
-1
-used seconds: 5.6889e-05
-1
-min time: 0
-used seconds: 0.127559
-133
-used seconds: 0.0017866
-3
-used seconds: 5.7058e-05
-1
-min time: 0.620031
-used seconds: 0.0226932
-27
-min time: 0
-used seconds: 0.0741277
-79
-used seconds: 6.0608e-05
-1
-used seconds: 5.8848e-05
-1
-min time: 0
-used seconds: 0.0730358
-81
-used seconds: 6.0596e-05
-1
-min time: 0.539348
-used seconds: 0.0394669
-46
-used seconds: 0.00109299
-2
-used seconds: 0.000103092
-1
-used seconds: 5.87e-05
-1
-used seconds: 0.00102111
-2
-min time: 0
-used seconds: 0.130522
-138
-min time: 0
-used seconds: 0.214094
-244
-min time: 0.93227
-used seconds: 0.0299014
-37
-used seconds: 5.6772e-05
-1
-used seconds: 0.000884013
-2
-min time: 0.93539
-used seconds: 0.0327717
-41
-min time: 0.24344
-used seconds: 0.0381354
-42
-min time: 0.317185
-used seconds: 0.031615
-34
-used seconds: 0.000954204
-2
-min time: 0.397152
-used seconds: 0.0971254
-107
-used seconds: 0.00352544
-5
-min time: 0.278017
-used seconds: 0.0329528
-39
-min time: 0
-used seconds: 0.132958
-142
-min time: 0
-used seconds: 0.174224
-193
-used seconds: 5.4649e-05
-1
-min time: 0
-used seconds: 0.149011
-168
-min time: 0.125812
-used seconds: 0.0223791
-27
-used seconds: 5.7222e-05
-1
-min time: 0.488987
-used seconds: 0.0448765
-49
-used seconds: 6.5237e-05
-1
-min time: 0
-used seconds: 0.0588996
-62
-min time: 0.427857
-used seconds: 0.0260794
-30
-min time: 0.500556
-used seconds: 0.0488343
-52
-used seconds: 6.1263e-05
-1
-min time: 0
-used seconds: 0.13379
-147
-min time: 0.932498
-used seconds: 0.0361556
-47
-min time: 0
-used seconds: 0.102322
-109
-min time: 0.839669
-used seconds: 0.0256261
-32
-used seconds: 0.000918303
-2
-used seconds: 6.0955e-05
-1
-used seconds: 0.00179264
-3
-used seconds: 5.9574e-05
-1
-min time: 0.310423
-used seconds: 0.0229555
-27
-min time: 0.788308
-used seconds: 0.021311
-24
-min time: 0
-used seconds: 0.125912
-136
-used seconds: 0.00436556
-6
-used seconds: 5.3665e-05
-1
-used seconds: 0.00126724
-2
-used seconds: 0.000122111
-1
-used seconds: 0.00115141
-2
-min time: 0.0597096
-used seconds: 0.0263721
-30
-min time: 0.164533
-used seconds: 0.0356705
-40
-used seconds: 6.2117e-05
-1
-used seconds: 0.00462688
-6
-min time: 0.96776
-used seconds: 0.0471663
-51
-min time: 0
-used seconds: 0.078522
-79
-min time: 0.645909
-used seconds: 0.0288842
-33
-min time: 0
-used seconds: 0.0722569
-80
-used seconds: 0.00687088
-8
-min time: 0
-used seconds: 0.190451
-211
-used seconds: 5.9807e-05
-1
-min time: 0.952865
-used seconds: 0.0233994
-29
-min time: 0
-used seconds: 0.274171
-276
-min time: 0.287744
-used seconds: 0.0222137
-26
-min time: 0.376776
-used seconds: 0.0231144
-26
-min time: 0
-used seconds: 0.162104
-171
-min time: 0.237663
-used seconds: 0.0300352
-37
-min time: 0
-used seconds: 0.112232
-115
-min time: 0.574775
-used seconds: 0.0245233
-29
-min time: 0.130867
-used seconds: 0.0300453
-32
-min time: 0
-used seconds: 0.148803
-160
-min time: 0
-used seconds: 0.130418
-143
-used seconds: 0.000905425
-2
-min time: 0.228851
-used seconds: 0.0635748
-67
-used seconds: 6.6161e-05
-1
-used seconds: 0.000980473
-2
-used seconds: 6.0086e-05
-1
-used seconds: 0.00187614
-3
-min time: 0.705738
-used seconds: 0.0241365
-28
-used seconds: 0.0009245
-2
-min time: 0.732176
-used seconds: 0.0297295
-32
-min time: 0.618063
-used seconds: 0.0214717
-23
-min time: 0
-used seconds: 0.210171
-209
-used seconds: 6.0276e-05
-1
-min time: 0
-used seconds: 0.177359
-182
-57 pairs have collided.
-used seconds: 0.042523
+intv:       0 0.121706
+
+intv:       0 0.288653
+intv:       0 0.354474
+intv:       0 0.349244
+
+intv:       0 0.091756
+intv:        0 0.0779366
+
+intv:        0 0.0780432
+intv:      0 0.43648
+
+intv:       0 0.173375
+
+intv:       0 0.484926
+intv:       0 0.195592
+
+intv:       0 0.249767
+
+intv:       0 0.589889
+
+intv:       0 0.523476
+intv:        0 0.0482773
+
+intv:       0 0.643553
+intv:     0 0.5174
+intv:       0 0.366176
+
+intv:      0 0.54872
+
+intv:       0 0.391677
+intv:       0 0.704438

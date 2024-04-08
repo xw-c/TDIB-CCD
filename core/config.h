@@ -44,5 +44,5 @@ std::uint64_t cnt;
 bool SHOWANS = 1;
 enum class BoundingBoxType { AABB, OBB, DOP14 };
 enum class SolverType { TDIntv, BaseIntv, ManifoldBase, ManifoldTD }; //sampling, linearization
-const BoundingBoxType BBDefault = BoundingBoxType::OBB;
+const BoundingBoxType BBDefault = BoundingBoxType::AABB;
 const SolverType SolverDefault = SolverType::BaseIntv;

@@ -82,6 +82,9 @@ public:
 
 		std::vector<Array2d> feasibleIntvs;
 		feasibleIntvs.clear();
+		const double aStrangeCoeff = 1e-6;
+		// lb是这对patch不可能在小于lb的时间碰上，ub是已经存在ub能碰上的了所以ub+e之后的我可以不考察
+		const Array2d candTIntv(-aStrangeCoeff, upperTime+MeantimeEpsilon+aStrangeCoeff);
 
 		auto AxisCheck=[&](std::vector<Line> lines1, std::vector<Line> lines2){
 			std::vector<Line> ch1, ch2;
@@ -92,7 +95,7 @@ public:
 			// std::cout<<lines1.size();
 			// if(lines1.size()>20)exit(-1);
 			// for(const auto l:lines1)std::cout<<"lines1 "<<l.k<<" "<<l.b<<"\n";
-			getCH(lines1, ch1, pts1, true, upperTime+MeantimeEpsilon);
+			getCH(lines1, ch1, pts1, true, candTIntv);
 			// std::cout<<ch1.size();
 			// if(ch1.size()>20)exit(-1);
 			// for(const auto l:ch1)std::cout<<"ch1 "<<l.k<<" "<<l.b<<"\n";
@@ -100,11 +103,11 @@ public:
 			// std::cout<<lines2.size();
 			// if(lines2.size()>20)exit(-1);
 			// for(const auto l:lines2)std::cout<<"lines1 "<<l.k<<" "<<l.b<<"\n";
-			getCH(lines2, ch2, pts2, false, upperTime+MeantimeEpsilon);
+			getCH(lines2, ch2, pts2, false, candTIntv);
 			// std::cout<<ch2.size();
 			// if(ch2.size()>20)exit(-1);
 			// for(const auto l:ch2)std::cout<<"ch2 "<<l.k<<" "<<l.b<<"\n";
-			const auto intvT = linearCHIntersect(ch1, ch2, pts1, pts2, upperTime+MeantimeEpsilon);
+			const auto intvT = linearCHIntersect(ch1, ch2, pts1, pts2, candTIntv[1]);
 			if(intvT[0]!=-1)feasibleIntvs.push_back(intvT);
 		};
 
@@ -126,7 +129,11 @@ public:
 			colTime = timeIntv;
 			return true; 
 		}
-
+		// for(auto& intv: feasibleIntvs){
+		// 	double len = intv[1] - intv[0]; 
+		// 	intv[0]+=aStrangeCoeff*len, intv[1]-=aStrangeCoeff*len;
+		// 	// intv[1]=std::max(intv[0],intv[1]);
+		// }
 		//无碰撞发生的并，剩下的就是有碰撞发生的
 		double minT = 0, maxT = upperTime;
 		std::sort(feasibleIntvs.begin(), feasibleIntvs.end(), 
