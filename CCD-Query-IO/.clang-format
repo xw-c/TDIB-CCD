@@ -1,0 +1,14 @@
+# https://clang.llvm.org/docs/ClangFormatStyleOptions.html
+BasedOnStyle: WebKit
+ColumnLimit: 80
+AlignTrailingComments: true
+FixNamespaceComments: true
+ReflowComments: true
+BinPackParameters: false
+AllowAllParametersOfDeclarationOnNextLine: true
+AlignAfterOpenBracket: AlwaysBreak
+BreakBeforeBinaryOperators: NonAssignment
+SortIncludes: false
+CommentPragmas:  '^@.+'
+BreakStringLiterals: false
+PackConstructorInitializers: CurrentLine
