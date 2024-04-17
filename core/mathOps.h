@@ -268,15 +268,15 @@ void setAxes(const std::array<Vector3d, ParamObj1::cntCp>& ptPos1,
 				Vector3d(1,1,1).normalized(), Vector3d(-1,1,1).normalized(), Vector3d(-1,-1,1).normalized()};
 	}
 	else if(BBDefault==BoundingBoxType::OBB){
-		Vector3d lu1 = ParamObj1::axisU(ptPos1).normalized();//u延展的方向
-		Vector3d lv1 = ParamObj1::axisV(ptPos1);//v延展的方向
-		lv1 = (lv1-lv1.dot(lu1)*lu1).eval();
-		Vector3d ln1 = lu1.cross(lv1);
+		Vector3d lu1 = ParamObj1::axisU(ptPos1);//u延展的方向
+		Vector3d lv1tmp = ParamObj1::axisV(ptPos1);//v延展的方向
+		Vector3d ln1 = lu1.cross(lv1tmp);
+		Vector3d lv1 = ln1.cross(lu1);
 
-		Vector3d lu2 = ParamObj2::axisU(ptPos2).normalized();//u延展的方向
-		Vector3d lv2 = ParamObj2::axisV(ptPos2);//v延展的方向
-		lv2 = (lv2-lv2.dot(lu2)*lu2).eval();
-		Vector3d ln2 = lu2.cross(lv2);
+		Vector3d lu2 = ParamObj2::axisU(ptPos2);//u延展的方向
+		Vector3d lv2tmp = ParamObj2::axisV(ptPos2);//v延展的方向
+		Vector3d ln2 = lu2.cross(lv2tmp);
+		Vector3d lv2 = ln2.cross(lu2);
 
 		axes = {lu1,lv1,ln1,lu2,lv2,ln2, 
 			lu1.cross(lu2), lu1.cross(lv2), lu1.cross(ln2), 

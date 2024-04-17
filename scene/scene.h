@@ -4,6 +4,8 @@
 #include"solverBaseManifold.h"
 #include"solverTD.h"
 #include"solverModTD.h"
+#include"solverModTDv2.h"
+#include"solverModTDv3.h"
 #include"solverTDManifold.h"
 #include"utilOps.h"
 #include "triBezier.h"
@@ -89,20 +91,26 @@ void randomTest(const std::string& solverType, const double& deltaDist, const in
 		// 		std::cerr<<"solver not implemented!\n";
 		// 		exit(-1);
 		// }
+		cnt=0;
 		if(solverType=="td")
 			t = SolverTD<ObjType,ObjType,ParamType,ParamType>::solveCCD(obj1,vel1,obj2,vel2,uv1,uv2,DeltaT,deltaDist);
 		else if(solverType=="base")
 			t = SolverBase<ObjType,ObjType,ParamType,ParamType>::solveCCD(obj1,vel1,obj2,vel2,uv1,uv2,DeltaT,deltaDist);
-		else if(solverType=="robust")
-			t = SolverRobustTD<ObjType,ObjType,ParamType,ParamType>::solveCCD(obj1,vel1,obj2,vel2,uv1,uv2,DeltaT,deltaDist);
+		else if(solverType=="modv1")
+			t = SolverModTD<ObjType,ObjType,ParamType,ParamType>::solveCCD(obj1,vel1,obj2,vel2,uv1,uv2,DeltaT,deltaDist);
+		else if(solverType=="modv2")
+			t = SolverModTDv2<ObjType,ObjType,ParamType,ParamType>::solveCCD(obj1,vel1,obj2,vel2,uv1,uv2,DeltaT,deltaDist);
+		else if(solverType=="modv3")
+			t = SolverModTDv3<ObjType,ObjType,ParamType,ParamType>::solveCCD(obj1,vel1,obj2,vel2,uv1,uv2,DeltaT,deltaDist);
 		else{
 			std::cerr<<"solver not implemented!\n";
 			exit(-1);
 		}
+		if(SHOWANS) std::cout<<cnt<<"\n";
 		if(t>=0)hasCol++;
-		// if(kase==21){
-		// 	saveDoFs<ObjType>(obj1.ctrlp, vel1.ctrlp, obj2.ctrlp, vel2.ctrlp);
-		// 	break;
+		// if(k==3){
+		// 	saveDoFs<ObjType,ObjType>(obj1.ctrlp, vel1.ctrlp, obj2.ctrlp, vel2.ctrlp);
+		// 	exit(-1);
 		// }
 		// ft<<t<<"\n";
 		file<<t<<"\n";
@@ -219,6 +227,8 @@ void validate(const std::string& solverType, const double& deltaDist, const int&
 		Vector3d(0,0,-1), Vector3d(0,0,-1), Vector3d(0,0,-1), Vector3d(0,0,-1),
 		Vector3d(0,0,-1), Vector3d(0,0,-1), Vector3d(0,0,-1), Vector3d(0,0,-1),
 		Vector3d(0,0,-1), Vector3d(0,0,-1), Vector3d(0,0,-1), Vector3d(0,0,-1)};
+
+	readinDoFs<ObjType,ObjType>(obj1.ctrlp, vel1.ctrlp, obj2.ctrlp, vel2.ctrlp);
 	using steady_clock = std::chrono::steady_clock;
 	using duration = std::chrono::duration<double>;
 	const auto initialTime = steady_clock::now();
@@ -226,8 +236,10 @@ void validate(const std::string& solverType, const double& deltaDist, const int&
 		t = SolverTD<ObjType,ObjType,ParamType,ParamType>::solveCCD(obj1,vel1,obj2,vel2,uv1,uv2,DeltaT,deltaDist);
 	else if(solverType=="base")
 		t = SolverBase<ObjType,ObjType,ParamType,ParamType>::solveCCD(obj1,vel1,obj2,vel2,uv1,uv2,DeltaT,deltaDist);
-	else if(solverType=="robust")
-		t = SolverRobustTD<ObjType,ObjType,ParamType,ParamType>::solveCCD(obj1,vel1,obj2,vel2,uv1,uv2,DeltaT,deltaDist);
+	else if(solverType=="modv2")
+		t = SolverModTDv2<ObjType,ObjType,ParamType,ParamType>::solveCCD(obj1,vel1,obj2,vel2,uv1,uv2,DeltaT,deltaDist);
+	else if(solverType=="modv3")
+		t = SolverModTDv3<ObjType,ObjType,ParamType,ParamType>::solveCCD(obj1,vel1,obj2,vel2,uv1,uv2,DeltaT,deltaDist);
 	else{
 		std::cerr<<"solver not implemented!\n";
 		exit(-1);
