@@ -5,17 +5,17 @@ inline std::unique_ptr<ArgsParser> BuildArgsParser()
 	auto parser = std::make_unique<ArgsParser>();
 	parser->addArgument<std::string>("solver", 's', "type of ccd solver (base, td)", "base");
 	parser->addArgument<std::string>("experiment", 'e', "type of experiment (rand, valid)", "rand");
-	// parser->addArgument<BoundingBoxType>("bb", 'b', "type of bounding box", BBDefault);
-	// parser->addArgument<bool>("process", 'p', "show details of solving process", SHOWANS);
+	parser->addArgument<std::string>("bb", 'b', "type of bounding box (AABB, OBB)", "OBB");
+	// parser->addArgument<std::string>("primitive", 'p', "type of primitive (tri/rec + 1/2/3 + /rat)", "rec3");
+
 	parser->addArgument<double>("delta", 'd', "distance for convergence criterion", MinL1Dist);
 	parser->addArgument<int>("kase", 'k', "number of generated cases", KaseDefault);
 	parser->addArgument<double>("velocity", 'v', "magnitude of velocity", PullVelocity);
+
+	// parser->addArgument<bool>("process", 'p', "show details of solving process", SHOWANS);
 	parser->addArgument<std::string>("output", 'o', "the output filename", "output");
-	// parser->addArgument<bool>("collision", 'p', "use self-collision of the patches or not", false);
 	return parser;
 }
-
-
 
 int main(int argc, char *argv[]){
 	auto parser = BuildArgsParser();
@@ -23,17 +23,31 @@ int main(int argc, char *argv[]){
 
     const auto solverType = std::any_cast<std::string>(parser->getValueByName("solver"));	
     const auto expType = std::any_cast<std::string>(parser->getValueByName("experiment"));	
+    const auto bbType = std::any_cast<std::string>(parser->getValueByName("bb"));	
+    // const auto primType = std::any_cast<std::string>(parser->getValueByName("primitive"));	
     const auto deltaDist = std::any_cast<double>(parser->getValueByName("delta"));
     const auto kase = std::any_cast<int>(parser->getValueByName("kase"));
     const auto velMag = std::any_cast<double>(parser->getValueByName("velocity"));
     const auto outputFile = std::any_cast<std::string>(parser->getValueByName("output"));
 
+	BBDefault = bbType=="OBB" ? BoundingBoxType::OBB : BoundingBoxType::AABB;
+
 	if(expType=="valid")
 		validate<RecCubicBezier, RecParamBound>(solverType, deltaDist, kase, velMag, outputFile);
 	else if(expType=="rand")
 		randomTest<RecCubicBezier, RecParamBound>(solverType, deltaDist, kase, velMag, outputFile);
+	else if(expType=="all"){
+		randomTest<TriLinearBezier, TriParamBound>(solverType, deltaDist, kase, velMag, outputFile);
+		randomTest<TriQuadBezier, TriParamBound>(solverType, deltaDist, kase, velMag, outputFile);
+		randomTest<TriCubicBezier, TriParamBound>(solverType, deltaDist, kase, velMag, outputFile);
+		randomTest<RecLinearBezier, RecParamBound>(solverType, deltaDist, kase, velMag, outputFile);
+		randomTest<RecQuadBezier, RecParamBound>(solverType, deltaDist, kase, velMag, outputFile);
+		randomTest<RecCubicBezier, RecParamBound>(solverType, deltaDist, kase, velMag, outputFile);
+		randomTest<RecQuadRatBezier, RecParamBound>(solverType, deltaDist, kase, velMag, outputFile);
+		randomTest<RecCubicRatBezier, RecParamBound>(solverType, deltaDist, kase, velMag, outputFile);
+	}
 	else{
-		std::cerr<<"what exp?\n";
+		std::cerr<<"what experiment?\n";
 		exit(-1);
 	}
 
