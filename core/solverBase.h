@@ -5,6 +5,7 @@ class SolverBase{
 	static bool primitiveCheck(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1, 
 							const ParamObj2 &CpPos2, const ParamObj2 &CpVel2,
 							const ParamBound1 &divUvB1, const ParamBound2 &divUvB2,
+							const BoundingBoxType& bb,
 							const Array2d divTime = Array2d(0,DeltaT)) {
 		auto posStart1 = CpPos1.divideBezierPatch(divUvB1), posEnd1 = posStart1;
 		auto ptVel1 = CpVel1.divideBezierPatch(divUvB1);
@@ -21,7 +22,7 @@ class SolverBase{
 
 		std::vector<Vector3d> axes;
 		axes.clear();
-		setAxes<ParamObj1, ParamObj2>(posStart1, posStart2, axes);
+		setAxes<ParamObj1, ParamObj2>(posStart1, posStart2, axes, bb);
 
 		for(auto& axis:axes){
 			double maxProj1 = -std::numeric_limits<double>::infinity(), minProj1 = std::numeric_limits<double>::infinity();
@@ -50,6 +51,7 @@ public:
 		static double solveCCD(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1, 
 						const ParamObj2 &CpPos2, const ParamObj2 &CpVel2,
 						Array2d& uv1, Array2d& uv2, 
+						const BoundingBoxType& bb = BBDefault,
 						const double upperTime = DeltaT,
 						const double deltaDist = MinL1Dist) {
 		struct PatchPair{
@@ -82,7 +84,7 @@ public:
 		std::priority_queue<PatchPair> heap;
 		ParamBound1 initParam1;
 		ParamBound2 initParam2;
-		if (primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, initParam1, initParam2))
+		if (primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, initParam1, initParam2, bb))
 			heap.emplace(initParam1, initParam2);
 		// cnt=1;
 		while (!heap.empty()) {
@@ -108,10 +110,10 @@ public:
 				ParamBound1 divUvB1(cur.pb1.interpSubpatchParam(i));
 				for (int j = 0; j < 4; j++) {
 					ParamBound2 divUvB2(cur.pb2.interpSubpatchParam(j));
-					if (primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, divUvB1, divUvB2, divTime1)){
+					if (primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, divUvB1, divUvB2, bb, divTime1)){
 						heap.emplace(divUvB1, divUvB2, divTime1);
 					}
-					if (primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, divUvB1, divUvB2, divTime2)){
+					if (primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, divUvB1, divUvB2, bb, divTime2)){
 						heap.emplace(divUvB1, divUvB2, divTime2);
 					}
 				}

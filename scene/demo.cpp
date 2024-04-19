@@ -3,7 +3,7 @@
 inline std::unique_ptr<ArgsParser> BuildArgsParser()
 {
 	auto parser = std::make_unique<ArgsParser>();
-	parser->addArgument<std::string>("solver", 's', "type of ccd solver (base, td)", "base");
+	parser->addArgument<std::string>("solver", 's', "type of ccd solver (base, td)", "td");
 	parser->addArgument<std::string>("experiment", 'e', "type of experiment (rand, valid)", "rand");
 	parser->addArgument<std::string>("bb", 'b', "type of bounding box (AABB, OBB)", "OBB");
 	// parser->addArgument<std::string>("primitive", 'p', "type of primitive (tri/rec + 1/2/3 + /rat)", "rec3");
@@ -23,28 +23,29 @@ int main(int argc, char *argv[]){
 
     const auto solverType = std::any_cast<std::string>(parser->getValueByName("solver"));	
     const auto expType = std::any_cast<std::string>(parser->getValueByName("experiment"));	
-    const auto bbType = std::any_cast<std::string>(parser->getValueByName("bb"));	
+    const auto bbType = std::any_cast<std::string>(parser->getValueByName("bb"));
     // const auto primType = std::any_cast<std::string>(parser->getValueByName("primitive"));	
     const auto deltaDist = std::any_cast<double>(parser->getValueByName("delta"));
     const auto kase = std::any_cast<int>(parser->getValueByName("kase"));
     const auto velMag = std::any_cast<double>(parser->getValueByName("velocity"));
     const auto outputFile = std::any_cast<std::string>(parser->getValueByName("output"));
 
-	BBDefault = bbType=="OBB" ? BoundingBoxType::OBB : BoundingBoxType::AABB;
+	const auto bb = bbType=="OBB" ? BoundingBoxType::OBB : BoundingBoxType::AABB;
+	BBDefault = bb;
 
 	if(expType=="valid")
-		validate<RecCubicBezier, RecParamBound>(solverType, deltaDist, kase, velMag, outputFile);
+		validate<RecCubicBezier, RecParamBound>(solverType, bb, deltaDist, kase, velMag, outputFile);
 	else if(expType=="rand")
-		randomTest<RecCubicBezier, RecParamBound>(solverType, deltaDist, kase, velMag, outputFile);
+		randomTest<RecCubicBezier, RecParamBound>(solverType, bb, deltaDist, kase, velMag, outputFile);
 	else if(expType=="all"){
-		randomTest<TriLinearBezier, TriParamBound>(solverType, deltaDist, kase, velMag, outputFile);
-		randomTest<TriQuadBezier, TriParamBound>(solverType, deltaDist, kase, velMag, outputFile);
-		randomTest<TriCubicBezier, TriParamBound>(solverType, deltaDist, kase, velMag, outputFile);
-		randomTest<RecLinearBezier, RecParamBound>(solverType, deltaDist, kase, velMag, outputFile);
-		randomTest<RecQuadBezier, RecParamBound>(solverType, deltaDist, kase, velMag, outputFile);
-		randomTest<RecCubicBezier, RecParamBound>(solverType, deltaDist, kase, velMag, outputFile);
-		randomTest<RecQuadRatBezier, RecParamBound>(solverType, deltaDist, kase, velMag, outputFile);
-		randomTest<RecCubicRatBezier, RecParamBound>(solverType, deltaDist, kase, velMag, outputFile);
+		randomTest<TriLinearBezier, TriParamBound>(solverType, bb, deltaDist, kase, velMag, outputFile);
+		randomTest<TriQuadBezier, TriParamBound>(solverType, bb, deltaDist, kase, velMag, outputFile);
+		randomTest<TriCubicBezier, TriParamBound>(solverType, bb, deltaDist, kase, velMag, outputFile);
+		randomTest<RecLinearBezier, RecParamBound>(solverType, bb, deltaDist, kase, velMag, outputFile);
+		randomTest<RecQuadBezier, RecParamBound>(solverType, bb, deltaDist, kase, velMag, outputFile);
+		randomTest<RecCubicBezier, RecParamBound>(solverType, bb, deltaDist, kase, velMag, outputFile);
+		randomTest<RecQuadRatBezier, RecParamBound>(solverType, bb, deltaDist, kase, velMag, outputFile);
+		randomTest<RecCubicRatBezier, RecParamBound>(solverType, bb, deltaDist, kase, velMag, outputFile);
 	}
 	else{
 		std::cerr<<"what experiment?\n";

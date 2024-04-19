@@ -1,61 +1,80 @@
-min time: 0.629897
-used seconds: 0.0331397
-case 0 done 0.0790374
-min time: 0.272329
-used seconds: 0.0235528
-case 1 done 0.446997
-min time: 0.578979
-used seconds: 0.0180305
-case 2 done 0.0312718
-min time: 0.44473
-used seconds: 0.0243094
-case 3 done 0.0797907
-min time: 0.0250398
-used seconds: 0.0180531
-case 4 done 0.758135
-min time: 0.581584
-used seconds: 0.0632009
-case 5 done 0.28984
-min time: 0.373499
-used seconds: 0.0251655
-case 6 done 0.10572
-min time: 0.220887
-used seconds: 0.0157261
-case 7 done 0.56826
-min time: 0.361309
-used seconds: 0.0138313
-case 8 done 0.0504455
-min time: 0.246176
-used seconds: 0.0261656
-case 9 done 0.0604512
-min time: 0.961337
-used seconds: 0.0231111
-case 10 done 1.09899
-min time: 0.44543
-used seconds: 0.0152092
-case 11 done 0.697962
-min time: 0.526852
-used seconds: 0.0166989
-case 12 done 1.37838
-min time: 0.423254
-used seconds: 0.0258325
-case 13 done 0.282083
-min time: 0.381463
-used seconds: 0.0140508
-case 14 done 0.0125168
-min time: 0.70106
-used seconds: 0.013923
-case 15 done 0.411925
-min time: 0.581886
-used seconds: 0.0239157
-case 16 done 0.0871771
-min time: 0.269471
-used seconds: 0.0154442
-case 17 done 0.0989885
-min time: 0.235122
-used seconds: 0.0180236
-case 18 done 1.11436
-min time: 0.744557
-used seconds: 0.0178031
-case 19 done 0.299597
-20 pairs have collided.
+min time: 0.648203
+used seconds: 0.0122492
+23
+case 0 done 0.000297343
+min time: 0.344859
+used seconds: 0.0110153
+22
+case 1 done 0.000382272
+min time: 0.579291
+used seconds: 0.00932507
+19
+case 2 done 0.000704774
+min time: 0.471608
+used seconds: 0.0269535
+53
+case 3 done 0.000273854
+min time: 0.18057
+used seconds: 0.00968719
+21
+case 4 done 0.000347454
+min time: 0.582935
+used seconds: 0.0560784
+112
+case 5 done 0.000550502
+min time: 0.406707
+used seconds: 0.021912
+44
+case 6 done 0.000357316
+min time: 0.324222
+used seconds: 0.00778485
+16
+case 7 done 0.000653241
+min time: 0.369751
+used seconds: 0.0103418
+20
+case 8 done 0.000250203
+min time: 0.278656
+used seconds: 0.0377113
+72
+case 9 done 0.000394953
+used seconds: 0.00335206
+7
+case 10 done 4.92638
+min time: 0.707703
+used seconds: 0.0427743
+82
+case 11 done 0.000380734
+used seconds: 0.00918656
+17
+case 12 done 4.79311
+min time: 0.454104
+used seconds: 0.0134063
+26
+case 13 done 0.000382726
+min time: 0.385968
+used seconds: 0.0355682
+73
+case 14 done 0.000425635
+min time: 0.988819
+used seconds: 0.0412423
+80
+case 15 done 0.000160584
+min time: 0.594525
+used seconds: 0.0326737
+68
+case 16 done 0.000664886
+min time: 0.288728
+used seconds: 0.013411
+27
+case 17 done 0.000262828
+min time: 0.298057
+used seconds: 0.00675198
+15
+case 18 done 0.00094015
+min time: 0.912581
+used seconds: 0.0995501
+197
+case 19 done 0.000188062
+18 pairs have collided.
+used seconds: 0.0250816

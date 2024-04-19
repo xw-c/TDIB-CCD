@@ -4,34 +4,28 @@
 // modification: individual OBB axes
 // modification: tlower --> time interval
 template<typename ParamObj1, typename ParamObj2, typename ParamBound1, typename ParamBound2>
-class SolverTD{
+class SolverRobustTD{
 public:
 	static bool primitiveCheck(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1, 
 						const ParamObj2 &CpPos2, const ParamObj2 &CpVel2,
 						const ParamBound1 &divUvB1, const ParamBound2 &divUvB2,
-						Array2d& colTime,
-						const BoundingBoxType& bb,
-						const Array2d& initTimeIntv = Array2d(0,DeltaT)) {
+						Array2d& colTime, Array2d& colTimeError,
+						const Array2d& timeIntv = Array2d(0,DeltaT), 
+						const Array2d& timeError = Array2d(0,0)) {
 		auto ptPos1 = CpPos1.divideBezierPatch(divUvB1);
 		auto ptVel1 = CpVel1.divideBezierPatch(divUvB1);
 		auto ptPos2 = CpPos2.divideBezierPatch(divUvB2);
 		auto ptVel2 = CpVel2.divideBezierPatch(divUvB2);
-		Array2d timeIntv(initTimeIntv[0]-1e-6, initTimeIntv[1]+1e-6);
-		// Array2d timeIntv(initTimeIntv);
-		// for(int i=0;i<ParamObj1::cntCp;i++){
-		// 	ptPos1[i]+=ptVel1[i]*timeIntv[0];
-		// }
-		// for(int i=0;i<ParamObj2::cntCp;i++){
-		// 	ptPos2[i]+=ptVel2[i]*timeIntv[0];
-		// }
-		// const double upperTime = timeIntv[1] - timeIntv[0];
+		for(int i=0;i<ParamObj1::cntCp;i++){
+			ptPos1[i]+=ptVel1[i]*timeIntv[0];
+		}
+		for(int i=0;i<ParamObj2::cntCp;i++){
+			ptPos2[i]+=ptVel2[i]*timeIntv[0];
+		}
+		const double upperTime = timeIntv[1] - timeIntv[0];
 		std::vector<Vector3d> axes;
-		setAxes<ParamObj1, ParamObj2>(ptPos1, ptVel1, ptPos2, ptVel2, axes, bb, initTimeIntv[0]);
-		// std::cout<<axes[1].transpose()<<"\n";
-		// std::cout<<axes[4].transpose()<<"\n";
-		// std::cout<<axes[6].transpose()<<"\n";
-		// std::cout<<timeIntv.transpose()<<"\n";
-
+		setAxes<ParamObj1, ParamObj2>(ptPos1, ptPos2, axes);
+		
 		std::vector<Array2d> feasibleIntvs;
 		feasibleIntvs.clear();
 		
@@ -40,13 +34,13 @@ public:
 			ch1.clear(); ch2.clear();
 
 			// for(const auto& l:lines1)std::cout<<"lines1:  "<<l.k<<" "<<l.b<<"\n";
-			robustCH(lines1, ch1, true, timeIntv);
+			robustCH(lines1, ch1, true, Array2d(0,upperTime));
 			// for(const auto& l:ch1)std::cout<<"ch1:  "<<l.k<<" "<<l.b<<"\n";
 			// for(const auto& l:lines2)std::cout<<"lines2:  "<<l.k<<" "<<l.b<<"\n";
-			robustCH(lines2, ch2, false, timeIntv);
+			robustCH(lines2, ch2, false, Array2d(0,upperTime));
 			// for(const auto& l:ch2)std::cout<<"ch2:  "<<l.k<<" "<<l.b<<"\n";
-			const auto intvT = robustHullIntersect(ch1, ch2, timeIntv);
-			// std::cout<<intvT.transpose()<<"\n";
+			const auto intvT = robustHullIntersect(ch1, ch2, Array2d(0,upperTime));
+			// 	std::cout<<timeIntv.transpose()<<"\n"<<intvT.transpose()<<"\n";
 			// 	std::cin.get();
 			if(intvT[0]!=-1)feasibleIntvs.push_back(intvT);
 		};
@@ -66,21 +60,21 @@ public:
 		// 	if(l[0]==l[1]){
 		// 		std::cout<<"timeIntv:"<<timeIntv.transpose()<<"\n";
 		// 		for(const auto&l1:feasibleIntvs)std::cout<<"intv:"<<l1.transpose()<<"\n";
-				// std::cin.get();
+		// 		std::cin.get();
 		// 	}
 		// }
 		
 		if (feasibleIntvs.size()==0) {
 			//这意味着整段时间都有碰撞
-			colTime = initTimeIntv;
+			colTime = timeIntv;
 			return true; 
 		}
-		double minT = initTimeIntv[0], maxT = initTimeIntv[1];
+		double minT = 0, maxT = upperTime;
 		std::sort(feasibleIntvs.begin(), feasibleIntvs.end(), 
 			[](const Array2d& intv1, const Array2d& intv2){
 				return (intv1(0)<intv2(0));
 			});
-		if(feasibleIntvs[0](0)<=initTimeIntv[0]){
+		if(feasibleIntvs[0](0)<=0){
 			minT = feasibleIntvs[0](1);
 			for(int i=1;i<feasibleIntvs.size();i++)
 				if(feasibleIntvs[i](0)<minT) //不能加等，因为无碰撞给的是开区间，如果有),(的情况加等号会把这个情况漏掉
@@ -93,7 +87,7 @@ public:
 			[](const Array2d& intv1, const Array2d& intv2){
 				return (intv1(1)>intv2(1));
 			});
-		if(feasibleIntvs[0](1)>=initTimeIntv[1]){
+		if(feasibleIntvs[0](1)>=upperTime){
 			maxT = feasibleIntvs[0](0);
 			for(int i=1;i<feasibleIntvs.size();i++)
 				if(feasibleIntvs[i](1)>maxT) //不能加等，因为无碰撞给的是开区间，如果有),(的情况加等号会把这个情况漏掉
@@ -104,7 +98,7 @@ public:
 		// if(minT==maxT){
 		// 	for(const auto&l:feasibleIntvs)std::cout<<"intv:"<<l.transpose()<<"\n";
 		// }
-		colTime = Array2d(minT, maxT); 
+		colTime = Array2d(minT + timeIntv[0], maxT + timeIntv[0]); 
 		return true;
 	}
 	static void robustCH(std::vector<Line>& lines, std::vector<Line>& ch, 
@@ -238,7 +232,6 @@ public:
 			if(intvR<=intvL)
 				return Array2d(-1,-1);
 		}
-
 		
 		if(intvL>intvR||intvL<tIntv[0]||intvR>tIntv[1]){
 			std::cout<<"error intersection!\n";
@@ -251,16 +244,16 @@ public:
 	static double solveCCD(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1, 
 						const ParamObj2 &CpPos2, const ParamObj2 &CpVel2,
 						Array2d& uv1, Array2d& uv2, 
-						const BoundingBoxType& bb,
 						const double upperTime = DeltaT,
 						const double deltaDist = MinL1Dist) {
 		struct PatchPair{
 			ParamBound1 pb1;
 			ParamBound2 pb2;
-			Array2d tIntv;
+			Array2d tIntv, tError;
 			PatchPair(const ParamBound1& c1, const ParamBound2& c2, 
-					const Array2d& t = Array2d(0,DeltaT)): pb1(c1), pb2(c2), tIntv(t) {}
-			bool operator<(PatchPair const &o) const { return tIntv[0] > o.tIntv[0]; }
+					const Array2d& t = Array2d(0,DeltaT),
+					const Array2d& te = Array2d(0,0)): pb1(c1), pb2(c2), tIntv(t), tError(te) {}
+			bool operator<(PatchPair const &o) const { return tIntv[0] - o.tIntv[0] > tError[0] - o.tError[0]; }
 			double calcL1Dist(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1, 
 							const ParamObj2 &CpPos2, const ParamObj2 &CpVel2) const{
 				auto ptPos1 = CpPos1.divideBezierPatch(pb1);
@@ -284,9 +277,9 @@ public:
 		std::priority_queue<PatchPair> heap;
 		ParamBound1 initParam1;
 		ParamBound2 initParam2;
-		Array2d initTimeIntv(0,upperTime), colTime;
-		if (primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, initParam1, initParam2, colTime, bb, initTimeIntv))
-			heap.emplace(initParam1, initParam2, colTime);
+		Array2d initTimeIntv(0,upperTime), initTimeError(0,0), colTime, colTimeError;
+		if (primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, initParam1, initParam2, colTime, colTimeError, initTimeIntv, initTimeError))
+			heap.emplace(initParam1, initParam2, colTime, colTimeError);
 		cnt=1;
 		while (!heap.empty()) {
 			auto const cur = heap.top();
@@ -303,7 +296,7 @@ public:
 					std::cout << "min time: "<<  cur.tIntv[0] 
 						<< "\nused seconds: " << duration(endTime - initialTime).count()
 						<< std::endl;
-				return cur.tIntv[0];
+				return cur.tIntv[0]; // 减掉tError应该也看不出来？
 			}
 
 			// Divide the current patch into four-to-four pieces
@@ -311,8 +304,8 @@ public:
 				ParamBound1 divUvB1(cur.pb1.interpSubpatchParam(i));
 				for (int j = 0; j < 4; j++) {
 					ParamBound2 divUvB2(cur.pb2.interpSubpatchParam(j));
-					if (primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, divUvB1, divUvB2, colTime, bb, cur.tIntv)){
-						heap.emplace(divUvB1, divUvB2, colTime);
+					if (primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, divUvB1, divUvB2, colTime, colTimeError, initTimeIntv, initTimeError)){
+						heap.emplace(divUvB1, divUvB2, colTime, colTimeError);
 					}
 				}
 			}
