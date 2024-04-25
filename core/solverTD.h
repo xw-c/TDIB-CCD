@@ -38,6 +38,8 @@ public:
 		auto AxisCheck=[&](std::vector<Line> lines1, std::vector<Line> lines2){
 			std::vector<Line> ch1, ch2;
 			ch1.clear(); ch2.clear();
+			// std::cout<<"min coeffs:"<<lines1[10].k<<" "<<lines1[10].b<<"\n";
+			// std::cout<<"min coeffs:"<<lines2[10].k<<" "<<lines2[10].b<<"\n";
 
 			// for(const auto& l:lines1)std::cout<<"lines1:  "<<l.k<<" "<<l.b<<"\n";
 			robustCH(lines1, ch1, true, timeIntv);
@@ -63,11 +65,11 @@ public:
 		}
 		// if (feasibleIntvs.size()==0) return 0; //这意味着整段时间都有碰撞
 		// for(const auto&l:feasibleIntvs){
-		// 	if(l[0]==l[1]){
+		// 	// if(l[0]==l[1]){
 		// 		std::cout<<"timeIntv:"<<timeIntv.transpose()<<"\n";
 		// 		for(const auto&l1:feasibleIntvs)std::cout<<"intv:"<<l1.transpose()<<"\n";
-				// std::cin.get();
-		// 	}
+		// 		std::cin.get();
+		// 	// }
 		// }
 		
 		if (feasibleIntvs.size()==0) {
@@ -87,6 +89,7 @@ public:
 					minT=std::max(minT, feasibleIntvs[i](1));
 				else break;
 		}
+		// std::cout<<minT<<"\n";
 		if(minT > maxT){ colTime = Array2d(-1,-1); return false; }
 		
 		std::sort(feasibleIntvs.begin(), feasibleIntvs.end(), 
@@ -100,7 +103,9 @@ public:
 					maxT=std::min(maxT, feasibleIntvs[i](0));
 				else break;
 		}
+		// std::cout<<maxT<<"\n";
 		if(minT > maxT){ colTime = Array2d(-1,-1); return false; }
+		// std::cin.get();
 		// if(minT==maxT){
 		// 	for(const auto&l:feasibleIntvs)std::cout<<"intv:"<<l.transpose()<<"\n";
 		// }

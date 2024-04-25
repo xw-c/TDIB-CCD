@@ -3,6 +3,7 @@
 
 class TriLinearBezier{
 public:
+	static const int order = 1;
 	static const int cntCp = 3;
 	std::array<Vector3d, 3> ctrlp;
 	TriLinearBezier() {}
@@ -41,6 +42,7 @@ public:
 
 class TriQuadBezier{
 public:
+	static const int order = 2;
 	static const int cntCp = 6;
 	std::array<Vector3d, 6> ctrlp;
 	TriQuadBezier() {}
@@ -87,6 +89,7 @@ public:
 
 class TriCubicBezier {
 public:
+	static const int order = 3;
 	static const int cntCp = 10;
 	// 003,102,201,300,012,111,210,021,120,030
 	std::array<Vector3d, 10> ctrlp;

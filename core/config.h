@@ -3,6 +3,7 @@
 #include <array>
 #include <string>
 #include <cstdint>
+#include <cfloat>
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
@@ -21,8 +22,12 @@ using Eigen::Array2d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 using Eigen::MatrixXd;
+using Array2dError = std::pair<Array2d, Array2d>;
 const double INFT = std::numeric_limits<double>::infinity();
 const double PI = std::acos(-1);
+const double MachineEps = DBL_EPSILON;//std::DBL_EPSILON;
+const double SqrtMachineEps = std::sqrt(MachineEps); //a hyperparam, not for error calculation, so no need to be so precise
+
 static constexpr int KaseDefault = 100;
 static constexpr double MinDeltaUV = 1e-6;
 static constexpr double MinDist = 1e-4;

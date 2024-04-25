@@ -3,6 +3,7 @@
 
 class RecLinearBezier{
 public:
+	static const int order = 1;
 	static const int cntCp = 4;
 	std::array<Vector3d, 4> ctrlp;
 	Vector3d lerp(double t, Vector3d const &t0, Vector3d const &t1) const { return (1 - t) * t0 + t * t1; }
@@ -44,6 +45,7 @@ public:
 
 class RecQuadBezier{
 public:
+	static const int order = 2;
 	static const int cntCp = 9;
 	std::array<Vector3d, 9> ctrlp;
 	Vector3d lerp(double t, Vector3d const &t0, Vector3d const &t1) const { return (1 - t) * t0 + t * t1; }
@@ -92,6 +94,7 @@ public:
 // Bicubic Bezier Functions
 class RecCubicBezier{
 public:
+	static const int order = 3;
 	static const int cntCp = 16;
 	std::array<Vector3d, 16> ctrlp;
 	Vector3d lerp(double t, Vector3d const &t0, Vector3d const &t1) const { return (1 - t) * t0 + t * t1; }

@@ -5,7 +5,7 @@ inline std::unique_ptr<ArgsParser> BuildArgsParser()
 	auto parser = std::make_unique<ArgsParser>();
 	parser->addArgument<std::string>("solver", 's', "type of ccd solver (base, td)", "td");
 	parser->addArgument<std::string>("experiment", 'e', "type of experiment (rand, valid)", "rand");
-	parser->addArgument<std::string>("bb", 'b', "type of bounding box (AABB, OBB)", "OBB");
+	parser->addArgument<std::string>("bb", 'b', "type of bounding box (aabb, obb)", "obb");
 	// parser->addArgument<std::string>("primitive", 'p', "type of primitive (tri/rec + 1/2/3 + /rat)", "rec3");
 
 	parser->addArgument<double>("delta", 'd', "distance for convergence criterion", MinL1Dist);
@@ -16,6 +16,8 @@ inline std::unique_ptr<ArgsParser> BuildArgsParser()
 	parser->addArgument<std::string>("output", 'o', "the output filename", "output");
 	return parser;
 }
+
+
 
 int main(int argc, char *argv[]){
 	auto parser = BuildArgsParser();
@@ -30,13 +32,22 @@ int main(int argc, char *argv[]){
     const auto velMag = std::any_cast<double>(parser->getValueByName("velocity"));
     const auto outputFile = std::any_cast<std::string>(parser->getValueByName("output"));
 
-	const auto bb = bbType=="OBB" ? BoundingBoxType::OBB : BoundingBoxType::AABB;
-	BBDefault = bb;
+	BoundingBoxType bb;
+	if(bbType=="obb")
+		bb = BBDefault = BoundingBoxType::OBB;
+	else if(bbType=="aabb")
+		bb = BBDefault = BoundingBoxType::AABB;
+	else{
+		std::cerr<<"what bounding box?\n";
+		exit(-1);
+	}
 
 	if(expType=="valid")
 		validate<RecCubicBezier, RecParamBound>(solverType, bb, deltaDist, kase, velMag, outputFile);
 	else if(expType=="rand")
 		randomTest<RecCubicBezier, RecParamBound>(solverType, bb, deltaDist, kase, velMag, outputFile);
+	else if(expType=="fn")
+		FNCase(solverType, bb, deltaDist, kase, velMag, outputFile);
 	else if(expType=="all"){
 		randomTest<TriLinearBezier, TriParamBound>(solverType, bb, deltaDist, kase, velMag, outputFile);
 		randomTest<TriQuadBezier, TriParamBound>(solverType, bb, deltaDist, kase, velMag, outputFile);
@@ -44,8 +55,8 @@ int main(int argc, char *argv[]){
 		randomTest<RecLinearBezier, RecParamBound>(solverType, bb, deltaDist, kase, velMag, outputFile);
 		randomTest<RecQuadBezier, RecParamBound>(solverType, bb, deltaDist, kase, velMag, outputFile);
 		randomTest<RecCubicBezier, RecParamBound>(solverType, bb, deltaDist, kase, velMag, outputFile);
-		randomTest<RecQuadRatBezier, RecParamBound>(solverType, bb, deltaDist, kase, velMag, outputFile);
-		randomTest<RecCubicRatBezier, RecParamBound>(solverType, bb, deltaDist, kase, velMag, outputFile);
+		// randomTest<RecQuadRatBezier, RecParamBound>(solverType, bb, deltaDist, kase, velMag, outputFile);
+		// randomTest<RecCubicRatBezier, RecParamBound>(solverType, bb, deltaDist, kase, velMag, outputFile);
 	}
 	else{
 		std::cerr<<"what experiment?\n";

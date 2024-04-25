@@ -4,6 +4,7 @@
 #include"solverBaseManifold.h"
 #include"solverTD.h"
 #include"solverInitTD.h"
+#include"solverRobustTD.h"
 #include"solverTDManifold.h"
 #include"utilOps.h"
 #include "triBezier.h"
@@ -74,6 +75,8 @@ void randomTest(const std::string& solverType, const BoundingBoxType & bb,
 			t = SolverTD<ObjType,ObjType,ParamType,ParamType>::solveCCD(obj1,vel1,obj2,vel2,uv1,uv2,bb,DeltaT,deltaDist);
 		else if(solverType=="init")
 			t = SolverInitTD<ObjType,ObjType,ParamType,ParamType>::solveCCD(obj1,vel1,obj2,vel2,uv1,uv2,DeltaT,deltaDist);
+		else if(solverType=="robust")
+			t = SolverRobustTD<ObjType,ObjType,ParamType,ParamType>::solveCCD(obj1,vel1,obj2,vel2,uv1,uv2,bb,DeltaT,deltaDist);
 		else if(solverType=="base")
 			t = SolverBase<ObjType,ObjType,ParamType,ParamType>::solveCCD(obj1,vel1,obj2,vel2,uv1,uv2,bb,DeltaT,deltaDist);
 		else{
@@ -82,10 +85,10 @@ void randomTest(const std::string& solverType, const BoundingBoxType & bb,
 		}
 		if(SHOWANS) std::cout<<cnt<<"\n";
 		if(t>=0)hasCol++;
-		// if(k==3){
-		// 	saveDoFs<ObjType,ObjType>(obj1.ctrlp, vel1.ctrlp, obj2.ctrlp, vel2.ctrlp);
-		// 	exit(-1);
-		// }
+		if(k==19){
+			saveDoFs<ObjType,ObjType>(obj1.ctrlp, vel1.ctrlp, obj2.ctrlp, vel2.ctrlp);
+			exit(-1);
+		}
 		// ft<<t<<"\n";
 		file<<t<<"\n";
 		// if(t>0)file<<t<<"  "<<uv1[0]<<"  "<<uv1[1]<<"  "<<uv2[0]<<"  "<<uv2[1]<<"\n";
@@ -103,7 +106,60 @@ void randomTest(const std::string& solverType, const BoundingBoxType & bb,
 	// ft.close();
 }
 
+void FNCase(const std::string& solverType, const BoundingBoxType & bb,
+				const double& deltaDist, const int& kase, const double& velMag, 
+				const std::string& outputFile){
+	RecLinearBezier obj1, obj2, vel1, vel2;
+	double t;
+	Array2d uv1,uv2;
 
+	// 一个由CH计算导致的fn
+	obj1.ctrlp = {
+		Vector3d(-1e-20,0,0), Vector3d(-1e-20,1,0),
+		Vector3d(-1,0,1), Vector3d(-1,1,1)
+	}, 
+	vel1.ctrlp = {
+		Vector3d(0,0,0), Vector3d(0,0,0), 
+		Vector3d(1,0,0), Vector3d(1,0,0)
+	},
+	obj2.ctrlp = {
+		Vector3d(1,0,0), Vector3d(1,1,0),
+		Vector3d(-1e-30,0,1), Vector3d(-1e-30,1,1)
+	}, 
+	vel2.ctrlp = {
+		Vector3d(0,0,0), Vector3d(0,0,0), 
+		Vector3d(0,0,0), Vector3d(0,0,0)
+	};
+
+	// readinDoFs<ObjType,ObjType>(obj1.ctrlp, vel1.ctrlp, obj2.ctrlp, vel2.ctrlp);
+	using steady_clock = std::chrono::steady_clock;
+	using duration = std::chrono::duration<double>;
+	const auto initialTime = steady_clock::now();
+	if(solverType=="td")
+		t = SolverTD<RecLinearBezier,RecLinearBezier,RecParamBound,RecParamBound>::solveCCD(obj1,vel1,obj2,vel2,uv1,uv2,bb,DeltaT,deltaDist);
+	else if(solverType=="robust")
+			t = SolverRobustTD<RecLinearBezier,RecLinearBezier,RecParamBound,RecParamBound>::solveCCD(obj1,vel1,obj2,vel2,uv1,uv2,bb,DeltaT,deltaDist);
+	else if(solverType=="base")
+		t = SolverBase<RecLinearBezier,RecLinearBezier,RecParamBound,RecParamBound>::solveCCD(obj1,vel1,obj2,vel2,uv1,uv2,bb,DeltaT,deltaDist);
+	else{
+		std::cerr<<"solver not implemented!\n";
+		exit(-1);
+	}
+	if(SHOWANS) std::cout<<" done "<<calcDist(obj1,vel1,obj2,vel2,uv1,uv2,t)<<"\n";
+	// Vector3d const p1 = obj1.evaluatePatchPoint(uv1);
+	// Vector3d const v1 = vel1.evaluatePatchPoint(uv1);
+	// Vector3d const p2 = obj2.evaluatePatchPoint(uv2);
+	// Vector3d const v2 = vel2.evaluatePatchPoint(uv2);
+	// Vector3d const pt1=(v1*t+p1), pt2=(v2*t+p2);
+	// std::cout<<"uv at:"<<uv1.transpose()<<"     "<<uv2.transpose()<<"\npos at: "<<p1.transpose()<<"     "<<p2.transpose()<<"\n";
+	// std::cout<<"delta: "<<(pt2-pt1).norm()<<"\n";
+	const auto endTime = steady_clock::now();
+	std::cout << "used seconds: " <<
+		duration(endTime - initialTime).count()
+		<< std::endl;
+	// fp.close();
+	// ft.close();
+}
 
 
 template<typename ObjType, typename ParamType>
@@ -117,26 +173,26 @@ void validate(const std::string& solverType, const BoundingBoxType & bb,
 	std::multiset<CCDIntv<ParamType, ParamType> > solutSet;
 	solutSet.clear();
 	
-	obj1.ctrlp = {
-		Vector3d(0,0,0), Vector3d(0,1,1), Vector3d(0,2,2), Vector3d(0,3,3),
-		Vector3d(1,0,1), Vector3d(1,1,2), Vector3d(1,2,3), Vector3d(1,3,4),
-		Vector3d(2,0,2), Vector3d(2,1,3), Vector3d(2,2,4), Vector3d(2,3,5),
-		Vector3d(3,0,3), Vector3d(3,1,4), Vector3d(3,2,5), Vector3d(3,3,6)
-	}, 
-	vel1.ctrlp = {Vector3d(0,0,1), Vector3d(0,0,1), Vector3d(0,0,1), Vector3d(0,0,1), 
-		Vector3d(0,0,1), Vector3d(0,0,1), Vector3d(0,0,1), Vector3d(0,0,1),
-		Vector3d(0,0,1), Vector3d(0,0,1), Vector3d(0,0,1), Vector3d(0,0,1),
-		Vector3d(0,0,1), Vector3d(0,0,1), Vector3d(0,0,1), Vector3d(0,0,1)};
-	obj2.ctrlp = {
-		Vector3d(0,0,7.1), Vector3d(0,1,7.1), Vector3d(0,2,7.1), Vector3d(0,3,7.1),
-		Vector3d(1,0,7.1), Vector3d(1,1,7.1), Vector3d(1,2,7.1), Vector3d(1,3,7.1),
-		Vector3d(2,0,7.1), Vector3d(2,1,7.1), Vector3d(2,2,7.1), Vector3d(2,3,7.1),
-		Vector3d(3,0,7.1), Vector3d(3,1,7.1), Vector3d(3,2,7.1), Vector3d(3,3,7.1)
-	}, 
-	vel2.ctrlp = {Vector3d(0,0,-1), Vector3d(0,0,-1), Vector3d(0,0,-1), Vector3d(0,0,-1),
-		Vector3d(0,0,-1), Vector3d(0,0,-1), Vector3d(0,0,-1), Vector3d(0,0,-1),
-		Vector3d(0,0,-1), Vector3d(0,0,-1), Vector3d(0,0,-1), Vector3d(0,0,-1),
-		Vector3d(0,0,-1), Vector3d(0,0,-1), Vector3d(0,0,-1), Vector3d(0,0,-1)};
+	// {obj1.ctrlp = {
+	// 	Vector3d(0,0,0), Vector3d(0,1,1), Vector3d(0,2,2), Vector3d(0,3,3),
+	// 	Vector3d(1,0,1), Vector3d(1,1,2), Vector3d(1,2,3), Vector3d(1,3,4),
+	// 	Vector3d(2,0,2), Vector3d(2,1,3), Vector3d(2,2,4), Vector3d(2,3,5),
+	// 	Vector3d(3,0,3), Vector3d(3,1,4), Vector3d(3,2,5), Vector3d(3,3,6)
+	// }, 
+	// vel1.ctrlp = {Vector3d(0,0,1), Vector3d(0,0,1), Vector3d(0,0,1), Vector3d(0,0,1), 
+	// 	Vector3d(0,0,1), Vector3d(0,0,1), Vector3d(0,0,1), Vector3d(0,0,1),
+	// 	Vector3d(0,0,1), Vector3d(0,0,1), Vector3d(0,0,1), Vector3d(0,0,1),
+	// 	Vector3d(0,0,1), Vector3d(0,0,1), Vector3d(0,0,1), Vector3d(0,0,1)};
+	// obj2.ctrlp = {
+	// 	Vector3d(0,0,7.1), Vector3d(0,1,7.1), Vector3d(0,2,7.1), Vector3d(0,3,7.1),
+	// 	Vector3d(1,0,7.1), Vector3d(1,1,7.1), Vector3d(1,2,7.1), Vector3d(1,3,7.1),
+	// 	Vector3d(2,0,7.1), Vector3d(2,1,7.1), Vector3d(2,2,7.1), Vector3d(2,3,7.1),
+	// 	Vector3d(3,0,7.1), Vector3d(3,1,7.1), Vector3d(3,2,7.1), Vector3d(3,3,7.1)
+	// }, 
+	// vel2.ctrlp = {Vector3d(0,0,-1), Vector3d(0,0,-1), Vector3d(0,0,-1), Vector3d(0,0,-1),
+	// 	Vector3d(0,0,-1), Vector3d(0,0,-1), Vector3d(0,0,-1), Vector3d(0,0,-1),
+	// 	Vector3d(0,0,-1), Vector3d(0,0,-1), Vector3d(0,0,-1), Vector3d(0,0,-1),
+	// 	Vector3d(0,0,-1), Vector3d(0,0,-1), Vector3d(0,0,-1), Vector3d(0,0,-1)};}
 
 	readinDoFs<ObjType,ObjType>(obj1.ctrlp, vel1.ctrlp, obj2.ctrlp, vel2.ctrlp);
 	using steady_clock = std::chrono::steady_clock;
@@ -144,6 +200,8 @@ void validate(const std::string& solverType, const BoundingBoxType & bb,
 	const auto initialTime = steady_clock::now();
 	if(solverType=="td")
 		t = SolverTD<ObjType,ObjType,ParamType,ParamType>::solveCCD(obj1,vel1,obj2,vel2,uv1,uv2,bb,DeltaT,deltaDist);
+	else if(solverType=="robust")
+			t = SolverRobustTD<ObjType,ObjType,ParamType,ParamType>::solveCCD(obj1,vel1,obj2,vel2,uv1,uv2,bb,DeltaT,deltaDist);
 	else if(solverType=="base")
 		t = SolverBase<ObjType,ObjType,ParamType,ParamType>::solveCCD(obj1,vel1,obj2,vel2,uv1,uv2,bb,DeltaT,deltaDist);
 	else{
