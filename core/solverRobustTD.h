@@ -72,8 +72,8 @@ public:
 		}
 		double boundCHProj1 = boundMHCoeff1 * boundP1;
 		double boundCHProj2 = boundMHCoeff2 * boundP2;
-		double errorCHProj1 = boundCHProj1 * MachineEps * orderCH1;
-		double errorCHProj2 = boundCHProj2 * MachineEps * orderCH2;
+		// double errorCHProj1 = boundCHProj1 * MachineEps * orderCH1;
+		// double errorCHProj2 = boundCHProj2 * MachineEps * orderCH2;
 
 		std::vector<Array2dError> feasibleIntvs;
 		feasibleIntvs.clear();
@@ -85,14 +85,14 @@ public:
 			// if(DEBUG)std::cout<<"min coeffs:"<<lines1[10].k<<" "<<lines1[10].b<<"\n";
 			// if(DEBUG)std::cout<<"min coeffs:"<<lines2[10].k<<" "<<lines2[10].b<<"\n";
 			// for(const auto& l:lines1)std::cout<<"lines1:  "<<l.k<<" "<<l.b<<"\n";
-			double errorCH1 = robustCH(lines1, ch1, true, timeIntv);
+			double boundCHCalc1 = robustCH(lines1, ch1, true, timeIntv);
 			// for(const auto& l:ch1)std::cout<<"ch1:  "<<l.k<<" "<<l.b<<"\n";
 			// for(const auto& l:lines2)std::cout<<"lines2:  "<<l.k<<" "<<l.b<<"\n";
-			double errorCH2 = robustCH(lines2, ch2, false, timeIntv);
+			double boundCHCalc2 = robustCH(lines2, ch2, false, timeIntv);
 			// for(const auto& l:ch2)std::cout<<"ch2:  "<<l.k<<" "<<l.b<<"\n";
 			// if(DEBUG)std::cout<<"error parts of 1: "<<errorCHProj1<<" "<<errorCH1<<"\n";
 			// if(DEBUG)std::cout<<"error parts of 2: "<<errorCHProj2<<" "<<errorCH2<<"\n";
-			errorCH1 += errorCHProj1, errorCH2 += errorCHProj2;
+			// errorCH1 += errorCHProj1, errorCH2 += errorCHProj2;
 			// std::cout<<"CH errors: "<<errorCH1<<"  "<<errorCH2<<"\n";
 
 			// 更简单一些的errorCH版本
@@ -107,6 +107,8 @@ public:
 								std::max(4*(maxbias-minbias), 
 										(lines2.back().k-lines2.front().k)*timeIntv[1]+(maxbias-minbias));
 			// std::cout<<"error parts of 2: "<<boundCHProj2<<" "<<boundBias2<<"\n";
+			// double boundBias1 = boundCHProj1 + boundCHCalc1;
+			// double boundBias2 = boundCHProj2 + boundCHCalc2;
 			int orderBias1 = orderCH1 + 2, orderBias2 = orderCH2 + 2;
 			// for(const auto& l:ch1)std::cout<<"ch1:  "<<l.k<<" "<<l.b<<"\n";
 			// for(const auto& l:ch2)std::cout<<"ch2:  "<<l.k<<" "<<l.b<<"\n";
@@ -191,17 +193,17 @@ public:
 		if(!getMaxCH)std::reverse(lines.begin(),lines.end());
 		lines.erase(std::unique(lines.begin(), lines.end()), lines.end()); // 去重
 		// std::cout<<lines.size()<<"\n";
-		std::vector<double> errorLines;
+		// std::vector<double> errorLines;
 
 		ch.clear();
-		errorLines.clear();
+		// errorLines.clear();
 		ch.push_back(lines[0]);
-		errorLines.push_back(0);
+		// errorLines.push_back(0);
 		int alpha = 1;
 		while(alpha < lines.size()){
 			// std::cout<<id<<"  "<<pts.size()<<"\n";
 			int beta = ch.size()-1;
-			double errorLine = 0;
+			// double errorLine = 0;
 			while(beta > 0){
 				double chfp = (ch[beta].k-ch[beta-1].k)*(lines[alpha].b-ch[beta-1].b)
 							-(lines[alpha].k-ch[beta-1].k)*(ch[beta].b-ch[beta-1].b);
@@ -209,13 +211,13 @@ public:
 				double errorCH = boundCH * MachineEps * 9;
 				//尽可能pop出去
 				if(chfp>=-errorCH){
-					errorLine += errorLines.back();
+					// errorLine += errorLines.back();
 					ch.pop_back();
-					errorLines.pop_back();
+					// errorLines.pop_back();
 					beta--;
-					if(chfp<errorCH){
-						errorLine += (std::abs(lines[alpha].b-ch[beta-1].b)+std::abs(ch[beta].b-ch[beta-1].b)) * MachineEps * 13;
-					}
+					// if(chfp<errorCH){
+					// 	errorLine += (std::abs(lines[alpha].b-ch[beta-1].b)+std::abs(ch[beta].b-ch[beta-1].b));
+					// }
 				}
 				else break;
 			}
@@ -226,13 +228,14 @@ public:
 				if(!getMaxCH) chStart = - chStart;
 				if(chStart>=-errorCHStart){
 					ch.pop_back();
-					if(chStart<errorCHStart){
-						double errorLineStart = errorCHStart;
-						errorLine += errorLineStart;
-					}
+					// if(chStart<errorCHStart){
+					// 	// double errorLineStart = errorCHStart;
+					// 	errorLine += boundCHStart;
+					// }
 				}
 			}
-			if(ch.empty() || errorLine!=0){ch.push_back(lines[alpha]); errorLines.push_back(errorLine);}
+			if(ch.empty())ch.push_back(lines[alpha]);
+			// if(ch.empty() || errorLine!=0){ch.push_back(lines[alpha]); errorLines.push_back(errorLine);}
 			else{
 				double chEnd = tIntv[1]*(lines[alpha].k-ch[beta].k)+(lines[alpha].b-ch[beta].b);
 				double boundCHEnd = tIntv[1]*std::abs(lines[alpha].k-ch[beta].k)+std::abs(lines[alpha].b-ch[beta].b);
@@ -240,12 +243,12 @@ public:
 				if(!getMaxCH) chEnd = - chEnd;
 				if(chEnd>errorCHEnd){
 					ch.push_back(lines[alpha]);
-					errorLines.push_back(errorLine);
+					// errorLines.push_back(errorLine);
 				}
-				else if(chEnd>-errorCHEnd){
-					double errorLineEnd = errorCHEnd;
-					errorLines.back() = std::max(errorLines.back(), errorLineEnd);
-				}
+				// else if(chEnd>-errorCHEnd){
+				// 	// double errorLineEnd = errorCHEnd;
+				// 	errorLines.back() = std::max(errorLines.back(), boundCHEnd);
+				// }
 			}
 			alpha++;
 		}
@@ -254,7 +257,7 @@ public:
 			std::cout<<"empty CH!\n";
 			exit(-1);
 		}
-		return *std::max_element(errorLines.begin(), errorLines.end());
+		return 0;//*std::max_element(errorLines.begin(), errorLines.end());
 	}
 	static Array2dError robustHullIntersect(const std::vector<Line>& ch1, const std::vector<Line>& ch2, 
 							const double& boundBias1, const double& boundBias2, 

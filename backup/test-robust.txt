@@ -1,80 +1,80 @@
 min time: 0.648205
-used seconds: 0.0447509
+used seconds: 0.0229968
 29
 case 0 done 0.00029461
 min time: 0.344867
-used seconds: 0.0344017
+used seconds: 0.0158711
 21
 case 1 done 0.000362876
 min time: 0.579259
-used seconds: 0.0431052
+used seconds: 0.0188777
 23
 case 2 done 0.000735295
 min time: 0.471566
-used seconds: 0.502537
+used seconds: 0.180287
 266
-case 3 done 0.000410971
+case 3 done 0.000410972
 min time: 0.180568
-used seconds: 0.0373582
+used seconds: 0.0119227
 21
 case 4 done 0.000350804
 min time: 0.582841
-used seconds: 0.320759
+used seconds: 0.109967
 199
 case 5 done 0.000508403
 min time: 0.40668
-used seconds: 0.215928
+used seconds: 0.0839722
 145
 case 6 done 0.000177237
 min time: 0.324217
-used seconds: 0.0266031
+used seconds: 0.0105245
 18
 case 7 done 0.000662928
 min time: 0.369664
-used seconds: 0.0639958
+used seconds: 0.0208421
 35
 case 8 done 0.000386146
 min time: 0.278619
-used seconds: 0.307181
+used seconds: 0.0901991
 153
 case 9 done 0.000198008
-used seconds: 0.00710046
+used seconds: 0.00298614
 5
 case 10 done 4.92652
 min time: 0.707589
-used seconds: 1.54808
+used seconds: 0.478837
 798
 case 11 done 0.000406629
-used seconds: 0.0370381
+used seconds: 0.0131448
 20
 case 12 done 4.79268
 min time: 0.454057
-used seconds: 0.0879984
+used seconds: 0.025037
 40
 case 13 done 0.000468483
 min time: 0.38584
-used seconds: 0.860891
+used seconds: 0.307962
 527
 case 14 done 0.000407002
 min time: 0.988705
-used seconds: 0.69078
-481
+used seconds: 0.276912
+480
 case 15 done 0.000414711
 min time: 0.594469
-used seconds: 0.348216
+used seconds: 0.137224
 226
-case 16 done 0.000551625
-min time: 0.288685
-used seconds: 0.0366921
+case 16 done 0.000551658
+min time: 0.288684
+used seconds: 0.0171668
 28
-case 17 done 0.00034042
+case 17 done 0.000340443
 min time: 0.298024
-used seconds: 0.024293
+used seconds: 0.0102496
 18
 case 18 done 0.000937097
 min time: 0.912551
-used seconds: 5.54856
+used seconds: 1.83076
 2882
 case 19 done 0.000325069
 18 pairs have collided.
-used seconds: 0.539352
+used seconds: 0.183315

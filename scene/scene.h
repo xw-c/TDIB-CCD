@@ -85,12 +85,11 @@ void randomTest(const std::string& solverType, const BoundingBoxType & bb,
 		}
 		if(SHOWANS) std::cout<<cnt<<"\n";
 		if(t>=0)hasCol++;
-		if(k==19){
-			saveDoFs<ObjType,ObjType>(obj1.ctrlp, vel1.ctrlp, obj2.ctrlp, vel2.ctrlp);
-			exit(-1);
-		}
+		// if(k==19){
+		// 	saveDoFs<ObjType,ObjType>(obj1.ctrlp, vel1.ctrlp, obj2.ctrlp, vel2.ctrlp);
+			// file<<t<<"\n";
+		// }
 		// ft<<t<<"\n";
-		file<<t<<"\n";
 		// if(t>0)file<<t<<"  "<<uv1[0]<<"  "<<uv1[1]<<"  "<<uv2[0]<<"  "<<uv2[1]<<"\n";
 		if(SHOWANS) std::cout<<"case "<<k<<" done "<<calcDist(obj1,vel1,obj2,vel2,uv1,uv2,t)<<"\n";
 		
