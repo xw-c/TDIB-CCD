@@ -189,6 +189,8 @@ public:
 			//axis变成0即为退化情况，但看起来不用特殊处理
 			Vector3d lu = Edge::direction(ptPos1) + initTimeIntv[0]*Edge::direction(ptVel1);//u延展的方向
 			Vector3d lvtmp = Edge::direction(ptPos2) + initTimeIntv[0]*Edge::direction(ptVel2);//u延展的方向
+			lu[0]*=1.01;
+			// lvtmp[0]*=1.5;
 			Vector3d ln = lu.cross(lvtmp);
 			Vector3d lv = ln.cross(lu);
 			axes = {lu, lv, ln};
@@ -214,9 +216,9 @@ public:
 			// std::cout<<"intv:"<<intvT.transpose()<<"\n";
 			if(intvT[0]!=-1)feasibleIntvs.push_back(intvT);
 		}
-		for(const auto&l:feasibleIntvs)std::cout<<"intv:"<<l.transpose()<<"\n";
+		// for(const auto&l:feasibleIntvs)std::cout<<"intv:"<<l.transpose()<<"\n";
 		auto b=intvMerge(feasibleIntvs, colTime, initTimeIntv);
-		std::cout<<"colTime: "<<colTime.transpose()<<"\n";
+		// std::cout<<"colTime: "<<colTime.transpose()<<"\n";
 		// std::cin.get();
 		return b;
 	}
@@ -275,6 +277,8 @@ public:
 		else if(bb==BoundingBoxType::OBB){
 			Vector3d lu = Face::axisU(ptPos2) + initTimeIntv[0]*Face::axisU(ptVel2);//u延展的方向
 			Vector3d lvtmp = Face::axisV(ptPos2) + initTimeIntv[0]*Face::axisV(ptVel2);//u延展的方向
+			lu[0]*=1.01;
+			// lvtmp[0]*=1.01;
 			Vector3d ln = lu.cross(lvtmp);
 			Vector3d lv = ln.cross(lu);
 			axes = {lu, lv, ln};

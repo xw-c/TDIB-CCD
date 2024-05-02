@@ -1,24 +1,24 @@
 #include "../core/argsParser.h"
 #include "linearGeom.h"
 #include "linearSolver.h"
-template<typename ObjType1, typename ObjType2>
-static void saveDoFs(const std::array<Vector3d, ObjType1::cntCp>& CpPos1, 
-					const std::array<Vector3d, ObjType1::cntCp>& CpVel1,
-					const std::array<Vector3d, ObjType2::cntCp>& CpPos2, 
-					const std::array<Vector3d, ObjType2::cntCp>& CpVel2,
-					const std::string& filename="DoFs.txt"){
-	std::ofstream f(filename);
-	f<< std::fixed << std::setprecision(10);
-	for(auto item : CpPos1)
-		f<<item.transpose()<<"\n";
-	for(auto item : CpVel1)
-		f<<item.transpose()<<"\n";
-	for(auto item : CpPos2)
-		f<<item.transpose()<<"\n";
-	for(auto item : CpVel2)
-		f<<item.transpose()<<"\n";
-	f.close();
-}
+// template<typename ObjType1, typename ObjType2>
+// static void saveDoFs(const std::array<Vector3d, ObjType1::cntCp>& CpPos1, 
+// 					const std::array<Vector3d, ObjType1::cntCp>& CpVel1,
+// 					const std::array<Vector3d, ObjType2::cntCp>& CpPos2, 
+// 					const std::array<Vector3d, ObjType2::cntCp>& CpVel2,
+// 					const std::string& filename="DoFs.txt"){
+// 	std::ofstream f(filename);
+// 	f<< std::fixed << std::setprecision(10);
+// 	for(auto item : CpPos1)
+// 		f<<item.transpose()<<"\n";
+// 	for(auto item : CpVel1)
+// 		f<<item.transpose()<<"\n";
+// 	for(auto item : CpPos2)
+// 		f<<item.transpose()<<"\n";
+// 	for(auto item : CpVel2)
+// 		f<<item.transpose()<<"\n";
+// 	f.close();
+// }
 static void generateEEPair(std::array<Vector3d, Edge::cntCp> &CpPos1, std::array<Vector3d, Edge::cntCp> &CpVel1,
 						std::array<Vector3d, Edge::cntCp> &CpPos2, std::array<Vector3d, Edge::cntCp> &CpVel2){
 	Vector3d dir=Vector3d::Random();
@@ -58,13 +58,12 @@ static void randomEETest(const BoundingBoxType & bb, const double& deltaDist, co
 	for(int k = 0; k < kase; k ++){
 		generateEEPair(obj1.ctrlp, vel1.ctrlp, obj2.ctrlp, vel2.ctrlp);
 		t = LinearSolverTD::solveEETest(obj1,vel1,obj2,vel2,u1,u2,bb,deltaT,deltaDist);
-		saveDoFs<Edge, Edge>(obj1.ctrlp, vel1.ctrlp, obj2.ctrlp, vel2.ctrlp);
-		std::cout<<u1<<" "<<u2<<" time "<<t<<"\n";
+		// std::cout<<u1<<" "<<u2<<" time "<<t<<"\n";
 		if(t>=0){
 			hasCol++;
-			auto colPos1 = (obj1.lerp(u1)+t*vel1.lerp(u1));
-			auto colPos2 = (obj2.lerp(u2)+t*vel2.lerp(u2));
-			std::cout<<"case "<<k<<" done, seperation: "<<(colPos1-colPos2).norm()<<"\n";
+			// auto colPos1 = (obj1.lerp(u1)+t*vel1.lerp(u1));
+			// auto colPos2 = (obj2.lerp(u2)+t*vel2.lerp(u2));
+			// std::cout<<"case "<<k<<" done, seperation: "<<(colPos1-colPos2).norm()<<"\n";
 		}
 	}
 	const auto endTime = steady_clock::now();
@@ -98,9 +97,9 @@ static void randomVFTest(const BoundingBoxType & bb, const double& deltaDist, co
 		t = LinearSolverTD::solveVFTest(obj1,vel1,obj2,vel2,uv,bb,deltaT,deltaDist);
 		if(t>=0){
 			hasCol++;
-			auto colPos1 = (obj1+t*vel1);
-			auto colPos2 = (obj2.evaluatePatchPoint(uv)+t*vel2.evaluatePatchPoint(uv));
-			std::cout<<"case "<<k<<" done, seperation: "<<(colPos1-colPos2).norm()<<"\n";
+			// auto colPos1 = (obj1+t*vel1);
+			// auto colPos2 = (obj2.evaluatePatchPoint(uv)+t*vel2.evaluatePatchPoint(uv));
+			// std::cout<<"case "<<k<<" done, seperation: "<<(colPos1-colPos2).norm()<<"\n";
 		}
 	}
 	const auto endTime = steady_clock::now();
