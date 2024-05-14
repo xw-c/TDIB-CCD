@@ -135,7 +135,7 @@ public:
 			}
 			if(beta==0){
 				double chStart = tIntv[0]*(lines[alpha].k-ch[0].k)+(lines[alpha].b-ch[0].b);
-				if((getMaxCH&&chStart>0)||(!getMaxCH&&chStart<0))
+				if((getMaxCH&&chStart>=0)||(!getMaxCH&&chStart<=0))
 					ch.pop_back();
 			}
 			if(ch.empty())ch.push_back(lines[alpha]);
@@ -188,8 +188,8 @@ public:
 				}
 				else {
 					id1++;
-					if(hifp2<0);
-					else id2++;
+					// if(hifp2<0);
+					// else id2++;
 				}
 			}
 			// std::cout<<"left: "<<id1<<"  "<<id2<<"  "<<intvL<<'\n';
@@ -231,8 +231,8 @@ public:
 				}
 				else {
 					id1--;
-					if(hifp2<0);
-					else id2--;
+					// if(hifp2<0);
+					// else id2--;
 				}
 			}
 			// std::cout<<"left: "<<id1<<"  "<<id2<<"  "<<intvL<<'\n';
