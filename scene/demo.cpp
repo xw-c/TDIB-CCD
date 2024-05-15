@@ -8,9 +8,9 @@ inline std::unique_ptr<ArgsParser> BuildArgsParser()
 	parser->addArgument<std::string>("bb", 'b', "type of bounding box (aabb, obb)", "obb");
 	// parser->addArgument<std::string>("primitive", 'p', "type of primitive (tri/rec + 1/2/3 + /rat)", "rec3");
 
-	parser->addArgument<double>("delta", 'd', "distance for convergence criterion", MinL1Dist);
-	parser->addArgument<int>("kase", 'k', "number of generated cases", KaseDefault);
-	parser->addArgument<double>("velocity", 'v', "magnitude of velocity", PullVelocity);
+	parser->addArgument<double>("delta", 'd', "distance for convergence criterion", 1e-6);
+	parser->addArgument<int>("kase", 'k', "number of generated cases", 50);
+	parser->addArgument<double>("velocity", 'v', "magnitude of velocity", 1);
 
 	// parser->addArgument<bool>("process", 'p', "show details of solving process", SHOWANS);
 	parser->addArgument<std::string>("output", 'o', "the output filename", "output");
@@ -46,7 +46,7 @@ int main(int argc, char *argv[]){
 		validate<RecCubicBezier, RecParamBound>(solverType, bb, deltaDist, kase, velMag, outputFile);
 	else if(expType=="rand")
 		randomTest<RecCubicBezier, RecParamBound>(solverType, bb, deltaDist, kase, velMag, outputFile);
-	else if(expType=="fn")
+			else if(expType=="fn")
 		FNCase(solverType, bb, deltaDist, kase, velMag, outputFile);
 	else if(expType=="all"){
 		randomTest<TriLinearBezier, TriParamBound>(solverType, bb, deltaDist, kase, velMag, outputFile);

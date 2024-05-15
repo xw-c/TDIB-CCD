@@ -83,8 +83,8 @@ private:
 				}
 				else {
 					id1++;
-					// if(hifp2<0);
-					// else id2++;
+					if(hifp2<0);
+					else id2++;
 				}
 			}
 			if(intvL==-1||intvL>=tIntv[1])return Array2d(-1,-1);
@@ -118,8 +118,8 @@ private:
 				}
 				else {
 					id1--;
-					// if(hifp2<0);
-					// else id2--;
+					if(hifp2<0);
+					else id2--;
 				}
 			}
 			if(intvR==-1){
@@ -240,7 +240,8 @@ public:
 
 			// Decide whether the algorithm converges
 			double mid1 = (cur.pb1[0]+cur.pb1[1])*0.5, mid2 = (cur.pb2[0]+cur.pb2[1])*0.5;
-			if (cur.calcL1Dist(CpPos1, CpVel1, CpPos2, CpVel2) < deltaDist) {
+			// if (cur.calcL1Dist(CpPos1, CpVel1, CpPos2, CpVel2) < deltaDist) {
+			if (cur.calcWidth() < deltaDist) {
 				u1=mid1, u2=mid2;
 				return cur.tIntv[0];
 			}
@@ -319,7 +320,8 @@ public:
 			heap.pop();
 
 			// Decide whether the algorithm converges
-			if (cur.calcL1Dist(CpPos1, CpVel1, CpPos2, CpVel2) < deltaDist) {
+			// if (cur.calcL1Dist(CpPos1, CpVel1, CpPos2, CpVel2) < deltaDist) {
+			if (cur.calcWidth() < deltaDist) {
 				uv = cur.pb.centerParam();
 				return cur.tIntv[0];
 			}

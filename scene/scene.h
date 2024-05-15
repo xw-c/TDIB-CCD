@@ -73,17 +73,12 @@ void randomTest(const std::string& solverType, const BoundingBoxType & bb,
 		generatePatchPair<ObjType>(obj1.ctrlp, vel1.ctrlp, obj2.ctrlp, vel2.ctrlp, velMag);
 		if(solverType=="td")
 			t = SolverTD<ObjType,ObjType,ParamType,ParamType>::solveCCD(obj1,vel1,obj2,vel2,uv1,uv2,bb,DeltaT,deltaDist);
-		else if(solverType=="init")
-			t = SolverInitTD<ObjType,ObjType,ParamType,ParamType>::solveCCD(obj1,vel1,obj2,vel2,uv1,uv2,DeltaT,deltaDist);
-		else if(solverType=="robust")
-			t = SolverRobustTD<ObjType,ObjType,ParamType,ParamType>::solveCCD(obj1,vel1,obj2,vel2,uv1,uv2,bb,DeltaT,deltaDist);
 		else if(solverType=="base")
 			t = SolverBase<ObjType,ObjType,ParamType,ParamType>::solveCCD(obj1,vel1,obj2,vel2,uv1,uv2,bb,DeltaT,deltaDist);
 		else{
 			std::cerr<<"solver not implemented!\n";
 			exit(-1);
 		}
-		if(SHOWANS) std::cout<<cnt<<"\n";
 		if(t>=0)hasCol++;
 		// if(k==19){
 		// 	saveDoFs<ObjType,ObjType>(obj1.ctrlp, vel1.ctrlp, obj2.ctrlp, vel2.ctrlp);
@@ -91,7 +86,7 @@ void randomTest(const std::string& solverType, const BoundingBoxType & bb,
 		// }
 		// ft<<t<<"\n";
 		// if(t>0)file<<t<<"  "<<uv1[0]<<"  "<<uv1[1]<<"  "<<uv2[0]<<"  "<<uv2[1]<<"\n";
-		if(SHOWANS) std::cout<<"case "<<k<<" done "<<calcDist(obj1,vel1,obj2,vel2,uv1,uv2,t)<<"\n";
+		std::cout<<"case "<<k<<" done "<<calcDist(obj1,vel1,obj2,vel2,uv1,uv2,t)<<"\n";
 		
 		// std::cout<<kase<<": "<<duration(steady_clock::now() - initialTime).count()<<"s\n";
 	}

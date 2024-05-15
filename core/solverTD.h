@@ -188,8 +188,8 @@ public:
 				}
 				else {
 					id1++;
-					// if(hifp2<0);
-					// else id2++;
+					if(hifp2<0);
+					else id2++;
 				}
 			}
 			// std::cout<<"left: "<<id1<<"  "<<id2<<"  "<<intvL<<'\n';
@@ -231,8 +231,8 @@ public:
 				}
 				else {
 					id1--;
-					// if(hifp2<0);
-					// else id2--;
+					if(hifp2<0);
+					else id2--;
 				}
 			}
 			// std::cout<<"left: "<<id1<<"  "<<id2<<"  "<<intvL<<'\n';
@@ -266,19 +266,9 @@ public:
 			PatchPair(const ParamBound1& c1, const ParamBound2& c2, 
 					const Array2d& t = Array2d(0,DeltaT)): pb1(c1), pb2(c2), tIntv(t) {}
 			bool operator<(PatchPair const &o) const { return tIntv[0] > o.tIntv[0]; }
-			double calcL1Dist(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1, 
-							const ParamObj2 &CpPos2, const ParamObj2 &CpVel2) const{
-				auto ptPos1 = CpPos1.divideBezierPatch(pb1);
-				auto ptVel1 = CpVel1.divideBezierPatch(pb1);
-				auto ptPos2 = CpPos2.divideBezierPatch(pb2);
-				auto ptVel2 = CpVel2.divideBezierPatch(pb2);
-				for(int i=0;i<ParamObj1::cntCp;i++)
-					ptPos1[i]+=ptVel1[i]*tIntv[0];
-				for(int i=0;i<ParamObj2::cntCp;i++)
-					ptPos2[i]+=ptVel2[i]*tIntv[0];
-				double d1=calcAAExtent<ParamObj1>(ptPos1);
-				double d2=calcAAExtent<ParamObj2>(ptPos2);
-				return std::max(d1, d2);
+			double calcWidth() const{
+				const double w1 = pb1.width(), w2 = pb2.width();
+				return std::max(std::max(w1, w2), tIntv[1]-tIntv[0]);
 			}
 		};
 
@@ -292,15 +282,15 @@ public:
 		Array2d initTimeIntv(0,upperTime), colTime;
 		if (primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, initParam1, initParam2, colTime, bb, initTimeIntv))
 			heap.emplace(initParam1, initParam2, colTime);
-		cnt=1;
+		// cnt=1;
 		while (!heap.empty()) {
 			auto const cur = heap.top();
 			heap.pop();
-			cnt++;
+			// cnt++;
 			// if(SHOWANS) std::cout<<cnt<<"\n";
 
 			// Decide whether the algorithm converges
-			if (cur.calcL1Dist(CpPos1, CpVel1, CpPos2, CpVel2) < deltaDist) {
+			if (cur.calcWidth() < deltaDist) {
 				uv1 = cur.pb1.centerParam();
 				uv2 = cur.pb2.centerParam();
 				const auto endTime = steady_clock::now();
