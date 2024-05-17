@@ -3,7 +3,7 @@
 #include <cassert>
 #include <filesystem>
 #include <iostream>
-
+#include "linearSolver.h"
 int main(){
     static const std::filesystem::path root_path(std::string("D:\\CCD\\ccd-queries-handcrafted"));
 

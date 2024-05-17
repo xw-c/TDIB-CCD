@@ -41,7 +41,7 @@ public:
 	}
 
 	Array2d centerParam() const { return 0.5 * (pMin + pMax); }
-	double diameter() const {
+	double width() const {
 		return (pMax - pMin).maxCoeff();
 	}
 };
@@ -67,9 +67,6 @@ public:
         os << "(" << coord.u << ", " << coord.v << ", " << coord.w << ")";
         return os;
     }
-	double computeSquaredDist(const BaryCoord& bc) const {
-		return (u - bc.u)*(u - bc.u)+ (v - bc.v)*(v - bc.v) + (w - bc.w)*(w - bc.w);
-	}
 };
 
 class TriParamBound{
@@ -98,8 +95,9 @@ public:
 	}
 
 	Array2d centerParam() const { return Array2d((nodes[0].u+nodes[1].u+nodes[2].u)/3., (nodes[0].v+nodes[1].v+nodes[2].v)/3.); }
-	double diameter() const {
-		const double e[3]={nodes[0].computeSquaredDist(nodes[1]), nodes[2].computeSquaredDist(nodes[1]), nodes[0].computeSquaredDist(nodes[2])};
-		return std::max(std::max(e[0], e[1]), e[2]);
+	double width() const {
+		double uMax=std::max(std::max(nodes[0].u, nodes[1].u), nodes[2].u), uMin=std::min(std::min(nodes[0].u, nodes[1].u), nodes[2].u); 
+		double vMax=std::max(std::max(nodes[0].v, nodes[1].v), nodes[2].v), vMin=std::min(std::min(nodes[0].v, nodes[1].v), nodes[2].v); 
+		return std::max(uMax-uMin, vMax-vMin);
 	}
 };
