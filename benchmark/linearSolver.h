@@ -95,8 +95,9 @@ private:
 		else{
 			while(id1>=0&&id2>=0){
 				if(ch1[id1].k<=ch2[id2].k){
-					std::cerr<<"end at strange slopes?\n";
-					exit(-1);
+					// std::cerr<<"end at strange slopes?\n";
+					// exit(-1);
+					return Array2d(-1,-1);
 				}
 				double hifp1, hifp2;
 				if(id1>0)
@@ -170,7 +171,7 @@ private:
 				else break;
 		}
 		if(initTimeIntv[0] > maxT) { colTime = Array2d(-1,-1); return false; }
-		else if(minT > maxT) { std::cerr<<"bug?\n"; std::cin.get();}//{ colTime = Array2d(-1,-1); return false; }
+		else if(minT > maxT) { colTime = Array2d(minT, initTimeIntv[1]);}
 		colTime = Array2d(minT, maxT); 
 		return true;
 	}
@@ -191,7 +192,11 @@ public:
 			//axis变成0即为退化情况，但看起来不用特殊处理
 			Vector3d lu = Edge::direction(ptPos1) + initTimeIntv[0]*Edge::direction(ptVel1);//u延展的方向
 			Vector3d lvtmp = Edge::direction(ptPos2) + initTimeIntv[0]*Edge::direction(ptVel2);//u延展的方向
-			lu[0]*=1.01;
+			// lu[0]*=1.01;
+			Vector3d randu = Vector3d::Random()*lu.norm()*0.01;
+			Vector3d randv = Vector3d::Random()*lvtmp.norm()*0.01;
+			lu+=randu;
+			lvtmp+=randv;
 			// lvtmp[0]*=1.5;
 			Vector3d ln = lu.cross(lvtmp);
 			Vector3d lv = ln.cross(lu);
@@ -280,7 +285,11 @@ public:
 		else if(bb==BoundingBoxType::OBB){
 			Vector3d lu = Face::axisU(ptPos2) + initTimeIntv[0]*Face::axisU(ptVel2);//u延展的方向
 			Vector3d lvtmp = Face::axisV(ptPos2) + initTimeIntv[0]*Face::axisV(ptVel2);//u延展的方向
-			lu[0]*=1.01;
+			// lu[0]*=1.01;
+			Vector3d randu = Vector3d::Random()*lu.norm()*0.01;
+			Vector3d randv = Vector3d::Random()*lvtmp.norm()*0.01;
+			lu+=randu;
+			lvtmp+=randv;
 			// lvtmp[0]*=1.01;
 			Vector3d ln = lu.cross(lvtmp);
 			Vector3d lv = ln.cross(lu);
