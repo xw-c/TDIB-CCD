@@ -1,4 +1,6 @@
 #include "scene.h"
+#include "scene_examples.h"
+#include "scene_manifold.h"
 #include "argsParser.h"
 inline std::unique_ptr<ArgsParser> BuildArgsParser()
 {
@@ -46,7 +48,13 @@ int main(int argc, char *argv[]){
 		validate<RecCubicBezier, RecParamBound>(solverType, bb, deltaDist, kase, velMag, outputFile);
 	else if(expType=="rand")
 		randomTest<RecCubicBezier, RecParamBound>(solverType, bb, deltaDist, kase, velMag, outputFile);
-			else if(expType=="fn")
+	else if(expType=="plane")
+		planeTest<RecCubicBezier, RecParamBound>(solverType, bb, deltaDist, outputFile);
+	else if(expType=="bunny")
+		parabolaBunnyTorus();
+	else if(expType=="torus")
+		torusTest(solverType, bb, deltaDist, outputFile);
+	else if(expType=="fn")
 		FNCase(solverType, bb, deltaDist, kase, velMag, outputFile);
 	else if(expType=="all"){
 		randomTest<TriLinearBezier, TriParamBound>(solverType, bb, deltaDist, kase, velMag, outputFile);

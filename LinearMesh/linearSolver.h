@@ -130,6 +130,9 @@ private:
 				return Array2d(-1,-1);
 		}
 
+		intvL = std::max(intvL, tIntv[0]);
+		intvR = std::min(intvR, tIntv[1]);
+
 		if(intvL>intvR||intvL<tIntv[0]||intvR>tIntv[1]){
 			std::cerr<<"error intersection!\n";
 			std::cerr<<intvL<<" "<<intvR<<", in range"<<tIntv[0]<<" "<<tIntv[0]<<"\n";
@@ -168,7 +171,8 @@ private:
 				else break;
 		}
 		if(initTimeIntv[0] > maxT) { colTime = Array2d(-1,-1); return false; }
-		else if(minT > maxT) { std::cerr<<"bug?\n"; std::cin.get();}//{ colTime = Array2d(-1,-1); return false; }
+		// maxT=std::max(minT, maxT);
+		else if(minT > maxT) { colTime = Array2d(minT, initTimeIntv[1]);}//{ colTime = Array2d(-1,-1); return false; }
 		colTime = Array2d(minT, maxT); 
 		return true;
 	}
@@ -189,7 +193,11 @@ public:
 			//axis变成0即为退化情况，但看起来不用特殊处理
 			Vector3d lu = Edge::direction(ptPos1) + initTimeIntv[0]*Edge::direction(ptVel1);//u延展的方向
 			Vector3d lvtmp = Edge::direction(ptPos2) + initTimeIntv[0]*Edge::direction(ptVel2);//u延展的方向
-			lu[0]*=1.01;
+			// lu[0]*=1.01;
+			Vector3d randu = Vector3d::Random()*lu.norm()*0.01;
+			Vector3d randv = Vector3d::Random()*lvtmp.norm()*0.01;
+			lu+=randu;
+			lvtmp+=randv;
 			// lvtmp[0]*=1.5;
 			Vector3d ln = lu.cross(lvtmp);
 			Vector3d lv = ln.cross(lu);

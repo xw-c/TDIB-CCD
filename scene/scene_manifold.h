@@ -11,7 +11,7 @@
 #include "recRatBezier.h"
 
 template<typename ObjType, typename ParamType>
-void planeTest(const std::string& solverType, const double& deltaDist, const int& kase, const double& velMag, const std::string& outputFile){
+void planeTest(const std::string& solverType, const BoundingBoxType & bb, const double& deltaDist, const std::string& outputFile){
 	ObjType obj1, obj2, vel1, vel2;
 	int hasCol = 0;
 	double t;
@@ -191,33 +191,8 @@ void generateTorus(RatParamMesh<RecQuadRatBezier>& torus, RatParamMesh<RecQuadRa
 	torus.cntPatches = 16;
 	vel = RatParamMesh<RecQuadRatBezier>(16, weight);
 }
-void generateCone(RatParamMesh<TriQuadRatBezier>& cone, RatParamMesh<TriQuadRatBezier>& vel){
-	double r=2, h=4;
-	//顶点位置没有乘权重
-	std::array<double, 6> weight = {1,1./sqrt(2),1, 1,1,1};
-	std::array<Vector3d, 6> pos1 = { Vector3d(r,0,0), Vector3d(r,r,0), Vector3d(0,r,0), 
-				Vector3d(r/2.,0,h/2.), Vector3d(0,r/2.,h/2.), Vector3d(0,0,h)},
 
-	pos2 = { Vector3d(0,r,0), Vector3d(-r,r,0), Vector3d(-r,0,0), 
-				Vector3d(0,r/2.,h/2.), Vector3d(-r/2.,0,h/2.), Vector3d(0,0,h)},
-
-	pos3 = { Vector3d(-r,0,0), Vector3d(-r,-r,0), Vector3d(0,-r,0), 
-				Vector3d(-r/2.,0,h/2.), Vector3d(0,-r/2.,h/2.), Vector3d(0,0,h)},
-
-	pos4 = { Vector3d(0,-r,0), Vector3d(r,-r,0), Vector3d(r,0,0), 
-				Vector3d(0,-r/2.,h/2.), Vector3d(r/2.,0,h/2.), Vector3d(0,0,h)};
-
-	cone.patches.clear();
-	cone.patches.emplace_back(pos1,weight);
-	cone.patches.emplace_back(pos2,weight);
-	cone.patches.emplace_back(pos3,weight);
-	cone.patches.emplace_back(pos4,weight);
-
-	cone.cntPatches = 4;
-
-	vel = RatParamMesh<TriQuadRatBezier>(4, weight);
-}
-void torusTest(const std::string& solverType, const double& deltaDist, const std::string& outputFile){
+void torusTest(const std::string& solverType, const BoundingBoxType & bb, const double& deltaDist, const std::string& outputFile){
 	RatParamMesh<RecQuadRatBezier> torusPos, torusVel;
 	generateTorus(torusPos,torusVel);
 

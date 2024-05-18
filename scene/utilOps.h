@@ -1,3 +1,4 @@
+#pragma once
 #include "config.h"
 template<typename ObjType1, typename ObjType2>
 static void readinDoFs(std::array<Vector3d, ObjType1::cntCp>& CpPos1, 
