@@ -244,10 +244,10 @@ public:
 				return Array2d(-1,-1);
 		}
 
-		
+
 		if(intvL>intvR||intvL<tIntv[0]||intvR>tIntv[1]){
 			std::cout<<"error intersection!\n";
-			std::cout<<intvL<<" "<<intvR<<", in range"<<tIntv[0]<<" "<<tIntv[0]<<"\n";
+			std::cout<<intvL<<" "<<intvR<<", in range"<<tIntv[0]<<" "<<tIntv[1]<<"\n";
 			exit(-1);
 		}
 		else return Array2d(intvL,intvR);

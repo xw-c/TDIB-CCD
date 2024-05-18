@@ -47,10 +47,10 @@ void planeTest(const std::string& solverType, const BoundingBoxType & bb, const 
 	const auto initialTime = steady_clock::now();
 	if(solverType=="td"){
 		SolverTDManifold<ObjType,ObjType,ParamType,ParamType> solver;
-		t = solver.solveCCD(obj1,vel1,obj2,vel2,solutSet,DeltaT,deltaDist);
+		t = solver.solveCCD(obj1,vel1,obj2,vel2,solutSet,bb,DeltaT,deltaDist);
 	}else if(solverType=="base"){
 		SolverBaseManifold<ObjType,ObjType,ParamType,ParamType> solver;
-		t = solver.solveCCD(obj1,vel1,obj2,vel2,solutSet,DeltaT,deltaDist);}
+		t = solver.solveCCD(obj1,vel1,obj2,vel2,solutSet,bb,DeltaT,deltaDist);}
 	else{
 		std::cerr<<"solver not implemented!\n";
 		exit(-1);
@@ -70,7 +70,7 @@ void planeTest(const std::string& solverType, const BoundingBoxType & bb, const 
 	
 	for(const auto& r:solutSet){
 		auto v=(r.aabb1[0]+r.aabb1[1])/2.;
-		file<<r.t<<" "<<v[0]<<" "<<v[1]<<"\n";
+		file<<r.tIntv[0]<<" "<<v[0]<<" "<<v[1]<<"\n";
 	}
 	file.close();
 	// fp.close();
@@ -81,6 +81,7 @@ template<typename ParamObj1, typename ParamObj2, typename ParamBound1, typename 
 double ccd_ratBezier_manifold(const std::string& solverType, const std::string& outputFile,
 			const RatParamMesh<ParamObj1>& mesh1, const RatParamMesh<ParamObj1>& vel1,
 			const RatParamMesh<ParamObj2>& mesh2, const RatParamMesh<ParamObj2>& vel2,
+			const BoundingBoxType & bb, 
 			const double upperTime, const double& deltaDist){
 	double minTimeUB = upperTime;
 	std::multiset<CCDIntv<ParamBound1, ParamBound2> > solutSet;
@@ -92,18 +93,18 @@ double ccd_ratBezier_manifold(const std::string& solverType, const std::string& 
 			if(solverType=="td"){
 				SolverTDManifold<ParamObj1,ParamObj2,ParamBound1,ParamBound2> solver;
 				t = solver.solveCCD(mesh1.patches[i], vel1.patches[i], mesh2.patches[j], vel2.patches[j], 
-								solutSet, minTimeUB, deltaDist);
+								solutSet,bb, minTimeUB, deltaDist);
 			}
 			else if(solverType=="base"){
 				SolverBaseManifold<ParamObj1,ParamObj2,ParamBound1,ParamBound2> solver;
 				t = solver.solveCCD(mesh1.patches[i], vel1.patches[i], mesh2.patches[j], vel2.patches[j], 
-								solutSet, minTimeUB, deltaDist);
+								solutSet,bb, minTimeUB, deltaDist);
 			}
 			else{
 				std::cerr<<"solver not implemented!\n";
 				exit(-1);
 			}
-			std::cout<<i<<" "<<j<<": "<<t<<solutSet.size()<<"\n";
+			std::cout<<i<<" "<<j<<": "<<t<<" "<<solutSet.size()<<"\n";
 			if(t>=0){
 				if(t==0)return 0;
 				minTimeUB = std::min(minTimeUB, t);
@@ -205,7 +206,7 @@ void torusTest(const std::string& solverType, const BoundingBoxType & bb, const 
 	const auto initialTime = steady_clock::now();
 	// double t=ccd(torusPos, torusVel, conePos, coneVel, 
 	// 			SolverBase<RecQuadRatBezier,TriQuadRatBezier,RecParamBound, TriParamBound>::solveCCD);
-	double t = ccd_ratBezier_manifold<RecQuadRatBezier,RecQuadRatBezier,RecParamBound, RecParamBound>(solverType, outputFile, torusPos, torusVel, torusPos2, torusVel2, DeltaT, deltaDist);
+	double t = ccd_ratBezier_manifold<RecQuadRatBezier,RecQuadRatBezier,RecParamBound, RecParamBound>(solverType, outputFile, torusPos, torusVel, torusPos2, torusVel2,bb, DeltaT, deltaDist);
 	const auto endTime = steady_clock::now();
 	std::cout<<"colTime: "<<t<<"\n";
 	std::cout << "used seconds: " <<

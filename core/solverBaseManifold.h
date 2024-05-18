@@ -58,12 +58,13 @@ class SolverBaseManifold{
 	bool primitiveCheck(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1, 
 							const ParamObj2 &CpPos2, const ParamObj2 &CpVel2,
 							const ParamBound1 &divUvB1, const ParamBound2 &divUvB2,
+							const BoundingBoxType& bb,
 							const Array2d divTime = Array2d(0,DeltaT)) {
 		calcPatches(CpPos1, CpVel1,CpPos2, CpVel2, divUvB1, divUvB2, divTime);
 
 		std::vector<Vector3d> axes;
 		axes.clear();
-		setAxes<ParamObj1, ParamObj2>(posStart1, posStart2, axes);
+		setAxes<ParamObj1, ParamObj2>(posStart1, posStart2, axes, bb);
 
 		for(auto& axis:axes){
 			double maxProj1 = -INFT, minProj1 = INFT;
@@ -93,6 +94,7 @@ public:
 	double solveCCD(const ParamObj1 &CpPos1, const ParamObj1 &CpVel1, 
 						const ParamObj2 &CpPos2, const ParamObj2 &CpVel2,
 						std::multiset<CCDIntv<ParamBound1, ParamBound2> > & solutSet,
+						const BoundingBoxType& bb,
 						const double upperTime = DeltaT,
 						const double deltaDist = MinL1Dist) {
 		struct PatchPair{
@@ -103,11 +105,9 @@ public:
 					Array2d t = Array2d(0,DeltaT)): pb1(c1), pb2(c2), tIntv(t) {}
 			// 按照lb升序排列-->按照ub升序排列
 			bool operator<(PatchPair const &o) const { return tIntv[1] > o.tIntv[1]; }
-			double calcL1Dist(const std::array<Vector3d, 2> &aabb1, 
-							const std::array<Vector3d, 2> &aabb2) const{
-				double d1=(aabb1[1]-aabb1[0]).maxCoeff();
-				double d2=(aabb2[1]-aabb2[0]).maxCoeff();
-				return std::max(d1, d2);
+			double calcWidth() const{
+				const double w1 = pb1.width(), w2 = pb2.width();
+				return std::max(std::max(w1, w2), tIntv[1]-tIntv[0]);
 			}
 		};
 
@@ -119,7 +119,7 @@ public:
 		ParamBound1 initParam1;
 		ParamBound2 initParam2;
 		Array2d initTimeIntv(0,upperTime);
-		if (primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, initParam1, initParam2, initTimeIntv))
+		if (primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, initParam1, initParam2, bb, initTimeIntv))
 			heap.emplace(initParam1, initParam2, initTimeIntv);
 
 		// cnt=1;
@@ -145,9 +145,9 @@ public:
 				if (discard) continue;
 			}
 
-			if (cur.calcL1Dist(aabb1, aabb2) < MinL1Dist) {
+			if (cur.calcWidth() < MinL1Dist) {
 				// if(cur.tIntv[0]<leastUB + MeantimeEpsilon){
-					// std::cout<<cur.calcL1Dist(aabb1, aabb2)<<"\n";
+					// std::cout<<cur.calcWidth(aabb1, aabb2)<<"\n";
 					// bool discard = false;
 					// if(!solutSet.empty()){
 					// 	for(const auto& r:solutSet)
@@ -197,10 +197,10 @@ public:
 				for (int j = 0; j < 4; j++) {
 					ParamBound2 divUvB2(cur.pb2.interpSubpatchParam(j));
 					calcPatches(CpPos1, CpVel1, CpPos2, CpVel2, divUvB1, divUvB2, divTime1);
-					if (divTime1[0]<leastUB + MeantimeEpsilon && primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, divUvB1, divUvB2, divTime1)){
+					if (divTime1[0]<leastUB + MeantimeEpsilon && primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, divUvB1, divUvB2, bb, divTime1)){
 						heap.emplace(divUvB1, divUvB2, divTime1);
 					}
-					if (divTime2[0]<leastUB + MeantimeEpsilon && primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, divUvB1, divUvB2, divTime2)){
+					if (divTime2[0]<leastUB + MeantimeEpsilon && primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, divUvB1, divUvB2, bb, divTime2)){
 						heap.emplace(divUvB1, divUvB2, divTime2);
 					}
 				}
