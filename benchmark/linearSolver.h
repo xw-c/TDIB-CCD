@@ -131,9 +131,11 @@ private:
 		}
 
 		if(intvL>intvR||intvL<tIntv[0]||intvR>tIntv[1]){
-			std::cerr<<"error intersection!\n";
-			std::cerr<<intvL<<" "<<intvR<<", in range"<<tIntv[0]<<" "<<tIntv[0]<<"\n";
-			exit(-1);
+			// std::cerr<<"error intersection!\n";
+			// std::cerr<<intvL<<" "<<intvR<<", in range"<<tIntv[0]<<" "<<tIntv[0]<<"\n";
+			// exit(-1);
+			intvL = std::max(intvL, tIntv[0]);
+			intvR = std::min(intvR, tIntv[1]);
 		}
 		else return Array2d(intvL,intvR);
 	}			
