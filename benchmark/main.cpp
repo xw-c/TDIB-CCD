@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <iostream>
 #include "linearSolver.h"
+#include "linearSolverBase.h"
 
 void count_fp_fn(double t, bool gt, int& fn, int& fp, const std::filesystem::directory_entry& csv, int i){
     bool collide = t >= 0;
@@ -31,7 +32,8 @@ double do_EE_test(const std::array<std::array<double, 3>, 8>& vertices, double& 
             va(ea0_t1-ea0_t0, ea1_t1-ea1_t0), vb(eb0_t1-eb0_t0, eb1_t1-eb1_t0);
     double u1 = 0, u2 = 0;
     const auto initialTime = std::chrono::steady_clock::now();
-    double t = LinearSolverTD::solveEETest(a, va, b, vb, u1, u2, BoundingBoxType::AABB, 1, 1e-6);
+    // double t = LinearSolverTD::solveEETest(a, va, b, vb, u1, u2, BoundingBoxType::AABB, 1, 1e-6);
+    double t = LinearSolverBase::solveEETest(a, va, b, vb, u1, u2, BoundingBoxType::OBB, 1, 1e-6);
     const auto endTime = std::chrono::steady_clock::now();
     double used_time = std::chrono::duration<double>(endTime - initialTime).count();
     time += used_time;
@@ -51,7 +53,8 @@ double do_VF_test(const std::array<std::array<double, 3>, 8>& vertices, double& 
     Face face(f), vface(vf);
     Array2d uv(0, 0);
     const auto initialTime = std::chrono::steady_clock::now();
-    double t = LinearSolverTD::solveVFTest(p_t0, p_t1-p_t0, face, vface, uv, BoundingBoxType::AABB, 1, 1e-6);
+    // double t = LinearSolverTD::solveVFTest(p_t0, p_t1-p_t0, face, vface, uv, BoundingBoxType::AABB, 1, 1e-6);
+    double t = LinearSolverBase::solveVFTest(p_t0, p_t1-p_t0, face, vface, uv, BoundingBoxType::OBB, 1, 1e-6);
     const auto endTime = std::chrono::steady_clock::now();
     double used_time = std::chrono::duration<double>(endTime - initialTime).count();
     time += used_time;
@@ -112,3 +115,37 @@ int main(int argc, char *argv[]){
     std::cout<<"total cases:"<<cnt<<std::endl;
     std::cout<<"total time:"<<time<<std::endl;
 }
+
+// int main(int argc, char *argv[]){
+//     double time = 0;
+//     int fp = 0, fn = 0, cnt = 0;
+//     std::string csv = "D:\\CCD\\ccd-queries-handcrafted\\fn_obb.csv";
+//     std::vector<ccd_io::CCDQuery> queries = ccd_io::read_ccd_queries(csv);
+//     int len = queries.size();
+//     // std::cout<<len<<std::endl;
+//     for(int i = 0; i < len; ++i) {
+//         cnt++;
+//         // std::cout<<"testing "<<csv.path().string()<<" case #"<< i <<std::endl;
+//         const auto& query = queries[i];
+//         const auto& vertices = query.vertices;
+//         // std::cout << std::fixed << std::setprecision(18);
+//         // for(int k = 0; k < 8; ++k){
+//         //     for(int l = 0; l < 3; ++l){
+//         //         std::cout<<vertices[k][l]<<" ";
+//         //     }
+//         //     std::cout<<std::endl;
+//         // }
+//         bool gt = query.ground_truth;
+//         double t = do_EE_test(vertices, time);
+//         bool collide = t >= 0;
+//         if(gt && !collide) {
+//             fn++;
+//             std::cout<<"FN occured in "<<csv<<" case #"<<i<<std::endl;
+//         }
+//     }
+//     std::cout << std::fixed << std::setprecision(10);
+//     std::cout<<"FN :"<<fn<<std::endl;
+//     std::cout<<"FP :"<<fp<<std::endl;
+//     std::cout<<"total cases:"<<cnt<<std::endl;
+//     std::cout<<"total time:"<<time<<std::endl;
+// }

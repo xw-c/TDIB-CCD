@@ -1,14 +1,8 @@
 # pragma once
 #include "linearGeom.h"
 
-class LinearSolverTD{
+class LinearSolverBase{
 private:
-	static Vector3d clampAxis(const Vector3d& axis){
-		Vector3d clp = axis;
-		const double maxcoeff=axis.cwiseAbs().maxCoeff();
-		for(int i=0;i<3;i++)if(std::abs(clp[i])<=maxcoeff*1e-10)clp[i]=0;
-		return clp;
-	}
 	static Array2d axisCheck(std::vector<Line> lines1, std::vector<Line> lines2,
 						const Array2d& timeIntv){
 		std::vector<Line> ch1, ch2;
@@ -16,8 +10,6 @@ private:
 
 			// for(const auto& l:lines1)std::cout<<"lines1:  "<<l.k<<" "<<l.b<<"\n";
 			// for(const auto& l:lines2)std::cout<<"lines2:  "<<l.k<<" "<<l.b<<"\n";
-		for( auto& l:lines1)l.b+=1e-12*abs(l.b);
-		for( auto& l:lines2)l.b-=1e-12*abs(l.b);
 		robustCH(lines1, ch1, true, timeIntv);
 		robustCH(lines2, ch2, false, timeIntv);
 			// for(const auto& l:ch1)std::cout<<"ch1:  "<<l.k<<" "<<l.b<<"\n";
@@ -103,9 +95,8 @@ private:
 		else{
 			while(id1>=0&&id2>=0){
 				if(ch1[id1].k<=ch2[id2].k){
-					// std::cerr<<"end at strange slopes?\n";
-					// exit(-1);
-					return Array2d(-1,-1);
+					std::cerr<<"end at strange slopes?\n";
+					exit(-1);
 				}
 				double hifp1, hifp2;
 				if(id1>0)
@@ -141,11 +132,11 @@ private:
 
 		intvL = std::max(intvL, tIntv[0]);
 		intvR = std::min(intvR, tIntv[1]);
+
 		if(intvL>intvR||intvL<tIntv[0]||intvR>tIntv[1]){
-			// std::cerr<<"error intersection!\n";
-			// std::cerr<<intvL<<" "<<intvR<<", in range"<<tIntv[0]<<" "<<tIntv[0]<<"\n";
-			// exit(-1);
-			return Array2d(-1,-1);
+			std::cerr<<"error intersection!\n";
+			std::cerr<<intvL<<" "<<intvR<<", in range"<<tIntv[0]<<" "<<tIntv[0]<<"\n";
+			exit(-1);
 		}
 		else return Array2d(intvL,intvR);
 	}			
@@ -159,8 +150,8 @@ private:
 			[](const Array2d& intv1, const Array2d& intv2){
 				return (intv1(0)<intv2(0));
 			});
-		if(feasibleIntvs[0](0)<initTimeIntv[0]){
-			minT = std::max(minT,feasibleIntvs[0](1));
+		if(feasibleIntvs[0](0)<=initTimeIntv[0]){
+			minT = feasibleIntvs[0](1);
 			for(int i=1;i<feasibleIntvs.size();i++)
 				if(feasibleIntvs[i](0)<minT) //不能加等，因为无碰撞给的是开区间，如果有),(的情况加等号会把这个情况漏掉
 					minT=std::max(minT, feasibleIntvs[i](1));
@@ -172,16 +163,17 @@ private:
 			[](const Array2d& intv1, const Array2d& intv2){
 				return (intv1(1)>intv2(1));
 			});
-		if(feasibleIntvs[0](1)>initTimeIntv[1]){
-			maxT = std::min(maxT, feasibleIntvs[0](0));
+		if(feasibleIntvs[0](1)>=initTimeIntv[1]){
+			maxT = feasibleIntvs[0](0);
 			for(int i=1;i<feasibleIntvs.size();i++)
 				if(feasibleIntvs[i](1)>maxT) //不能加等，因为无碰撞给的是开区间，如果有),(的情况加等号会把这个情况漏掉
 					maxT=std::min(maxT, feasibleIntvs[i](0));
 				else break;
 		}
 		if(initTimeIntv[0] > maxT) { colTime = Array2d(-1,-1); return false; }
-		if(minT >= maxT) { colTime = Array2d(maxT, minT);}
-		else colTime = Array2d(minT, maxT); 
+		// maxT=std::max(minT, maxT);
+		else if(minT > maxT) { colTime = Array2d(minT, initTimeIntv[1]);}//{ colTime = Array2d(-1,-1); return false; }
+		colTime = Array2d(minT, maxT); 
 		return true;
 	}
 public:
@@ -189,11 +181,21 @@ public:
 						const std::array<Vector3d,Edge::cntCp> &ptVel1, 
 						const std::array<Vector3d,Edge::cntCp> &ptPos2, 
 						const std::array<Vector3d,Edge::cntCp> &ptVel2,
-						Array2d& colTime,
 						const BoundingBoxType& bb,
 						const Array2d& initTimeIntv) {
-		Array2d timeIntv(initTimeIntv[0]-1e-10, initTimeIntv[1]+1e-10);
+		
+		std::array<Vector3d,Edge::cntCp> posStart1, posEnd1, posStart2, posEnd2;
+		for(int i=0;i<Edge::cntCp;i++){
+			posStart1[i]=ptPos1[i]+ptVel1[i]*initTimeIntv[0],
+			posEnd1[i]=ptPos1[i]+ptVel1[i]*initTimeIntv[1];
+		}
+		for(int i=0;i<Edge::cntCp;i++){
+			posStart2[i]=ptPos2[i]+ptVel2[i]*initTimeIntv[0],
+			posEnd2[i]=ptPos2[i]+ptVel2[i]*initTimeIntv[1];
+		}
+
 		std::vector<Vector3d> axes;
+		axes.clear();
 		if(bb==BoundingBoxType::AABB){
 			axes = {Vector3d::Unit(0), Vector3d::Unit(1), Vector3d::Unit(2)};
 		}
@@ -202,42 +204,37 @@ public:
 			Vector3d lu = Edge::direction(ptPos1) + initTimeIntv[0]*Edge::direction(ptVel1);//u延展的方向
 			Vector3d lvtmp = Edge::direction(ptPos2) + initTimeIntv[0]*Edge::direction(ptVel2);//u延展的方向
 			// lu[0]*=1.01;
-			// Vector3d randu = Vector3d::Random()*lu.norm()*0.01;
-			// Vector3d randv = Vector3d::Random()*lvtmp.norm()*0.01;
-			// lu+=randu;
-			// lvtmp+=randv;
+			Vector3d randu = Vector3d::Random()*lu.norm()*0.01;
+			Vector3d randv = Vector3d::Random()*lvtmp.norm()*0.01;
+			lu+=randu;
+			lvtmp+=randv;
 			// lvtmp[0]*=1.5;
 			Vector3d ln = lu.cross(lvtmp);
 			Vector3d lv = ln.cross(lu);
 			axes = {lu, lv, ln};
 		}
-
-		std::vector<Array2d> feasibleIntvs;
-		feasibleIntvs.clear();
-		
-		for( auto& axis:axes){
-			// std::cout<<std::fixed<<std::setprecision(18)<<"axis: "<<axis.transpose()<<"\n";
-			// axis.normalize();
-			std::vector<Line> ptLines1, ptLines2;
-			ptLines1.clear(); ptLines2.clear();
-			for(int i = 0; i < Edge::cntCp; i++) ptLines1.emplace_back(ptVel1[i].dot(axis), ptPos1[i].dot(axis));
-			for(int i = 0; i < Edge::cntCp; i++) ptLines2.emplace_back(ptVel2[i].dot(axis), ptPos2[i].dot(axis));
-			
-			std::sort(ptLines1.begin(), ptLines1.end());
-			std::sort(ptLines2.begin(), ptLines2.end());
-			auto intvT = axisCheck(ptLines1, ptLines2, timeIntv);
-			// std::cout<<"intv:"<<intvT.transpose()<<"\n";
-			if(intvT[0]!=-1)feasibleIntvs.push_back(intvT);
-			intvT = axisCheck(ptLines2, ptLines1, timeIntv);
-			// std::cout<<"intv:"<<intvT.transpose()<<"\n";
-			if(intvT[0]!=-1)feasibleIntvs.push_back(intvT);
-			// std::cin.get();
+		for(auto& axis:axes){
+			double maxProj1 = -std::numeric_limits<double>::infinity(), minProj1 = std::numeric_limits<double>::infinity();
+			for(const auto&p:posStart1){
+				maxProj1 = std::max(maxProj1, p.dot(axis));
+				minProj1 = std::min(minProj1, p.dot(axis));
+			}
+			for(const auto&p:posEnd1){
+				maxProj1 = std::max(maxProj1, p.dot(axis));
+				minProj1 = std::min(minProj1, p.dot(axis));
+			}
+			double maxProj2 = -std::numeric_limits<double>::infinity(), minProj2 = std::numeric_limits<double>::infinity();
+			for(const auto&p:posStart2){
+				maxProj2 = std::max(maxProj2, p.dot(axis));
+				minProj2 = std::min(minProj2, p.dot(axis));
+			}
+			for(const auto&p:posEnd2){
+				maxProj2 = std::max(maxProj2, p.dot(axis));
+				minProj2 = std::min(minProj2, p.dot(axis));
+			}
+			if(maxProj2<minProj1 || maxProj1<minProj2) return false;
 		}
-		// for(const auto&l:feasibleIntvs)std::cout<<std::fixed<<std::setprecision(18)<<"final set:"<<l.transpose()<<"\n";
-		auto b=intvMerge(feasibleIntvs, colTime, initTimeIntv);
-		// std::cout<<"colTime: "<<colTime.transpose()<<"\n\n";
-		// std::cin.get();
-		return b;
+		return true;
 	}
 
 	static double solveEETest(const Edge &CpPos1, const Edge &CpVel1, 
@@ -247,14 +244,14 @@ public:
 						const double upperTime,
 						const double deltaDist) {
 		std::priority_queue<EEPair> heap;
-		Array2d initParam(0,1), initTimeIntv(0,upperTime), colTime;
-		if (primitiveEECheck(CpPos1.ctrlp, CpVel1.ctrlp, CpPos2.ctrlp, CpVel2.ctrlp, colTime, bb, initTimeIntv))
-			heap.emplace(initParam, initParam, colTime);
+		Array2d initParam(0,1), initTimeIntv(0,upperTime);
+		if (primitiveEECheck(CpPos1.ctrlp, CpVel1.ctrlp, CpPos2.ctrlp, CpVel2.ctrlp, bb, initTimeIntv))
+			heap.emplace(initParam, initParam, initTimeIntv);
 		
 		while (!heap.empty()) {
 			auto const cur = heap.top();
 			heap.pop();
-			// std::cout<<cur.tIntv[0]<<" "<<cur.tIntv[1]<<std::endl;
+
 			// Decide whether the algorithm converges
 			double mid1 = (cur.pb1[0]+cur.pb1[1])*0.5, mid2 = (cur.pb2[0]+cur.pb2[1])*0.5;
 			// if (cur.calcL1Dist(CpPos1, CpVel1, CpPos2, CpVel2) < deltaDist) {
@@ -264,6 +261,8 @@ public:
 			}
 
 			// Divide the current patch into four-to-four pieces
+			double tMid = (cur.tIntv[0]+cur.tIntv[1])*0.5;
+			Array2d divTime1(cur.tIntv[0],tMid), divTime2(tMid, cur.tIntv[1]);
 			for (int i = 0; i < 2; i++) {
 				Array2d divUvB1[2]={Array2d(cur.pb1[0],mid1), Array2d(mid1, cur.pb1[1])};
 				for (int j = 0; j < 2; j++) {
@@ -272,8 +271,11 @@ public:
 					auto ptVel1 = CpVel1.divideBezierPatch(divUvB1[i]);
 					auto ptPos2 = CpPos2.divideBezierPatch(divUvB2[j]);
 					auto ptVel2 = CpVel2.divideBezierPatch(divUvB2[j]);
-					if (primitiveEECheck(ptPos1, ptVel1, ptPos2, ptVel2, colTime, bb, cur.tIntv)){
-						heap.emplace(divUvB1[i], divUvB2[j], colTime);
+					if (primitiveEECheck(ptPos1, ptVel1, ptPos2, ptVel2, bb, divTime1)){
+						heap.emplace(divUvB1[i], divUvB2[j], divTime1);
+					}
+					if (primitiveEECheck(ptPos1, ptVel1, ptPos2, ptVel2, bb, divTime2)){
+						heap.emplace(divUvB1[i], divUvB2[j], divTime2);
 					}
 				}
 			}
@@ -284,10 +286,16 @@ public:
 	static bool primitiveVFCheck(const Vector3d &ptPos1, const Vector3d &ptVel1, 
 						const std::array<Vector3d,Face::cntCp> &ptPos2, 
 						const std::array<Vector3d,Face::cntCp> &ptVel2,
-						Array2d& colTime,
 						const BoundingBoxType& bb,
 						const Array2d& initTimeIntv) {
-		Array2d timeIntv(initTimeIntv[0]-1e-10, initTimeIntv[1]+1e-10);
+		auto posStart1 = ptPos1+initTimeIntv[0]*ptVel1;
+		auto posEnd1 = ptPos1+initTimeIntv[1]*ptVel1;
+		std::array<Vector3d,Face::cntCp> posStart2, posEnd2;
+		for(int i=0;i<Face::cntCp;i++){
+			posStart2[i]=ptPos2[i]+ptVel2[i]*initTimeIntv[0],
+			posEnd2[i]=ptPos2[i]+ptVel2[i]*initTimeIntv[1];
+		}
+
 		std::vector<Vector3d> axes;
 		if(bb==BoundingBoxType::AABB){
 			axes = {Vector3d::Unit(0), Vector3d::Unit(1), Vector3d::Unit(2)};
@@ -295,33 +303,28 @@ public:
 		else if(bb==BoundingBoxType::OBB){
 			Vector3d lu = Face::axisU(ptPos2) + initTimeIntv[0]*Face::axisU(ptVel2);//u延展的方向
 			Vector3d lvtmp = Face::axisV(ptPos2) + initTimeIntv[0]*Face::axisV(ptVel2);//u延展的方向
-			// lu[0]*=1.01;
-			// Vector3d randu = Vector3d::Random()*lu.norm()*0.01;
-			// Vector3d randv = Vector3d::Random()*lvtmp.norm()*0.01;
-			// lu+=randu;
-			// lvtmp+=randv;
+			lu[0]*=1.01;
 			// lvtmp[0]*=1.01;
 			Vector3d ln = lu.cross(lvtmp);
 			Vector3d lv = ln.cross(lu);
 			axes = {lu, lv, ln};
 		}
 
-		std::vector<Array2d> feasibleIntvs;
-		feasibleIntvs.clear();
-		
-		for(const auto& axis:axes){
-			std::vector<Line> ptLines1, ptLines2;
-			ptLines1.clear(); ptLines2.clear();
-			ptLines1.emplace_back(ptVel1.dot(axis), ptPos1.dot(axis));
-			for(int i = 0; i < Face::cntCp; i++) ptLines2.emplace_back(ptVel2[i].dot(axis), ptPos2[i].dot(axis));
-			std::sort(ptLines1.begin(), ptLines1.end());
-			std::sort(ptLines2.begin(), ptLines2.end());
-			auto intvT = axisCheck(ptLines1, ptLines2, timeIntv);
-			if(intvT[0]!=-1)feasibleIntvs.push_back(intvT);
-			intvT = axisCheck(ptLines2, ptLines1, timeIntv);
-			if(intvT[0]!=-1)feasibleIntvs.push_back(intvT);
+		for(auto& axis:axes){
+			double maxProj1 = posStart1.dot(axis), minProj1 = posStart1.dot(axis);
+			maxProj1 = std::max(maxProj1,posEnd1.dot(axis)), minProj1 = std::min(minProj1,posEnd1.dot(axis));
+			double maxProj2 = -std::numeric_limits<double>::infinity(), minProj2 = std::numeric_limits<double>::infinity();
+			for(const auto&p:posStart2){
+				maxProj2 = std::max(maxProj2, p.dot(axis));
+				minProj2 = std::min(minProj2, p.dot(axis));
+			}
+			for(const auto&p:posEnd2){
+				maxProj2 = std::max(maxProj2, p.dot(axis));
+				minProj2 = std::min(minProj2, p.dot(axis));
+			}
+			if(maxProj2<minProj1 || maxProj1<minProj2) return false;
 		}
-		return intvMerge(feasibleIntvs, colTime, initTimeIntv);
+		return true;
 	}
 
 	static double solveVFTest(const Vector3d &CpPos1, const Vector3d &CpVel1, 
@@ -332,14 +335,13 @@ public:
 						const double deltaDist) {
 		std::priority_queue<VFPair> heap;
 		TriParamBound initParam;
-		Array2d initTimeIntv(0,upperTime), colTime;
-		if (primitiveVFCheck(CpPos1, CpVel1, CpPos2.ctrlp, CpVel2.ctrlp, colTime, bb, initTimeIntv))
-			heap.emplace(initParam, colTime);
+		Array2d initTimeIntv(0,upperTime);
+		if (primitiveVFCheck(CpPos1, CpVel1, CpPos2.ctrlp, CpVel2.ctrlp, bb, initTimeIntv))
+			heap.emplace(initParam, initTimeIntv);
 		
 		while (!heap.empty()) {
 			auto const cur = heap.top();
 			heap.pop();
-			// std::cout<<cur.tIntv[0]<<" "<<cur.tIntv[1]<<std::endl;
 
 			// Decide whether the algorithm converges
 			// if (cur.calcL1Dist(CpPos1, CpVel1, CpPos2, CpVel2) < deltaDist) {
@@ -349,13 +351,19 @@ public:
 			}
 
 			// Divide the current patch into four-to-four pieces
+			double tMid = (cur.tIntv[0]+cur.tIntv[1])*0.5;
+			Array2d divTime1(cur.tIntv[0],tMid), divTime2(tMid, cur.tIntv[1]);
 			for (int j = 0; j < 4; j++) {
 				TriParamBound divUvB2(cur.pb.interpSubpatchParam(j));
 				auto ptPos2 = CpPos2.divideBezierPatch(divUvB2);
 				auto ptVel2 = CpVel2.divideBezierPatch(divUvB2);
-				if (primitiveVFCheck(CpPos1, CpVel1, ptPos2, ptVel2, colTime, bb, cur.tIntv)){
+				if (primitiveVFCheck(CpPos1, CpVel1, ptPos2, ptVel2, bb, divTime1)){
 					// if(colTime[1]-colTime[0]<1e-12)return colTime[0];
-					heap.emplace(divUvB2, colTime);
+					heap.emplace(divUvB2, divTime1);
+				}
+				if (primitiveVFCheck(CpPos1, CpVel1, ptPos2, ptVel2, bb, divTime2)){
+					// if(colTime[1]-colTime[0]<1e-12)return colTime[0];
+					heap.emplace(divUvB2, divTime2);
 				}
 			}
 		}
