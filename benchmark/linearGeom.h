@@ -80,6 +80,10 @@ public:
 		const double w1 = pb1[1]-pb1[0], w2 = pb2[1]-pb2[0], wt = tIntv[1]-tIntv[0];
 		return std::max(std::max(w1,w2), wt);
 	}
+	double calc4dWidth() const{
+		const double w1 = pb1[1]-pb1[0], w2 = pb2[1]-pb2[0];
+		return std::max(w1,w2);
+	}
 	// double calcL1Dist(const Edge &CpPos1, const Edge &CpVel1, 
 	// 				const Edge &CpPos2, const Edge &CpVel2) const{
 	// 	auto ptPos1 = CpPos1.divideBezierPatch(pb1);
@@ -104,6 +108,9 @@ struct VFPair{
 	double calcWidth() const{
 		const double wpb = pb.width(), wt = tIntv[1]-tIntv[0];
 		return std::max(wpb, wt);
+	}
+	double calc4dWidth() const{
+		return pb.width();
 	}
 	// double calcL1Dist(const Vector3d &CpPos1, const Vector3d &CpVel1, 
 	// 				const Face &CpPos2, const Face &CpVel2) const{
