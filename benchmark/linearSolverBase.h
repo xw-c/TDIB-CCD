@@ -255,7 +255,7 @@ public:
 			// Decide whether the algorithm converges
 			double mid1 = (cur.pb1[0]+cur.pb1[1])*0.5, mid2 = (cur.pb2[0]+cur.pb2[1])*0.5;
 			// if (cur.calcL1Dist(CpPos1, CpVel1, CpPos2, CpVel2) < deltaDist) {
-			if (cur.calcWidth() < deltaDist) {
+			if (cur.calc4dWidth() < deltaDist) {
 				u1=mid1, u2=mid2;
 				return cur.tIntv[0];
 			}
@@ -345,7 +345,7 @@ public:
 
 			// Decide whether the algorithm converges
 			// if (cur.calcL1Dist(CpPos1, CpVel1, CpPos2, CpVel2) < deltaDist) {
-			if (cur.calcWidth() < deltaDist) {
+			if (cur.calc4dWidth() < deltaDist) {
 				uv = cur.pb.centerParam();
 				return cur.tIntv[0];
 			}
