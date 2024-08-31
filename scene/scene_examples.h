@@ -365,9 +365,9 @@ void compareInTeapot(const std::string& solverType, const BoundingBoxType & bb,
 				readin.read(reinterpret_cast<char *>(&teapotVel.patches[id].ctrlp[i][k]), sizeof(double));
 	readin.close();
 	// 不同时间步长、不同solver、不同文件的cloth
-	const int fileTotal = 1, stepTotal=5;
+	const int fileTotal = 6, stepTotal=5;
 	double costs[fileTotal][stepTotal];
-	int frames[fileTotal]={94};
+	int frames[fileTotal]={94,113,126,278,356,389};
 	double timeSteps[stepTotal]={0.001,0.002,0.005,0.01,0.02};
 	for(int frcnt=0;frcnt<fileTotal;frcnt++){
 		int fr = frames[frcnt];

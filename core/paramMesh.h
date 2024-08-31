@@ -42,7 +42,7 @@ public:
 		std::vector<Vector3i> faces;
 		convert2Mesh(verts, faces, du, dv);
 		std::ofstream out(filename);
-		out<<std::fixed<<std::setprecision(10);
+		// out<<std::fixed<<std::setprecision(10);
 		for(auto&vert:verts)
 			out<<"v "<<vert[0]<<" "<<vert[1]<<" "<<vert[2]<<"\n";
 		for(auto&face:faces)
