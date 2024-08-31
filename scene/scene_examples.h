@@ -279,6 +279,144 @@ void parabolaBunnyTorus(){
 		f<<hasCol[i]<<" "<<timeCost[i]<<"\n";
 	f.close();
 }
+
+void compareInLocking(const std::string& solverType, const BoundingBoxType & bb, 
+					const double& deltaDist, const std::string& outputFile){
+	ParamMesh<RecCubicBezier> cloth(100), clothVel(100);
+	Array2d uv1, uv2;
+	using steady_clock = std::chrono::steady_clock;
+	using duration = std::chrono::duration<double>;
+	std::ifstream readin;
+	// 不同时间步长、不同solver、不同文件的cloth
+	const int fileTotal = 1, stepTotal=1;
+	double costs[fileTotal][stepTotal];
+	int frames[fileTotal]={28};//,120,140,160,180,207,213
+	double timeSteps[stepTotal]={0.002};//0.001,0.002,0.005,0.01,0.02
+	for(int frcnt=0;frcnt<fileTotal;frcnt++){
+		int fr = frames[frcnt];
+		std::string filename = "locking-"+std::to_string(fr)+".dat";
+		readin.open(filename, std::ios::binary);
+		for(int id=0;id<100;id++){
+			for (int i = 0; i < 16; i++)
+				for(int k=0;k<3;k++)
+					readin.read(reinterpret_cast<char *>(&cloth.patches[id].ctrlp[i][k]), sizeof(double));
+			for (int i = 0; i < 16; i++)
+				for(int k=0;k<3;k++)
+					readin.read(reinterpret_cast<char *>(&clothVel.patches[id].ctrlp[i][k]), sizeof(double));
+		}
+		readin.close();
+		for(int stcnt=0;stcnt<stepTotal;stcnt++){
+			auto h=timeSteps[stcnt];
+			std::cout<<"frame"<< fr <<"time step "<<h<<": ";
+			double t, minT = 0.02;
+			const auto initialTime = steady_clock::now();
+			for(int id1=0;id1<100;id1++){
+				for(int id2=0;id2<100;id2++){
+					int i=id1/10,j=id1%10;
+					int ii=id2/10,jj=id2%10;
+					if (ii == i || ii == i - 1 || ii == i + 1)
+						if(jj == j || jj == j - 1 || jj == j + 1)
+							continue;
+					if (ii >= i && jj >= j) 
+						continue;
+					if(solverType=="td")
+						t = SolverTD<RecCubicBezier,RecCubicBezier,RecParamBound,RecParamBound>::solveCCD(cloth.patches[id1],clothVel.patches[id1],cloth.patches[id2],clothVel.patches[id2],uv1,uv2,bb,minT,deltaDist);
+					else if(solverType=="base")
+						t = SolverBase<RecCubicBezier,RecCubicBezier,RecParamBound,RecParamBound>::solveCCD(cloth.patches[id1],clothVel.patches[id1],cloth.patches[id2],clothVel.patches[id2],uv1,uv2,bb,minT,deltaDist);
+					else{
+						std::cerr<<"solver not implemented!\n";
+						exit(-1);
+					}
+					if(t!=-1)minT=std::min(minT,t);
+				}
+			}
+			const auto endTime = steady_clock::now();
+			costs[frcnt][stcnt]=duration(endTime - initialTime).count();
+			std::cout<<"toi " << minT <<", costs "<<duration(endTime - initialTime).count()<<"s.\n";
+		}
+	}
+	std::cout<<std::fixed<<std::setprecision(2);
+	for(int i=0;i<fileTotal;i++){
+		std::cout<<"\\hline\nFr. "<<frames[i];
+		for(int j=0;j<stepTotal;j++)
+			std::cout<<"&"<<costs[i][j];
+		std::cout<<"\\\\\n";
+	}
+}
+
+
+void compareInTeapot(const std::string& solverType, const BoundingBoxType & bb, 
+					const double& deltaDist, const std::string& outputFile){
+	ParamMesh<RecCubicBezier> cloth(400), clothVel(400);
+	ParamMesh<RecCubicBezier> teapot(32), teapotVel(32);
+
+	Array2d uv1, uv2;
+	using steady_clock = std::chrono::steady_clock;
+	using duration = std::chrono::duration<double>;
+	std::ifstream readin;
+	readin.open("teapot-collider.dat", std::ios::binary);
+	for(int id=0;id<32;id++)
+		for (int i = 0; i < 16; i++)
+			for(int k=0;k<3;k++)
+				readin.read(reinterpret_cast<char *>(&teapot.patches[id].ctrlp[i][k]), sizeof(double));
+	for(int id=0;id<32;id++)
+		for (int i = 0; i < 16; i++)
+			for(int k=0;k<3;k++)
+				readin.read(reinterpret_cast<char *>(&teapotVel.patches[id].ctrlp[i][k]), sizeof(double));
+	readin.close();
+	// 不同时间步长、不同solver、不同文件的cloth
+	const int fileTotal = 1, stepTotal=5;
+	double costs[fileTotal][stepTotal];
+	int frames[fileTotal]={94};
+	double timeSteps[stepTotal]={0.001,0.002,0.005,0.01,0.02};
+	for(int frcnt=0;frcnt<fileTotal;frcnt++){
+		int fr = frames[frcnt];
+		std::string filename = "teapot-cloth-"+std::to_string(fr)+".dat";
+		readin.open(filename, std::ios::binary);
+		for(int id=0;id<400;id++){
+			for (int i = 0; i < 16; i++)
+				for(int k=0;k<3;k++)
+					readin.read(reinterpret_cast<char *>(&cloth.patches[id].ctrlp[i][k]), sizeof(double));
+			for (int i = 0; i < 16; i++)
+				for(int k=0;k<3;k++)
+					readin.read(reinterpret_cast<char *>(&clothVel.patches[id].ctrlp[i][k]), sizeof(double));
+		}
+		readin.close();
+		// cloth.writeObj("teapot-cloth.obj",0.05,0.05);
+		// teapot.writeObj("teapot-collider.obj",0.05,0.05);
+		for(int stcnt=0;stcnt<stepTotal;stcnt++){
+			auto h=timeSteps[stcnt];
+			std::cout<<"frame"<< fr <<"time step "<<h<<": ";
+			double t, minT=h;
+			const auto initialTime = steady_clock::now();
+			for(int id1=0;id1<400;id1++){
+				for(int id2=0;id2<32;id2++){
+					// if(SHOWANS)std::cout<<i<<", "<<j<<": "<<ii<<", "<<jj<<":\n";
+					if(solverType=="td")
+						t = SolverTD<RecCubicBezier,RecCubicBezier,RecParamBound,RecParamBound>::solveCCD(cloth.patches[id1],clothVel.patches[id1],teapot.patches[id2],teapotVel.patches[id2],uv1,uv2,bb,minT,deltaDist);
+					else if(solverType=="base")
+						t = SolverBase<RecCubicBezier,RecCubicBezier,RecParamBound,RecParamBound>::solveCCD(cloth.patches[id1],clothVel.patches[id1],teapot.patches[id2],teapotVel.patches[id2],uv1,uv2,bb,minT,deltaDist);
+					else{
+						std::cerr<<"solver not implemented!\n";
+						exit(-1);
+					}
+					if(t!=-1)minT=std::min(minT,t);
+				}
+			}
+			const auto endTime = steady_clock::now();
+			costs[frcnt][stcnt]=duration(endTime - initialTime).count();
+			std::cout<<"toi " << minT <<", costs "<<duration(endTime - initialTime).count()<<"s.\n";
+		}
+	}
+	std::cout<<std::fixed<<std::setprecision(2);
+	for(int i=0;i<fileTotal;i++){
+		std::cout<<"\\hline\nFr. "<<frames[i];
+		for(int j=0;j<stepTotal;j++)
+			std::cout<<"&"<<costs[i][j];
+		std::cout<<"\\\\\n";
+	}
+}
+
 /*
 void parabolaPotCup(){
 	// read in torus, bunny, both zero weights

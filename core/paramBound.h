@@ -72,6 +72,7 @@ public:
 class TriParamBound{
 public:
 
+	Array2d pMin, pMax;
     std::array<BaryCoord,3> nodes;
 
 	inline static const std::array<BaryCoord,3> relativeSubpatch[4] = {

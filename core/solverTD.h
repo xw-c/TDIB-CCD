@@ -282,11 +282,11 @@ public:
 		Array2d initTimeIntv(0,upperTime), colTime;
 		if (primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, initParam1, initParam2, colTime, bb, initTimeIntv))
 			heap.emplace(initParam1, initParam2, colTime);
-		// cnt=1;
+		cnt=1;
 		while (!heap.empty()) {
 			auto const cur = heap.top();
 			heap.pop();
-			// cnt++;
+			cnt++;
 			// if(SHOWANS) std::cout<<cnt<<"\n";
 
 			// Decide whether the algorithm converges

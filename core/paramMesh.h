@@ -17,8 +17,8 @@ public:
 					const double du=0.2, const double dv=0.2) const {
 		int cntVerts=0;
 		for(auto& patch: patches){
-			for(double u=0;u<1;u+=du)
-				for(double v=0;v<patch.feasibleUpperV(u);v+=dv){
+			for(double u=0;u<1-1e-10;u+=du)
+				for(double v=0;v<patch.feasibleUpperV(u)-1e-10;v+=dv){
 					Vector3d p1=patch.evaluatePatchPoint(Array2d(u,v)),
 					p2=patch.evaluatePatchPoint(Array2d(u+du,v)),
 					p3=patch.evaluatePatchPoint(Array2d(u,v+dv));
@@ -26,7 +26,7 @@ public:
 					verts.push_back(p2);
 					verts.push_back(p3);
 					faces.emplace_back(cntVerts+1, cntVerts+2, cntVerts+3);
-					if(v<patch.feasibleUpperV(u+du)){
+					if(v<patch.feasibleUpperV(u+du)-1e-10){
 						Vector3d p4=patch.evaluatePatchPoint(Array2d(u+du,v+dv));
 						verts.push_back(p4);
 						faces.emplace_back(cntVerts+4, cntVerts+3, cntVerts+2);
@@ -42,6 +42,7 @@ public:
 		std::vector<Vector3i> faces;
 		convert2Mesh(verts, faces, du, dv);
 		std::ofstream out(filename);
+		out<<std::fixed<<std::setprecision(10);
 		for(auto&vert:verts)
 			out<<"v "<<vert[0]<<" "<<vert[1]<<" "<<vert[2]<<"\n";
 		for(auto&face:faces)
@@ -52,7 +53,7 @@ public:
 
 
 template<typename PatchType>
-class ParamMesh: MeshBase<PatchType>{
+class ParamMesh: public MeshBase<PatchType>{
 public:
     using MeshBase<PatchType>::cntPatches;
     using MeshBase<PatchType>::patches;

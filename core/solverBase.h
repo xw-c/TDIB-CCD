@@ -74,14 +74,16 @@ public:
 		std::priority_queue<PatchPair> heap;
 		ParamBound1 initParam1;
 		ParamBound2 initParam2;
-		if (primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, initParam1, initParam2, bb))
-			heap.emplace(initParam1, initParam2);
-		// cnt=1;
+		Array2d initTimeIntv(0,upperTime);
+		if (primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, initParam1, initParam2, bb, initTimeIntv))
+			heap.emplace(initParam1, initParam2, initTimeIntv);
+		cnt=1;
 		while (!heap.empty()) {
 			auto const cur = heap.top();
 			heap.pop();
-			// cnt++;
-			// if(SHOWANS) std::cout<<cnt<<"\n";
+			cnt++;
+			double tMid = (cur.tIntv[0]+cur.tIntv[1])*0.5;
+			if(SHOWANS) std::cout<<cnt<<": "<<tMid<<"\n";
 			if (cur.calcWidth() < deltaDist) {
 				uv1 = cur.pb1.centerParam();
 				uv2 = cur.pb2.centerParam();
@@ -94,12 +96,18 @@ public:
 			}
 
 			// Divide the current patch into two sets of four-to-four pieces
-			double tMid = (cur.tIntv[0]+cur.tIntv[1])*0.5;
+			// double tMid = (cur.tIntv[0]+cur.tIntv[1])*0.5;
 			Array2d divTime1(cur.tIntv[0],tMid), divTime2(tMid, cur.tIntv[1]);
 			for (int i = 0; i < 4; i++) {
 				ParamBound1 divUvB1(cur.pb1.interpSubpatchParam(i));
 				for (int j = 0; j < 4; j++) {
 					ParamBound2 divUvB2(cur.pb2.interpSubpatchParam(j));
+					// std::cout<<divUvB1.pMin.transpose()<<", "<<divUvB1.pMax.transpose()<<"\n";
+					// std::cout<<divUvB2.pMin.transpose()<<", "<<divUvB2.pMax.transpose()<<"\n";
+					// std::cout<<divTime1.transpose()<<"\ntest1: ";
+					// std::cout<<primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, divUvB1, divUvB2, bb, divTime1)<<"\ntest2:";
+					// std::cout<<primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, divUvB1, divUvB2, bb, divTime2)<<"\n";
+					// std::cin.get();
 					if (primitiveCheck(CpPos1, CpVel1, CpPos2, CpVel2, divUvB1, divUvB2, bb, divTime1)){
 						heap.emplace(divUvB1, divUvB2, divTime1);
 					}

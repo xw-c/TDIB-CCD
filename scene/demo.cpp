@@ -50,6 +50,12 @@ int main(int argc, char *argv[]){
 		randomTest<RecCubicBezier, RecParamBound>(solverType, bb, deltaDist, kase, velMag, outputFile);
 	else if(expType=="plane")
 		planeTest<RecCubicBezier, RecParamBound>(solverType, bb, deltaDist, outputFile);
+	else if(expType=="check")
+		checkDat(solverType, bb, deltaDist, kase, velMag, outputFile);
+	else if(expType=="locking")
+		compareInLocking(solverType, bb, deltaDist, outputFile);
+	else if(expType=="teapot")
+		compareInTeapot(solverType, bb, deltaDist, outputFile);
 	else if(expType=="bunny")
 		parabolaBunnyTorus();
 	else if(expType=="torus")

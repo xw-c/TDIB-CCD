@@ -155,6 +155,40 @@ void FNCase(const std::string& solverType, const BoundingBoxType & bb,
 	// ft.close();
 }
 
+void checkDat(const std::string& solverType, const BoundingBoxType & bb,
+				const double& deltaDist, const int& kase, const double& velMag, 
+				const std::string& outputFile){
+	// TriQuadBezier obj1, obj2, vel1, vel2;
+	std::array<Vector3d, 6> CpPos1,CpPos2,CpVel1,CpVel2;
+	double t;
+	Array2d uv1,uv2;
+
+	std::ifstream readin("case579.dat", std::ios::binary);
+	for (int i = 0; i < 6; i++)
+		for(int k=0;k<3;k++)
+			readin.read(reinterpret_cast<char *>(&CpPos1[i][k]), sizeof(double));
+	for (int i = 0; i < 6; i++)
+		for(int k=0;k<3;k++)
+			readin.read(reinterpret_cast<char *>(&CpPos2[i][k]), sizeof(double));
+			
+	for (int i = 0; i < 6; i++)
+		for(int k=0;k<3;k++)
+			readin.read(reinterpret_cast<char *>(&CpVel1[i][k]), sizeof(double));
+	for (int i = 0; i < 6; i++)
+		for(int k=0;k<3;k++)
+			readin.read(reinterpret_cast<char *>(&CpVel2[i][k]), sizeof(double));
+	readin.close();
+
+	ParamMesh<TriQuadBezier> obj1(1), obj2(1);
+	ParamMesh<TriQuadBezier> vel1(1), vel2(1);
+	obj1.patches[0]=CpPos1, obj2.patches[0]=CpPos2;
+	vel1.patches[0]=CpVel1, vel2.patches[0]=CpVel2;
+	obj1.moveObj(vel1,0.62);
+	obj2.moveObj(vel2,0.62);
+	obj1.writeObj("checkDat1.obj",0.05, 0.05);
+	obj2.writeObj("checkDat2.obj",0.05,0.05);
+
+}
 
 template<typename ObjType, typename ParamType>
 void validate(const std::string& solverType, const BoundingBoxType & bb,
@@ -202,6 +236,7 @@ void validate(const std::string& solverType, const BoundingBoxType & bb,
 		std::cerr<<"solver not implemented!\n";
 		exit(-1);
 	}
+	// std::cout<<cnt<<"\n";
 	if(SHOWANS) std::cout<<" done "<<calcDist(obj1,vel1,obj2,vel2,uv1,uv2,t)<<"\n";
 	// Vector3d const p1 = obj1.evaluatePatchPoint(uv1);
 	// Vector3d const v1 = vel1.evaluatePatchPoint(uv1);
@@ -216,6 +251,14 @@ void validate(const std::string& solverType, const BoundingBoxType & bb,
 		<< std::endl;
 	// fp.close();
 	// ft.close();
+	ParamMesh<ObjType> Obj1(1), Obj2(1);
+	ParamMesh<ObjType> Vel1(1), Vel2(1);
+	Obj1.patches[0]=obj1, Obj2.patches[0]=obj2;
+	Vel1.patches[0]=vel1, Vel2.patches[0]=vel2;
+	Obj1.moveObj(Vel1,0.002);
+	Obj2.moveObj(Vel2,0.002);
+	Obj1.writeObj("checkDat1.obj",0.05, 0.05);
+	Obj2.writeObj("checkDat2.obj",0.05,0.05);
 }
 
 
