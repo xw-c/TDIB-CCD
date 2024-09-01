@@ -197,7 +197,7 @@ double ccd(const Mesh1& mesh1, const Mesh1& vel1,
 		for(int j = 0; j < mesh2.cntPatches; j++){
 			double t = paramCCD(mesh1.patches[i], vel1.patches[i], mesh2.patches[j], vel2.patches[j], 
 								uv1, uv2, bb, minTime, deltaDist);
-			std::cout<<i<<" "<<j<<": "<<t<<"\n";
+			// std::cout<<i<<" "<<j<<": "<<t<<"\n";
 			if(t>=0){
 				if(t==0)return 0;
 				minTime = std::min(minTime, t);
@@ -211,7 +211,7 @@ void parabolaBunnyTorus(){
 	TriLinearMesh bunnyPos("bunny292.obj"), bunnyVel(bunnyPos.cntPatches);
 	RatParamMesh<RecQuadRatBezier> torusPos, torusVel;
 	generateTorusComponent(torusPos, torusVel);
-	torusPos.writeObj("bunny-torus/0.obj");
+	// torusPos.writeObj("bunny-torus/0.obj");
 
 	using steady_clock = std::chrono::steady_clock;
 	using duration = std::chrono::duration<double>;
@@ -227,8 +227,8 @@ void parabolaBunnyTorus(){
 	bunnyPos.setOrigin(displace);
 	torusPos.setOrigin(-displace);
 	torusPos.rotateObj(-PI/2.,Vector3d::Unit(0),torusPos.getOrigin());
-	bunnyPos.writeObj("bunny-torus/0-bunny.obj");
-	torusPos.writeObj("bunny-torus/0-torus.obj");
+	bunnyPos.writeObj("0-bunny.obj");
+	torusPos.writeObj("0-torus.obj");
 
 	constexpr double totalTime = 1., deltaT = 0.02;
 	constexpr int totalFrame = static_cast<int>(totalTime/deltaT);
@@ -249,35 +249,37 @@ void parabolaBunnyTorus(){
 		newTorusPos.moveObj(deltaT*(initVel+accel));
 		newTorusPos.rotateObj(-swirlSpeed*deltaT,swirlAxisTorus,newTorusPos.getOrigin());
 		torusVel.setVel(torusPos, newTorusPos, deltaT);
-
-		const auto initialTime = steady_clock::now();
-		double t = ccd(bunnyPos, bunnyVel, torusPos, torusVel, SolverTD<TriLinearBezier,RecQuadRatBezier,TriParamBound,RecParamBound>::solveCCD);
-		const auto endTime = steady_clock::now();
-		if(t < deltaT){
-			hasCol[fr] = true;
-			if(firstCol >= totalTime){
-				firstCol = t + fr * deltaT;
-				bunnyPos.moveObj(bunnyVel, t);
-				torusPos.moveObj(torusVel, t);
-				bunnyPos.writeObj("bunny-torus/col-bunny.obj");
-				torusPos.writeObj("bunny-torus/col-torus.obj");
+		if(fr==17){
+			const auto initialTime = steady_clock::now();
+			double t = ccd(bunnyPos, bunnyVel, torusPos, torusVel, SolverTD<TriLinearBezier,RecQuadRatBezier,TriParamBound,RecParamBound>::solveCCD, BoundingBoxType::OBB,deltaT);
+			const auto endTime = steady_clock::now();
+			if(t < deltaT){
+				hasCol[fr] = true;
+				if(firstCol >= totalTime){
+					firstCol = t + fr * deltaT;
+					bunnyPos.moveObj(bunnyVel, t);
+					torusPos.moveObj(torusVel, t);
+					bunnyPos.writeObj("col-bunny.obj");
+					torusPos.writeObj("col-torus.obj");
+				}
 			}
+			else hasCol[fr] = false;
+			timeCost[fr] = duration(endTime - initialTime).count();
+			std::cout<<"frame "<<fr<<" costs "<<timeCost[fr]<<"s.\n";
 		}
-		else hasCol[fr] = false;
-		timeCost[fr] = duration(endTime - initialTime).count();
-		std::cout<<"frame "<<fr<<" costs "<<timeCost[fr]<<"s.\n";
-		
 		bunnyPos = newBunnyPos;
 		torusPos = newTorusPos;
 
 		// bunnyPos.writeObj("./bunny-torus/"+std::to_string(fr)+"-bunny.obj");
 		// torusPos.writeObj("./bunny-torus/"+std::to_string(fr)+"-torus.obj");
 	}
-	std::cout<<"First collision time: "<< firstCol<<"s.\n";
-	std::ofstream f("./bunny-torus/time_cost.txt");
-	for(int i=0;i<totalFrame;i++)
-		f<<hasCol[i]<<" "<<timeCost[i]<<"\n";
-	f.close();
+	bunnyPos.writeObj("end-bunny.obj");
+	torusPos.writeObj("end-torus.obj");
+	// std::cout<<"First collision time: "<< firstCol<<"s.\n";
+	// std::ofstream f("./bunny-torus/time_cost.txt");
+	// for(int i=0;i<totalFrame;i++)
+	// 	f<<hasCol[i]<<" "<<timeCost[i]<<"\n";
+	// f.close();
 }
 
 void compareInLocking(const std::string& solverType, const BoundingBoxType & bb, 

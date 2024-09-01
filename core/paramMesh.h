@@ -13,7 +13,15 @@ public:
 	int cntPatches;
 	std::vector<PatchType> patches;
 	
-	void convert2Mesh(std::vector<Vector3d>&verts, std::vector<Vector3i>&faces, 
+	Vector3d evaluatePatchNormal(const PatchType& patch, Array2d const &uv) const {
+		double diff = 0.001;
+		Vector3d p = patch.evaluatePatchPoint(uv),
+		pdu = patch.evaluatePatchPoint(Array2d(uv[0]+diff, uv[1])),
+		pdv = patch.evaluatePatchPoint(Array2d(uv[0], uv[1]+diff));
+		return ((pdu-p).cross(pdv-p)).normalized();
+	}
+
+	void convert2Mesh(std::vector<Vector3d>&verts, std::vector<Vector3d>&norms, std::vector<Vector3i>&faces, 
 					const double du=0.2, const double dv=0.2) const {
 		int cntVerts=0;
 		for(auto& patch: patches){
@@ -22,13 +30,21 @@ public:
 					Vector3d p1=patch.evaluatePatchPoint(Array2d(u,v)),
 					p2=patch.evaluatePatchPoint(Array2d(u+du,v)),
 					p3=patch.evaluatePatchPoint(Array2d(u,v+dv));
+					Vector3d n1=evaluatePatchNormal(patch, Array2d(u,v)),
+					n2=evaluatePatchNormal(patch, Array2d(u+du,v)),
+					n3=evaluatePatchNormal(patch, Array2d(u,v+dv));
 					verts.push_back(p1);
 					verts.push_back(p2);
 					verts.push_back(p3);
+					norms.push_back(n1);
+					norms.push_back(n2);
+					norms.push_back(n3);
 					faces.emplace_back(cntVerts+1, cntVerts+2, cntVerts+3);
 					if(v<patch.feasibleUpperV(u+du)-1e-10){
 						Vector3d p4=patch.evaluatePatchPoint(Array2d(u+du,v+dv));
+						Vector3d n4=evaluatePatchNormal(patch, Array2d(u+du,v+dv));
 						verts.push_back(p4);
+						norms.push_back(n4);
 						faces.emplace_back(cntVerts+4, cntVerts+3, cntVerts+2);
 						cntVerts+=4;
 					}
@@ -39,14 +55,19 @@ public:
 
 	void writeObj(const std::string& filename, const double du=0.2, const double dv=0.2) const {
 		std::vector<Vector3d> verts;
+		std::vector<Vector3d> norms;
 		std::vector<Vector3i> faces;
-		convert2Mesh(verts, faces, du, dv);
+		convert2Mesh(verts, norms, faces, du, dv);
 		std::ofstream out(filename);
 		// out<<std::fixed<<std::setprecision(10);
 		for(auto&vert:verts)
 			out<<"v "<<vert[0]<<" "<<vert[1]<<" "<<vert[2]<<"\n";
+		for(auto&norm:norms)
+			out<<"vn "<<norm[0]<<" "<<norm[1]<<" "<<norm[2]<<"\n";
 		for(auto&face:faces)
-			out<<"f "<<face[0]<<" "<<face[1]<<" "<<face[2]<<"\n";
+			out<<"f "<<face[0]<<"//"<<face[0]<<" "
+				<<face[1]<<"//"<<face[1]<<" "
+				<<face[2]<<"//"<<face[2]<<"\n";
 		out.close();
 	}
 };
