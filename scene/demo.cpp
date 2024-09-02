@@ -57,7 +57,8 @@ int main(int argc, char *argv[]){
 	else if(expType=="teapot")
 		compareInTeapot(solverType, bb, deltaDist, outputFile);
 	else if(expType=="bunny")
-		parabolaBunnyTorus();
+		repeatBunnyTorus();
+		// parabolaBunnyTorus();
 	else if(expType=="torus")
 		torusTest(solverType, bb, deltaDist, outputFile);
 	else if(expType=="fn")

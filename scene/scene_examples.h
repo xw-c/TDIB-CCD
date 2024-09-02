@@ -66,13 +66,14 @@ public:
 	// 读入模型
 	TriLinearMesh(const std::string& filename){
 		std::ifstream in(filename);
-		int cntV;
-		in >> cntV >> cntPatches;
+		int cntVerts, cntFaces;
+		in >> cntVerts >> cntFaces;
+		cntPatches = cntFaces;
 
 		std::vector<Vector3d> verts;
 		std::vector<Vector3i> faces;
-		verts.resize(cntV);
-		faces.resize(cntPatches);
+		verts.resize(cntVerts);
+		faces.resize(cntFaces);
 		char c;
 		for(auto& vert: verts)
 			in >> c >> vert[0] >> vert[1] >> vert[2];
@@ -97,6 +98,7 @@ public:
 		std::vector<Vector3i> faces;
 		convert2Mesh(verts, faces);
 		std::ofstream out(filename);
+		out<<cntPatches*3<<" "<<cntPatches<<"\n";
 		for(auto&vert:verts)
 			out<<"v "<<vert[0]<<" "<<vert[1]<<" "<<vert[2]<<"\n";
 		for(auto&face:faces)
@@ -206,9 +208,40 @@ double ccd(const Mesh1& mesh1, const Mesh1& vel1,
 	return minTime;
 }
 
+void repeatBunnyTorus(){
+	TriLinearMesh bunnyPos("17-bunnyPos.obj"), bunnyVel("17-bunnyVel.obj");
+	RatParamMesh<RecQuadRatBezier> torusPos, torusVel;
+	torusPos.cntPatches=torusVel.cntPatches=16;
+	std::ifstream infile("17-torusPos.dat", std::ios::binary);
+	for(int i=0;i<16;i++){
+		RecQuadRatBezier patch;
+		for(auto&p:patch.ctrlp)
+			for(int dim=0; dim < 4; ++dim) 
+				infile.read(reinterpret_cast<char *>(&p[dim]), sizeof(double));
+		torusPos.patches.push_back(patch);
+	}
+	infile.close();
+	infile.open("17-torusVel.dat", std::ios::binary);
+	for(int i=0;i<16;i++){
+		RecQuadRatBezier patch;
+		for(auto&p:patch.ctrlp)
+			for(int dim=0; dim < 4; ++dim) 
+				infile.read(reinterpret_cast<char *>(&p[dim]), sizeof(double));
+		torusVel.patches.push_back(patch);
+	}
+
+	constexpr double deltaT = 0.02;
+	
+	using steady_clock = std::chrono::steady_clock;
+	using duration = std::chrono::duration<double>;
+	const auto initialTime = steady_clock::now();
+	double t = ccd(bunnyPos, bunnyVel, torusPos, torusVel, SolverTD<TriLinearBezier,RecQuadRatBezier,TriParamBound,RecParamBound>::solveCCD, BoundingBoxType::OBB,deltaT);
+	const auto endTime = steady_clock::now();
+	std::cout<<"frame 17: toi "<<t<<", costs "<<duration(endTime - initialTime).count()<<"s.\n";
+}
 void parabolaBunnyTorus(){
 	// read in torus, bunny, both zero weights
-	TriLinearMesh bunnyPos("bunny292.obj"), bunnyVel(bunnyPos.cntPatches);
+	TriLinearMesh bunnyPos("bunny292.obj"), bunnyVel(bunnyPos);
 	RatParamMesh<RecQuadRatBezier> torusPos, torusVel;
 	generateTorusComponent(torusPos, torusVel);
 	// torusPos.writeObj("bunny-torus/0.obj");
@@ -227,8 +260,8 @@ void parabolaBunnyTorus(){
 	bunnyPos.setOrigin(displace);
 	torusPos.setOrigin(-displace);
 	torusPos.rotateObj(-PI/2.,Vector3d::Unit(0),torusPos.getOrigin());
-	bunnyPos.writeObj("0-bunny.obj");
-	torusPos.writeObj("0-torus.obj");
+	// bunnyPos.writeObj("0-bunny.obj");
+	// torusPos.writeObj("0-torus.obj");
 
 	constexpr double totalTime = 1., deltaT = 0.02;
 	constexpr int totalFrame = static_cast<int>(totalTime/deltaT);
@@ -250,23 +283,38 @@ void parabolaBunnyTorus(){
 		newTorusPos.rotateObj(-swirlSpeed*deltaT,swirlAxisTorus,newTorusPos.getOrigin());
 		torusVel.setVel(torusPos, newTorusPos, deltaT);
 		if(fr==17){
-			const auto initialTime = steady_clock::now();
-			double t = ccd(bunnyPos, bunnyVel, torusPos, torusVel, SolverTD<TriLinearBezier,RecQuadRatBezier,TriParamBound,RecParamBound>::solveCCD, BoundingBoxType::OBB,deltaT);
-			const auto endTime = steady_clock::now();
-			if(t < deltaT){
-				hasCol[fr] = true;
-				if(firstCol >= totalTime){
-					firstCol = t + fr * deltaT;
-					bunnyPos.moveObj(bunnyVel, t);
-					torusPos.moveObj(torusVel, t);
-					bunnyPos.writeObj("col-bunny.obj");
-					torusPos.writeObj("col-torus.obj");
-				}
-			}
-			else hasCol[fr] = false;
-			timeCost[fr] = duration(endTime - initialTime).count();
-			std::cout<<"frame "<<fr<<" costs "<<timeCost[fr]<<"s.\n";
+			std::ofstream outfile("17-torusPos.dat", std::ios::out|std::ios::trunc|std::ios::binary);
+			for(const auto&patch:torusPos.patches)
+				for(const auto&p:patch.ctrlp)
+					for(int dim=0; dim < 4; ++dim) 
+						outfile.write(reinterpret_cast<const char*>(&p[dim]),sizeof(p[dim]));
+			outfile.close();
+			outfile.open("17-torusVel.dat", std::ios::out|std::ios::trunc|std::ios::binary);
+			for(const auto&patch:torusVel.patches)
+				for(const auto&p:patch.ctrlp)
+					for(int dim=0; dim < 4; ++dim) 
+						outfile.write(reinterpret_cast<const char*>(&p[dim]),sizeof(p[dim]));
+			outfile.close();
+			bunnyPos.writeObj("17-bunnyPos.obj");
+			bunnyVel.writeObj("17-bunnyVel.obj");
+			exit(0);
 		}
+		// const auto initialTime = steady_clock::now();
+		// double t = ccd(bunnyPos, bunnyVel, torusPos, torusVel, SolverTD<TriLinearBezier,RecQuadRatBezier,TriParamBound,RecParamBound>::solveCCD, BoundingBoxType::OBB,deltaT);
+		// const auto endTime = steady_clock::now();
+		// if(t < deltaT){
+		// 	hasCol[fr] = true;
+		// 	if(firstCol >= totalTime){
+		// 		firstCol = t + fr * deltaT;
+		// 		bunnyPos.moveObj(bunnyVel, t);
+		// 		torusPos.moveObj(torusVel, t);
+		// 		bunnyPos.writeObj("col-bunny.obj");
+		// 		torusPos.writeObj("col-torus.obj");
+		// 	}
+		// }
+		// else hasCol[fr] = false;
+		// timeCost[fr] = duration(endTime - initialTime).count();
+		// std::cout<<"frame "<<fr<<" costs "<<timeCost[fr]<<"s.\n";
 		bunnyPos = newBunnyPos;
 		torusPos = newTorusPos;
 
