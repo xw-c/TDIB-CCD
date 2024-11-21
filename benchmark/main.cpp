@@ -6,6 +6,15 @@
 #include <iostream>
 #include "linearSolver.h"
 #include "linearSolverTrad.h"
+#include "argsParser.h"
+inline std::unique_ptr<ArgsParser> BuildArgsParser()
+{
+	auto parser = std::make_unique<ArgsParser>();
+	parser->addArgument<std::string>("path", 'p', "path to CCD benchmark", "");
+    parser->addArgument<std::string>("solver", 's', "type of ccd solver (trad, td)", "td");
+    parser->addArgument<std::string>("bb", 'b', "type of bounding box (aabb, obb)", "obb");
+	return parser;
+}
 
 static std::ofstream outfile("log.txt");
 
@@ -23,7 +32,7 @@ void count_fp_fn(double t, bool gt, int& fn, int& fp, const std::filesystem::dir
     }
 }
 
-double do_EE_test(const std::array<std::array<double, 3>, 8>& vertices, double& time){
+double do_EE_test(const std::array<std::array<double, 3>, 8>& vertices, double& time, const std::string &solver, const BoundingBoxType &bb){
     Vector3d ea0_t0(vertices[0][0],vertices[0][1],vertices[0][2]);
     Vector3d ea1_t0(vertices[1][0],vertices[1][1],vertices[1][2]);
     Vector3d eb0_t0(vertices[2][0],vertices[2][1],vertices[2][2]);
@@ -36,15 +45,15 @@ double do_EE_test(const std::array<std::array<double, 3>, 8>& vertices, double& 
             va(ea0_t1-ea0_t0, ea1_t1-ea1_t0), vb(eb0_t1-eb0_t0, eb1_t1-eb1_t0);
     double u1 = 0, u2 = 0;
     const auto initialTime = std::chrono::steady_clock::now();
-    double t = LinearSolverTD::solveEETest(a, va, b, vb, u1, u2, BoundingBoxType::OBB, 1, 1e-6);
-    // double t = LinearSolverTrad::solveEETest(a, va, b, vb, u1, u2, BoundingBoxType::AABB, 1, 1e-6);
+    double t = solver == "td" ? LinearSolverTD::solveEETest(a, va, b, vb, u1, u2, bb, 1, 1e-6)
+                              : LinearSolverTrad::solveEETest(a, va, b, vb, u1, u2, bb, 1, 1e-6);
     const auto endTime = std::chrono::steady_clock::now();
     double used_time = std::chrono::duration<double>(endTime - initialTime).count();
     time += used_time;
     return t;
 }
 
-double do_VF_test(const std::array<std::array<double, 3>, 8>& vertices, double& time){
+double do_VF_test(const std::array<std::array<double, 3>, 8>& vertices, double& time, const std::string &solver, const BoundingBoxType &bb){
     Vector3d p_t0(vertices[0][0],vertices[0][1],vertices[0][2]);
     Vector3d t0_t0(vertices[1][0],vertices[1][1],vertices[1][2]);
     Vector3d t1_t0(vertices[2][0],vertices[2][1],vertices[2][2]);
@@ -57,15 +66,13 @@ double do_VF_test(const std::array<std::array<double, 3>, 8>& vertices, double& 
     Face face(f), vface(vf);
     Array2d uv(0, 0);
     const auto initialTime = std::chrono::steady_clock::now();
-    double t = LinearSolverTD::solveVFTest(p_t0, p_t1-p_t0, face, vface, uv, BoundingBoxType::OBB, 1, 1e-6);
-    // double t = LinearSolverTrad::solveVFTest(p_t0, p_t1-p_t0, face, vface, uv, BoundingBoxType::AABB, 1, 1e-6);
+    double t = solver == "td" ? LinearSolverTD::solveVFTest(p_t0, p_t1-p_t0, face, vface, uv, bb, 1, 1e-6)
+                              : LinearSolverTrad::solveVFTest(p_t0, p_t1-p_t0, face, vface, uv, bb, 1, 1e-6);
     const auto endTime = std::chrono::steady_clock::now();
     double used_time = std::chrono::duration<double>(endTime - initialTime).count();
     time += used_time;
     return t;
 }
-
-static const std::filesystem::path root_path(std::string("D:\\CCD\\wang21benchmark"));
 
 static const std::array<std::string, 11> folders { {
     "erleben-sliding-spike",
@@ -93,7 +100,7 @@ static const std::array<std::string, 2> subfolders { {
     "vertex-face"
 } };
 
-void handcrafted_tests(){
+void handcrafted_tests(const std::filesystem::path &root_path, const std::string &solver, const BoundingBoxType &bb){
     double time_ee = 0, time_vf = 0;
     int fp_ee = 0, fn_ee = 0, fp_vf = 0, fn_vf = 0, cnt_ee = 0, cnt_vf = 0;
     for (const std::string& folder : folders) {
@@ -109,12 +116,12 @@ void handcrafted_tests(){
                     bool gt = query.ground_truth;
                     if(subfolder == "edge-edge") {
                         cnt_ee++;
-                        double t = do_EE_test(vertices, time_ee);
+                        double t = do_EE_test(vertices, time_ee, solver, bb);
                         count_fp_fn(t, gt, fn_ee, fp_ee, csv, i);
                     }
                     else if(subfolder == "vertex-face") {
                         cnt_vf++;
-                        double t = do_VF_test(vertices, time_vf);
+                        double t = do_VF_test(vertices, time_vf, solver, bb);
                         count_fp_fn(t, gt, fn_vf, fp_vf, csv, i);
                     }
                 }
@@ -132,7 +139,7 @@ void handcrafted_tests(){
     std::cout<<"total time VF:"<<time_vf<<std::endl;
 }
 
-void simulation_tests(){
+void simulation_tests(const std::filesystem::path &root_path, const std::string &solver, const BoundingBoxType &bb){
     double time_ee = 0, time_vf = 0;
     int fp_ee = 0, fn_ee = 0, fp_vf = 0, fn_vf = 0, cnt_ee = 0, cnt_vf = 0;
     for (const std::string& simulation_folder : simulation_folders) {
@@ -149,12 +156,12 @@ void simulation_tests(){
                     if(subfolder == "edge-edge") {
                         cnt_ee++;
                         // outfile<<"testing "<< csv.path().string() <<"case #"<<i<<" cur time "<< time_ee << std::endl;
-                        double t = do_EE_test(vertices, time_ee);
+                        double t = do_EE_test(vertices, time_ee, solver, bb);
                         count_fp_fn(t, gt, fn_ee, fp_ee, csv, i);
                     }
                     else if(subfolder == "vertex-face") {
                         cnt_vf++;
-                        double t = do_VF_test(vertices, time_vf);
+                        double t = do_VF_test(vertices, time_vf, solver, bb);
                         count_fp_fn(t, gt, fn_vf, fp_vf, csv, i);
                     }
                 }
@@ -173,40 +180,19 @@ void simulation_tests(){
 }
 
 int main(int argc, char *argv[]){
-    handcrafted_tests();
-    simulation_tests();
-}
+    auto parser = BuildArgsParser();
+	parser->parse(argc, argv);
 
-// int main(int argc, char *argv[]){
-//     double time = 0;
-//     int fp = 0, fn = 0, cnt = 0;
-//     std::string csv = "D:\\CCD\\ccd-queries-handcrafted\\fn_obb.csv";
-//     std::vector<ccd_io::CCDQuery> queries = ccd_io::read_ccd_queries(csv);
-//     int len = queries.size();
-//     // std::cout<<len<<std::endl;
-//     for(int i = 0; i < len; ++i) {
-//         cnt++;
-//         // std::cout<<"testing "<<csv.path().string()<<" case #"<< i <<std::endl;
-//         const auto& query = queries[i];
-//         const auto& vertices = query.vertices;
-//         // std::cout << std::fixed << std::setprecision(18);
-//         // for(int k = 0; k < 8; ++k){
-//         //     for(int l = 0; l < 3; ++l){
-//         //         std::cout<<vertices[k][l]<<" ";
-//         //     }
-//         //     std::cout<<std::endl;
-//         // }
-//         bool gt = query.ground_truth;
-//         double t = do_EE_test(vertices, time);
-//         bool collide = t >= 0;
-//         if(gt && !collide) {
-//             fn++;
-//             std::cout<<"FN occured in "<<csv<<" case #"<<i<<std::endl;
-//         }
-//     }
-//     std::cout << std::fixed << std::setprecision(10);
-//     std::cout<<"FN :"<<fn<<std::endl;
-//     std::cout<<"FP :"<<fp<<std::endl;
-//     std::cout<<"total cases:"<<cnt<<std::endl;
-//     std::cout<<"total time:"<<time<<std::endl;
-// }
+    const auto path = std::any_cast<std::string>(parser->getValueByName("path"));
+    const std::filesystem::path root_path(path);
+    if(!std::filesystem::exists(path)) {
+        std::cerr << "Invalid path. Check your benchmark directory." << std::endl;
+        return -1;
+    }
+    const auto solverType = std::any_cast<std::string>(parser->getValueByName("solver"));
+    const auto bbType = std::any_cast<std::string>(parser->getValueByName("bb"));
+    BoundingBoxType bb;
+	bb = bbType=="obb" ? BoundingBoxType::OBB : bb = BoundingBoxType::AABB;
+    handcrafted_tests(root_path, solverType, bb);
+    simulation_tests(root_path, solverType, bb);
+}
