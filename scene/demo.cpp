@@ -8,7 +8,7 @@ inline std::unique_ptr<ArgsParser> BuildArgsParser()
 	parser->addArgument<std::string>("experiment", 'e', "type of experiment (rand, single, bunny)", "rand");
 	parser->addArgument<std::string>("bb", 'b', "type of bounding box (aabb, obb)", "obb");
 
-	parser->addArgument<double>("delta", 'd', "distance for convergence criterion", 1e-6);
+	parser->addArgument<double>("delta", 'd', "distance for convergence criterion", 1e-5);
 	parser->addArgument<int>("kase", 'k', "number of generated cases", 100);
 	return parser;
 }
@@ -38,16 +38,16 @@ int main(int argc, char *argv[]){
 	else if(solverType=="trad")
 		solver = SolverType::TradIntv;
 	else{
-		std::cerr<<"Bounding box not implemented.\n";
+		std::cerr<<"Solver not implemented.\n";
 		exit(-1);
 	}
 
-	if(expType=="single")
-		singleTest<RecCubicBezier, RecParamBound>(solver, bb, deltaDist);
-	else if(expType=="rand")
+	if(expType=="rand")
 		randomTest<RecCubicBezier, RecParamBound>(solver, bb, deltaDist, kase);
+	else if(expType=="single")
+		singleTest(solver, bb, deltaDist);
 	else if(expType=="bunny")
-		parabolaBunnyTorus();
+		parabolaBunnyTorus(solver, bb, deltaDist);
 	else{
 		std::cerr<<"Experiment not implemented.\n";
 		exit(-1);

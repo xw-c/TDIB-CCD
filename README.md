@@ -15,7 +15,7 @@ We have implemented the traditional inclusion-based method (described in Section
 ### Geometric primitives
 CCD methods between parametric surfaces have been tested on different geometric primitives, including triangular patches and rectangular patches of 1st/2nd/3rd order. Each patch is represented by a list of control points. Taking third-order patches as an example, we illustrate the order below. 
 - Each control point of an rectangular patch of order $n$ is denoted by 2 integers indicating its position on the $(u,v)$ grid.
-- Each control point of an triangular patch of order $n$ is denoted by 3 integers, which sums into $n$, indicating its position on the $(u,v,w)$ grid.
+- Each control point of an triangular patch of order $n$ is denoted by 3 integers, which add up to $n$, indicating its position on the $(u,v,w)$ grid.
 
 ![](img/geo.gif)
 
@@ -24,6 +24,7 @@ This repository has contained 3 experiments for CCD between parametric surfaces.
 - Singel test. We manually design a simple case to show how to use the CCD solver.
 - Random test. It randomly generates a number of CCD cases between third-order rectangular patches and report the average time consumption. The geometric primitive can be changed by editing the template parameters in the `main` function.
 - Bunny-torus test (Figure 2). CCD is applied between 2 multi-patch objects. Both the bunny and the torus undergo imitated rigid-body motions.
+
 Also, it has contained 1 experiment for EE/VF tests.
 【【【【【【TODO】】】】】】
 ## Usage
