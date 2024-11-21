@@ -25,7 +25,7 @@ This repository has contained 3 experiments for CCD between parametric surfaces.
 - Random test. It randomly generates a number of CCD cases between third-order rectangular patches and report the average time consumption. The geometric primitive can be changed by editing the template parameters in the `main` function.
 - Bunny-torus test (Figure 2). CCD is applied between 2 multi-patch objects. Both the bunny and the torus undergo imitated rigid-body motions.
 
-Also, it has contained 1 experiment for EE/VF tests in the `benchmark` branch. This experiment tests CCD solvers on the large-scale benchmark released by [CCD-Wrapper](https://github.com/Continuous-Collision-Detection/CCD-Wrapper).
+Additionally, it includes one experiment for EE/VF tests in the `benchmark` branch. This experiment evaluates CCD solvers on the large-scale benchmark released by [CCD-Wrapper](https://github.com/Continuous-Collision-Detection/CCD-Wrapper).
 
 ## Usage
 ### Install
@@ -50,7 +50,7 @@ Optional arguments:
 ```
 The default setting is
 ```
-xmake run scene -s td -e rand -b obb -d 1e-6 k 100
+xmake run scene -s td -e rand -b obb -d 1e-5 -k 100
 ```
 Put the `./scene/bunny292.obj` file under the same folder as `scene.exe` before you run the bunny-torus test.
 
