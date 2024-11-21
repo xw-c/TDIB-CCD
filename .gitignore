@@ -5,5 +5,5 @@ build
 .vscode
 vsxmake*
 
-data
-log
+data*
+log*

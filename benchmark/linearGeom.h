@@ -32,19 +32,10 @@ struct Line
 	void set(const double& _k, const double &_b){k=_k,b=_b;}
 	Line(const double& k,const double& b): k(k), b(b) {}
 	bool operator<(const Line &l) const { 
-		return k < l.k || (k == l.k && b > l.b); // 相同斜率的直线中只有截距最大的被留下来
+		return k < l.k || (k == l.k && b > l.b);
 	}
 	bool operator==(const Line &l) const {return k == l.k;}
 };
-
-// class Vert{
-// public:
-// 	static const int cntCp = 1;
-// 	std::array<Vector3d,1> ctrlp;
-// 	Vert() {}
-// 	Vert(const Vector3d&v) {ctrlp[0]=v;}
-// 	Vert(const std::array<Vector3d,1>&v): ctrlp(v) {}
-// };
 
 class Edge{
 public:
@@ -84,20 +75,6 @@ public:
 		const double w1 = pb1[1]-pb1[0], w2 = pb2[1]-pb2[0];
 		return std::max(w1,w2);
 	}
-	// double calcL1Dist(const Edge &CpPos1, const Edge &CpVel1, 
-	// 				const Edge &CpPos2, const Edge &CpVel2) const{
-	// 	auto ptPos1 = CpPos1.divideBezierPatch(pb1);
-	// 	auto ptVel1 = CpVel1.divideBezierPatch(pb1);
-	// 	auto ptPos2 = CpPos2.divideBezierPatch(pb2);
-	// 	auto ptVel2 = CpVel2.divideBezierPatch(pb2);
-	// 	for(int i=0;i<Edge::cntCp;i++)
-	// 		ptPos1[i]+=ptVel1[i]*tIntv[0];
-	// 	for(int i=0;i<Edge::cntCp;i++)
-	// 		ptPos2[i]+=ptVel2[i]*tIntv[0];
-	// 	double d1=(ptPos1[0].cwiseMax(ptPos1[1])-ptPos1[0].cwiseMin(ptPos1[1])).maxCoeff();
-	// 	double d2=(ptPos2[0].cwiseMax(ptPos2[1])-ptPos2[0].cwiseMin(ptPos2[1])).maxCoeff();
-	// 	return std::max(d1, d2);
-	// }
 };
 
 struct VFPair{
@@ -112,15 +89,5 @@ struct VFPair{
 	double calc4dWidth() const{
 		return pb.width();
 	}
-	// double calcL1Dist(const Vector3d &CpPos1, const Vector3d &CpVel1, 
-	// 				const Face &CpPos2, const Face &CpVel2) const{
-	// 	auto ptPos2 = CpPos2.divideBezierPatch(pb);
-	// 	auto ptVel2 = CpVel2.divideBezierPatch(pb);
-	// 	for(int i=0;i<Face::cntCp;i++)
-	// 		ptPos2[i]+=ptVel2[i]*tIntv[0];
-	// 	Vector3d projMax = (ptPos2[0].cwiseMax(ptPos2[1])).cwiseMax(ptPos2[2]);
-	// 	Vector3d projMin = (ptPos2[0].cwiseMin(ptPos2[1])).cwiseMin(ptPos2[2]);
-	// 	return (projMax-projMin).maxCoeff();
-	// }
 };
 

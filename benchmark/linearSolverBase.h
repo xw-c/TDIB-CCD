@@ -8,18 +8,14 @@ private:
 		std::vector<Line> ch1, ch2;
 		ch1.clear(); ch2.clear();
 
-			// for(const auto& l:lines1)std::cout<<"lines1:  "<<l.k<<" "<<l.b<<"\n";
-			// for(const auto& l:lines2)std::cout<<"lines2:  "<<l.k<<" "<<l.b<<"\n";
 		robustCH(lines1, ch1, true, timeIntv);
 		robustCH(lines2, ch2, false, timeIntv);
-			// for(const auto& l:ch1)std::cout<<"ch1:  "<<l.k<<" "<<l.b<<"\n";
-			// for(const auto& l:ch2)std::cout<<"ch2:  "<<l.k<<" "<<l.b<<"\n";
 		return robustHullIntersect(ch1, ch2, timeIntv);
 	};
 	static void robustCH(std::vector<Line>& lines, std::vector<Line>& ch, 
 				const bool getMaxCH, const Array2d& tIntv) {
 		if(!getMaxCH)std::reverse(lines.begin(),lines.end());
-		lines.erase(std::unique(lines.begin(), lines.end()), lines.end()); // 去重
+		lines.erase(std::unique(lines.begin(), lines.end()), lines.end());
 		ch.clear();
 		ch.push_back(lines[0]);
 		int alpha = 1;
@@ -153,7 +149,7 @@ private:
 		if(feasibleIntvs[0](0)<=initTimeIntv[0]){
 			minT = feasibleIntvs[0](1);
 			for(int i=1;i<feasibleIntvs.size();i++)
-				if(feasibleIntvs[i](0)<minT) //不能加等，因为无碰撞给的是开区间，如果有),(的情况加等号会把这个情况漏掉
+				if(feasibleIntvs[i](0)<minT)
 					minT=std::max(minT, feasibleIntvs[i](1));
 				else break;
 		}
@@ -166,13 +162,12 @@ private:
 		if(feasibleIntvs[0](1)>=initTimeIntv[1]){
 			maxT = feasibleIntvs[0](0);
 			for(int i=1;i<feasibleIntvs.size();i++)
-				if(feasibleIntvs[i](1)>maxT) //不能加等，因为无碰撞给的是开区间，如果有),(的情况加等号会把这个情况漏掉
+				if(feasibleIntvs[i](1)>maxT)
 					maxT=std::min(maxT, feasibleIntvs[i](0));
 				else break;
 		}
 		if(initTimeIntv[0] > maxT) { colTime = Array2d(-1,-1); return false; }
-		// maxT=std::max(minT, maxT);
-		else if(minT > maxT) { colTime = Array2d(minT, initTimeIntv[1]);}//{ colTime = Array2d(-1,-1); return false; }
+		else if(minT > maxT) { colTime = Array2d(minT, initTimeIntv[1]);}
 		colTime = Array2d(minT, maxT); 
 		return true;
 	}
@@ -200,15 +195,12 @@ public:
 			axes = {Vector3d::Unit(0), Vector3d::Unit(1), Vector3d::Unit(2)};
 		}
 		else if(bb==BoundingBoxType::OBB){
-			//axis变成0即为退化情况，但看起来不用特殊处理
-			Vector3d lu = Edge::direction(ptPos1) + initTimeIntv[0]*Edge::direction(ptVel1);//u延展的方向
-			Vector3d lvtmp = Edge::direction(ptPos2) + initTimeIntv[0]*Edge::direction(ptVel2);//u延展的方向
-			// lu[0]*=1.01;
+			Vector3d lu = Edge::direction(ptPos1) + initTimeIntv[0]*Edge::direction(ptVel1);
+			Vector3d lvtmp = Edge::direction(ptPos2) + initTimeIntv[0]*Edge::direction(ptVel2);
 			Vector3d randu = Vector3d::Random()*lu.norm()*0.01;
 			Vector3d randv = Vector3d::Random()*lvtmp.norm()*0.01;
 			lu+=randu;
 			lvtmp+=randv;
-			// lvtmp[0]*=1.5;
 			Vector3d ln = lu.cross(lvtmp);
 			Vector3d lv = ln.cross(lu);
 			axes = {lu, lv, ln};
@@ -254,7 +246,6 @@ public:
 
 			// Decide whether the algorithm converges
 			double mid1 = (cur.pb1[0]+cur.pb1[1])*0.5, mid2 = (cur.pb2[0]+cur.pb2[1])*0.5;
-			// if (cur.calcL1Dist(CpPos1, CpVel1, CpPos2, CpVel2) < deltaDist) {
 			if (cur.calc4dWidth() < deltaDist) {
 				u1=mid1, u2=mid2;
 				return cur.tIntv[0];
@@ -301,10 +292,9 @@ public:
 			axes = {Vector3d::Unit(0), Vector3d::Unit(1), Vector3d::Unit(2)};
 		}
 		else if(bb==BoundingBoxType::OBB){
-			Vector3d lu = Face::axisU(ptPos2) + initTimeIntv[0]*Face::axisU(ptVel2);//u延展的方向
-			Vector3d lvtmp = Face::axisV(ptPos2) + initTimeIntv[0]*Face::axisV(ptVel2);//u延展的方向
+			Vector3d lu = Face::axisU(ptPos2) + initTimeIntv[0]*Face::axisU(ptVel2);
+			Vector3d lvtmp = Face::axisV(ptPos2) + initTimeIntv[0]*Face::axisV(ptVel2);
 			lu[0]*=1.01;
-			// lvtmp[0]*=1.01;
 			Vector3d ln = lu.cross(lvtmp);
 			Vector3d lv = ln.cross(lu);
 			axes = {lu, lv, ln};
@@ -344,7 +334,6 @@ public:
 			heap.pop();
 
 			// Decide whether the algorithm converges
-			// if (cur.calcL1Dist(CpPos1, CpVel1, CpPos2, CpVel2) < deltaDist) {
 			if (cur.calc4dWidth() < deltaDist) {
 				uv = cur.pb.centerParam();
 				return cur.tIntv[0];
@@ -358,11 +347,9 @@ public:
 				auto ptPos2 = CpPos2.divideBezierPatch(divUvB2);
 				auto ptVel2 = CpVel2.divideBezierPatch(divUvB2);
 				if (primitiveVFCheck(CpPos1, CpVel1, ptPos2, ptVel2, bb, divTime1)){
-					// if(colTime[1]-colTime[0]<1e-12)return colTime[0];
 					heap.emplace(divUvB2, divTime1);
 				}
 				if (primitiveVFCheck(CpPos1, CpVel1, ptPos2, ptVel2, bb, divTime2)){
-					// if(colTime[1]-colTime[0]<1e-12)return colTime[0];
 					heap.emplace(divUvB2, divTime2);
 				}
 			}
