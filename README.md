@@ -7,10 +7,10 @@ This is the official implementation of [A Time-Dependent Inclusion-Based Method 
 ### Structure
 We have provided the core code for CCD between parametric surfaces in the `./core` folder, including implementation of geometric primitives, CCD solvers, and some auxiliary functions. Different test scenarios are set in the `./scene` folder.
 
-Also, we have provided a denegerate version of CCD methods for EE tests and VF tests between linear triangle meshes in the `./linear-tri` folder.
+Also, we have provided a denegerate version of CCD methods for EE tests and VF tests between linear triangle meshes in the `./benchmark` folder of the `benchmark` branch.
 
 ### CCD solver
-We have implemented the traditional inclusion-based method (described in Section 3) in `./core/solverTrad.h` and our proposed time-dependent inclusion-based method (described in Section 4) in `./core/solverTD.h`. Both methods can adopt AABB or OBB as the inclusion type.
+We have implemented the traditional inclusion-based method (described in Section 3) and our proposed time-dependent inclusion-based method (described in Section 4). Both methods can adopt AABB or OBB as the inclusion type.
 
 ### Geometric primitives
 CCD methods between parametric surfaces have been tested on different geometric primitives, including triangular patches and rectangular patches of 1st/2nd/3rd order. Each patch is represented by a list of control points. Taking third-order patches as an example, we illustrate the order below. 
@@ -21,12 +21,12 @@ CCD methods between parametric surfaces have been tested on different geometric 
 
 ### Test scenarios
 This repository has contained 3 experiments for CCD between parametric surfaces.
-- Singel test. We manually design a simple case to show how to use the CCD solver.
+- Single test. We manually design a simple case to show how to use the CCD solver.
 - Random test. It randomly generates a number of CCD cases between third-order rectangular patches and report the average time consumption. The geometric primitive can be changed by editing the template parameters in the `main` function.
 - Bunny-torus test (Figure 2). CCD is applied between 2 multi-patch objects. Both the bunny and the torus undergo imitated rigid-body motions.
 
-Also, it has contained 1 experiment for EE/VF tests.
-【【【【【【TODO】】】】】】
+Also, it has contained 1 experiment for EE/VF tests in the `benchmark` branch. This experiment tests CCD solvers on the large-scale benchmark released by [CCD-Wrapper](https://github.com/Continuous-Collision-Detection/CCD-Wrapper).
+
 ## Usage
 ### Install
 - Install [xmake](https://xmake.io/). 
@@ -54,11 +54,10 @@ xmake run scene -s td -e rand -b obb -d 1e-6 k 100
 ```
 Put the `./scene/bunny292.obj` file under the same folder as `scene.exe` before you run the bunny-torus test.
 
-To build the test for EE/VF tests, umcomment the last lines in `./xmake.lua` and run `xmake`. 
-【【【【【【TODO】】】】】】
+To build the experiment for EE/VF tests, checkout to the `benchmark` branch, follow the instructions on [CCD-Wrapper](https://github.com/Continuous-Collision-Detection/CCD-Wrapper), and use similar commands to install and run it.
 
 ## Contact
-Feel free to open a github issue or contact us at [pku_xwchen@163.com](mailto:pku_xwchen@163.com).
+Feel free to open a github issue or contact us at [pku_xwchen@163.com](mailto:pku_xwchen@163.com) / [chengyupku@163.com](mailto:chengyupku@163.com).
 
 ## Citation
 Please consider citing our paper if you find it useful for your project :)

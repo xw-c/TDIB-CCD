@@ -10,8 +10,3 @@ target("scene")
     add_includedirs("core", {public = true})
     add_packages("eigen","fmt", {public = true})
     add_files("scene/demo.cpp","core/*.cpp")
-
--- target("linear")
---     set_kind("binary")
---     add_packages("eigen","fmt", {public = true})
---     add_files("linear_tri/demo.cpp", "core/argsParser.cpp")
