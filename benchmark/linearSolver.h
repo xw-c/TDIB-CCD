@@ -14,13 +14,13 @@ private:
 		std::vector<Line> ch1, ch2;
 		ch1.clear(); ch2.clear();
 
-		for( auto& l:lines1)l.b+=1e-12*abs(l.b);
-		for( auto& l:lines2)l.b-=1e-12*abs(l.b);
-		robustCH(lines1, ch1, true, timeIntv);
-		robustCH(lines2, ch2, false, timeIntv);
-		return robustHullIntersect(ch1, ch2, timeIntv);
+		for( auto& l:lines1)l.b+=1e-6*abs(l.b);
+		for( auto& l:lines2)l.b-=1e-6*abs(l.b);
+		calcBoundaries(lines1, ch1, true, timeIntv);
+		calcBoundaries(lines2, ch2, false, timeIntv);
+		return boundaryIntersect(ch1, ch2, timeIntv);
 	};
-	static void robustCH(std::vector<Line>& lines, std::vector<Line>& ch, 
+	static void calcBoundaries(std::vector<Line>& lines, std::vector<Line>& ch, 
 				const bool getMaxCH, const Array2d& tIntv) {
 		if(!getMaxCH)std::reverse(lines.begin(),lines.end());
 		lines.erase(std::unique(lines.begin(), lines.end()), lines.end());
@@ -57,7 +57,7 @@ private:
 			exit(-1);
 		}
 	}
-	static Array2d robustHullIntersect(const std::vector<Line>& ch1, const std::vector<Line>& ch2, 
+	static Array2d boundaryIntersect(const std::vector<Line>& ch1, const std::vector<Line>& ch2, 
 							const Array2d& tIntv) {
 		int id1=0, id2=0;
 		double intvL=-1, intvR=-1;

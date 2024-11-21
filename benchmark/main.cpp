@@ -5,7 +5,7 @@
 #include <filesystem>
 #include <iostream>
 #include "linearSolver.h"
-#include "linearSolverBase.h"
+#include "linearSolverTrad.h"
 
 static std::ofstream outfile("log.txt");
 
@@ -37,7 +37,7 @@ double do_EE_test(const std::array<std::array<double, 3>, 8>& vertices, double& 
     double u1 = 0, u2 = 0;
     const auto initialTime = std::chrono::steady_clock::now();
     double t = LinearSolverTD::solveEETest(a, va, b, vb, u1, u2, BoundingBoxType::OBB, 1, 1e-6);
-    // double t = LinearSolverBase::solveEETest(a, va, b, vb, u1, u2, BoundingBoxType::AABB, 1, 1e-6);
+    // double t = LinearSolverTrad::solveEETest(a, va, b, vb, u1, u2, BoundingBoxType::AABB, 1, 1e-6);
     const auto endTime = std::chrono::steady_clock::now();
     double used_time = std::chrono::duration<double>(endTime - initialTime).count();
     time += used_time;
@@ -58,7 +58,7 @@ double do_VF_test(const std::array<std::array<double, 3>, 8>& vertices, double& 
     Array2d uv(0, 0);
     const auto initialTime = std::chrono::steady_clock::now();
     double t = LinearSolverTD::solveVFTest(p_t0, p_t1-p_t0, face, vface, uv, BoundingBoxType::OBB, 1, 1e-6);
-    // double t = LinearSolverBase::solveVFTest(p_t0, p_t1-p_t0, face, vface, uv, BoundingBoxType::AABB, 1, 1e-6);
+    // double t = LinearSolverTrad::solveVFTest(p_t0, p_t1-p_t0, face, vface, uv, BoundingBoxType::AABB, 1, 1e-6);
     const auto endTime = std::chrono::steady_clock::now();
     double used_time = std::chrono::duration<double>(endTime - initialTime).count();
     time += used_time;
