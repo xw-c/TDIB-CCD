@@ -5,6 +5,7 @@ class RecQuadRatBezier{
 public:
 	static const int cntCp = 9;
 	std::array<Vector4d, 9> ctrlp;
+	
 	RecQuadRatBezier(){}
 	RecQuadRatBezier(const std::array<Vector3d, 9>& pos, const std::array<double, 9>& weight){
 		for(int i = 0; i < 9; i++){
@@ -24,6 +25,7 @@ public:
 			ctrlp[i] = Vector4d(0, 0, 0, weight[i]);
 		}
 	}
+
 	Vector4d lerp(double t, Vector4d const &t0, Vector4d const &t1) const { return (1 - t) * t0 + t * t1; }
 	Vector4d blossomQuadBezier(std::span<Vector4d const> p, double u0, double u1) const {
 		Vector4d b[2] = { lerp(u0, p[0], p[1]), lerp(u0, p[1], p[2]) };
@@ -40,7 +42,7 @@ public:
 
 	Vector3d get3dPos(const Vector4d& pt) const { 
 		if(pt[3]==0){
-			std::cout<<"why zero weight?\n";exit(-1);
+			std::cerr<<"zero weight!\n";exit(-1);
 		}
 		return Vector3d(pt[0]/pt[3], pt[1]/pt[3], pt[2]/pt[3]); 
 	}
@@ -57,8 +59,6 @@ public:
 		return (pt[2]-pt[0]+pt[8]-pt[6]);
 	}
 
-	// Patch Functions
-	// 先v变再u变
 	std::array<Vector3d, 9> divideBezierPatch(RecParamBound const &uvB) const {
 		std::array<Vector3d, 9> divCp;
 		divCp[0] = get3dPos(blossomBiquadBezier(ctrlp, uvB.corner(0), uvB.corner(0)));
@@ -74,23 +74,10 @@ public:
 	}
 };
 
-// Bicubic Bezier Functions
 class RecCubicRatBezier{
 public:
 	static const int cntCp = 16;
-	// wx, wy, wz, w
 	std::array<Vector4d, 16> ctrlp;
-
-	// RecCubicRatBezier(const std::array<Vector3d, 16>& pos, const std::array<double, 16>& weight){
-	// 	for(int i = 0; i < 16; i++){
-	// 		ctrlp[i] = Vector4d(pos[i][0]*weight[i], pos[i][1]*weight[i], pos[i][2]*weight[i], weight[i]);
-	// 	}
-	// }
-	// RecCubicRatBezier(const std::array<double, 16>& weight){
-	// 	for(int i = 0; i < 16; i++){
-	// 		ctrlp[i] = Vector4d(0, 0, 0, weight[i]);
-	// 	}
-	// }
 
 	Vector4d lerp(double t, Vector4d const &t0, Vector4d const &t1) const { return (1 - t) * t0 + t * t1; }
 	
@@ -123,8 +110,7 @@ public:
 	static Vector3d axisV(const std::array<Vector3d, 16>& pt){
 		return (pt[3]-pt[0]+pt[15]-pt[12]);
 	}
-	// Patch Functions
-	// 先v变再u变
+
 	std::array<Vector3d, 16> divideBezierPatch(RecParamBound const &uvB) const {
 		std::array<Vector3d, 16> divCp;
 		divCp[0] = get3dPos(blossomBicubicBezier(ctrlp, uvB.corner(0), uvB.corner(0), uvB.corner(0)));

@@ -9,7 +9,7 @@ public:
 	TriQuadRatBezier(const std::array<Vector3d, 6>& pos, const std::array<double, 6>& weight){
 		for(int i = 0; i < 6; i++){
 			if(weight[i]==0){
-				std::cerr<<"zero weight!\n";
+				std::cerr<<"Error: rational patch got zero weight!\n";
 				exit(-1);
 			}
 			ctrlp[i] = Vector4d(pos[i][0]*weight[i], pos[i][1]*weight[i], pos[i][2]*weight[i], weight[i]);
@@ -18,7 +18,7 @@ public:
 	TriQuadRatBezier(const std::array<double, 6>& weight){
 		for(int i = 0; i < 6; i++){
 			if(weight[i]==0){
-				std::cerr<<"zero weight!\n";
+				std::cerr<<"Error: rational patch got zero weight!\n";
 				exit(-1);
 			}
 			ctrlp[i] = Vector4d(0, 0, 0, weight[i]);
@@ -26,10 +26,6 @@ public:
 	}
 
 	Vector4d triLerp(const Vector4d& b0, const Vector4d& b1, const Vector4d& b2, const BaryCoord& coord) const {
-		if(std::abs(coord.u + coord.v + coord.w - 1) > 1e-12){
-			std::cerr<<coord.u + coord.v + coord.w<<"param coord wrong!\n";
-			exit(-1);
-		}
 		return coord.w * b0 + coord.u * b1 + coord.v * b2;
 	}
 
@@ -52,7 +48,6 @@ public:
 		return pt[5]-pt[0];
 	}
 
-	// 100,010,001
 	std::array<Vector3d, 6> divideBezierPatch(const TriParamBound& coords) const {
 		std::array<Vector3d, 6> divCp;
 		divCp[0] = get3dPos(blossomBiquadBezier(ctrlp, coords.nodes[2], coords.nodes[2]));
@@ -68,14 +63,13 @@ public:
 class TriCubicRatBezier {
 public:
 	static const int cntCp = 10;
-	// 003,102,201,300,012,111,210,021,120,030
 	std::array<Vector4d, 10> ctrlp;
 
 	TriCubicRatBezier() {}
 	TriCubicRatBezier(const std::array<Vector3d, 10>& pos, const std::array<double, 10>& weight){
 		for(int i = 0; i < 10; i++){
 			if(weight[i]==0){
-				std::cerr<<"zero weight!\n";
+				std::cerr<<"Error: rational patch got zero weight!\n";
 				exit(-1);
 			}
 			ctrlp[i] = Vector4d(pos[i][0]*weight[i], pos[i][1]*weight[i], pos[i][2]*weight[i], weight[i]);
@@ -84,7 +78,7 @@ public:
 	TriCubicRatBezier(const std::array<double, 10>& weight){
 		for(int i = 0; i < 10; i++){
 			if(weight[i]==0){
-				std::cerr<<"zero weight!\n";
+				std::cerr<<"Error: rational patch got zero weight!\n";
 				exit(-1);
 			}
 			ctrlp[i] = Vector4d(0, 0, 0, weight[i]);
@@ -94,10 +88,6 @@ public:
 	TriCubicRatBezier(const std::array<Vector4d, 10>& p): ctrlp(p) {}
 
 	Vector4d triLerp(const Vector4d& b0, const Vector4d& b1, const Vector4d& b2, const BaryCoord& coord) const {
-		if(std::abs(coord.u + coord.v + coord.w - 1) > 1e-12){
-			std::cerr<<coord.u + coord.v + coord.w<<"param coord wrong!\n";
-			exit(-1);
-		}
 		return coord.w * b0 + coord.u * b1 + coord.v * b2;
 	}
 
@@ -126,7 +116,6 @@ public:
 		return pt[9]-pt[0];
 	}
 
-	// 100,010,001
 	std::array<Vector3d, 10> divideBezierPatch(const TriParamBound& coords) const {
 		std::array<Vector3d, 10> divCp;
 		divCp[0] = get3dPos(blossomBicubicBezier(ctrlp, coords.nodes[2], coords.nodes[2], coords.nodes[2]));

@@ -10,6 +10,7 @@ using Eigen::MatrixXd;
 #include <span>
 #include <array>
 
+// For rec patches
 class RecParamBound {
 public:
 	Array2d pMin, pMax;
@@ -46,6 +47,7 @@ public:
 	}
 };
 
+// For tri patches
 class BaryCoord {
 public:
 	double u,v,w;
@@ -69,6 +71,7 @@ public:
     }
 };
 
+// For tri patches
 class TriParamBound{
 public:
 

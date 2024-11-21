@@ -5,6 +5,7 @@ class RecLinearBezier{
 public:
 	static const int order = 1;
 	static const int cntCp = 4;
+	// control point order: 00, 01, 10, 11
 	std::array<Vector3d, 4> ctrlp;
 	Vector3d lerp(double t, Vector3d const &t0, Vector3d const &t1) const { return (1 - t) * t0 + t * t1; }
 	Vector3d blossomLinearBezier(std::span<Vector3d const> p, double u0) const {
@@ -31,8 +32,7 @@ public:
 		return pt[1]-pt[0]+pt[3]-pt[2];
 	}
 	
-	// Patch Functions
-	// 先v变再u变
+	// control point order: 00, 01, 10, 11
 	std::array<Vector3d, 4> divideBezierPatch(RecParamBound const &uvB) const {
 		std::array<Vector3d, 4> divCp;
 		divCp[0] = blossomBilinearBezier(ctrlp, uvB.corner(0));
@@ -47,6 +47,7 @@ class RecQuadBezier{
 public:
 	static const int order = 2;
 	static const int cntCp = 9;
+	// control point order: 00, 01, 02, 10, 11, 12, 20, 21, 22
 	std::array<Vector3d, 9> ctrlp;
 	Vector3d lerp(double t, Vector3d const &t0, Vector3d const &t1) const { return (1 - t) * t0 + t * t1; }
 	Vector3d blossomQuadBezier(std::span<Vector3d const> p, double u0, double u1) const {
@@ -74,8 +75,7 @@ public:
 		return pt[2]-pt[0]+pt[8]-pt[6];
 	}
 
-	// Patch Functions
-	// 先v变再u变
+	// control point order: 00, 01, 02, 10, 11, 12, 20, 21, 22
 	std::array<Vector3d, 9> divideBezierPatch(RecParamBound const &uvB) const {
 		std::array<Vector3d, 9> divCp;
 		divCp[0] = blossomBiquadBezier(ctrlp, uvB.corner(0), uvB.corner(0));
@@ -91,11 +91,11 @@ public:
 	}
 };
 
-// Bicubic Bezier Functions
 class RecCubicBezier{
 public:
 	static const int order = 3;
 	static const int cntCp = 16;
+	// control point order: 00, 01, 02, 03, 10, 11, 12, 13, 20, 21, 22, 23, 30, 31, 32, 33
 	std::array<Vector3d, 16> ctrlp;
 	Vector3d lerp(double t, Vector3d const &t0, Vector3d const &t1) const { return (1 - t) * t0 + t * t1; }
 	Vector3d blossomCubicBezier(std::span<Vector3d const> p, double u0, double u1, double u2) const {
@@ -124,8 +124,7 @@ public:
 		return pt[3]-pt[0]+pt[15]-pt[12];
 	}
 
-	// Patch Functions
-	// 先v变再u变
+	// control point order: 00, 01, 02, 03, 10, 11, 12, 13, 20, 21, 22, 23, 30, 31, 32, 33
 	std::array<Vector3d, 16> divideBezierPatch(RecParamBound const &uvB) const {
 		std::array<Vector3d, 16> divCp;
 		divCp[0] = blossomBicubicBezier(ctrlp, uvB.corner(0), uvB.corner(0), uvB.corner(0));

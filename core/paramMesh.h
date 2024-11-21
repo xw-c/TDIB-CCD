@@ -21,6 +21,7 @@ public:
 		return ((pdu-p).cross(pdv-p)).normalized();
 	}
 
+	// This function can sometimes affected by floating-point errors, resulting in extra or leaving patches
 	void convert2Mesh(std::vector<Vector3d>&verts, std::vector<Vector3d>&norms, std::vector<Vector3i>&faces, 
 					const double du=0.2, const double dv=0.2) const {
 		int cntVerts=0;
@@ -78,7 +79,10 @@ class ParamMesh: public MeshBase<PatchType>{
 public:
     using MeshBase<PatchType>::cntPatches;
     using MeshBase<PatchType>::patches;
-	// 用于初始化速度
+
+	ParamMesh(){}
+
+	// Initialize zero velocities
 	ParamMesh(const int cnt){
 		cntPatches = cnt;
 		patches.resize(cntPatches);
@@ -86,19 +90,6 @@ public:
 			for(auto& pt:patch.ctrlp)
 				pt.setZero();
 		}
-	};
-	// 读入模型
-	ParamMesh(const std::string& filename){
-		std::ifstream in(filename);
-		in>>cntPatches;
-		patches.resize(cntPatches);
-		int uOrder, vOrder;//暂时没管
-		for(auto& patch: patches){
-			in>>uOrder>>vOrder;
-			for(auto& pt:patch.ctrlp)
-				in>>pt[0]>>pt[1]>>pt[2];
-		}
-		in.close();
 	};
 
 	void moveObj(const Vector3d& dis){
@@ -129,8 +120,9 @@ public:
 			}
 		}
 	}
+
 	void rotateObj(const double& angle, const Vector3d& axis, const Vector3d& origin = Vector3d::Zero()){
-		//似乎带仿射
+		// "axis" should be unit vector, otherwise obj would be stretched
 		Eigen::AngleAxisd rot(angle, axis);
 		for(auto& patch: patches)
 			for(auto& pt:patch.ctrlp)
@@ -150,8 +142,9 @@ public:
     using MeshBase<PatchType>::patches;
 
 	RatParamMesh(){}
+
+	// Initialize zero velocities
 	RatParamMesh(const int cnt, const std::array<double, PatchType::cntCp>& weight){
-		//this用于辅助编译器识别
 		cntPatches = cnt;
 		for(int i = 0; i < cnt; i++){
 			patches.emplace_back(weight);
@@ -187,7 +180,7 @@ public:
 			}
 	}
 	void rotateObj(const double& angle, const Vector3d& axis, const Vector3d& origin = Vector3d::Zero()){
-		//似乎带仿射
+		// "axis" should be unit vector, otherwise obj would be stretched
 		Eigen::AngleAxisd rot(angle, axis);
 		for(auto& patch: patches)
 			for(auto& pt:patch.ctrlp){

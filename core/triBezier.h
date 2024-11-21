@@ -5,6 +5,7 @@ class TriLinearBezier{
 public:
 	static const int order = 1;
 	static const int cntCp = 3;
+	// control point order: 001, 100, 010
 	std::array<Vector3d, 3> ctrlp;
 	TriLinearBezier() {}
 	TriLinearBezier(const std::array<Vector3d, 3>& p): ctrlp(p) {}
@@ -30,7 +31,7 @@ public:
 		return pt[2]-pt[0];
 	}
 
-	// 100,010,001
+	// control point order: 001, 100, 010
 	std::array<Vector3d, 3> divideBezierPatch(const TriParamBound& coords) const {
 		std::array<Vector3d, 3> divCp;
 		divCp[0] = blossomBilinearBezier(ctrlp, coords.nodes[2]);
@@ -44,6 +45,7 @@ class TriQuadBezier{
 public:
 	static const int order = 2;
 	static const int cntCp = 6;
+	// control point order: 002, 101, 200, 011, 110, 020
 	std::array<Vector3d, 6> ctrlp;
 	TriQuadBezier() {}
 	TriQuadBezier(const std::array<Vector3d, 6>& p): ctrlp(p) {}
@@ -74,7 +76,7 @@ public:
 		return pt[5]-pt[0];
 	}
 
-	// 100,010,001
+	// control point order: 002, 101, 200, 011, 110, 020
 	std::array<Vector3d, 6> divideBezierPatch(const TriParamBound& coords) const {
 		std::array<Vector3d, 6> divCp;
 		divCp[0] = blossomBiquadBezier(ctrlp, coords.nodes[2], coords.nodes[2]);
@@ -91,7 +93,7 @@ class TriCubicBezier {
 public:
 	static const int order = 3;
 	static const int cntCp = 10;
-	// 003,102,201,300,012,111,210,021,120,030
+	// control point order: 003, 102, 201, 300, 012, 111, 210, 021, 120, 030
 	std::array<Vector3d, 10> ctrlp;
 
 	TriCubicBezier() {}
@@ -136,7 +138,7 @@ public:
 		return pt[9]-pt[0];
 	}
 
-	// 100,010,001
+	// control point order: 003, 102, 201, 300, 012, 111, 210, 021, 120, 030
 	std::array<Vector3d, 10> divideBezierPatch(const TriParamBound& coords) const {
 		std::array<Vector3d, 10> divCp;
 		divCp[0] = blossomBicubicBezier(ctrlp, coords.nodes[2], coords.nodes[2], coords.nodes[2]);
@@ -150,12 +152,6 @@ public:
 		divCp[8] = blossomBicubicBezier(ctrlp, coords.nodes[0], coords.nodes[1], coords.nodes[1]);
 		divCp[9] = blossomBicubicBezier(ctrlp, coords.nodes[1], coords.nodes[1], coords.nodes[1]);
 		return divCp;
-	}
-
-	void checkTri() const {
-		for(int i=0;i<10;i++){
-			std::cout<<"cp "<<i<<": "<<ctrlp[i].transpose()<<"\n";
-		}
 	}
 };
 
