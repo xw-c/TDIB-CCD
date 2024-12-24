@@ -11,21 +11,21 @@ std::string ArgsParser::generateUsage() const
 {
 	std::string usage;
 	// Usage header.
-	usage += fmt::format("Usage: {}", _progName);
+	usage += std::format("Usage: {}", _progName);
 	for (const auto &arg : _args)
 		if (arg->isMandatory())
-			usage += fmt::format(" {}", arg->getShortDesc());
+			usage += std::format(" {}", arg->getShortDesc());
 	for (const auto &arg : _args)
 		if (!arg->isMandatory())
-			usage += fmt::format(" [{}]", arg->getShortDesc());
+			usage += std::format(" [{}]", arg->getShortDesc());
 	usage += "\nOptions:\n";
 	// Usage body.
 	std::size_t maxWidth = 0;
 	for (const auto &arg : _args) maxWidth = std::max(maxWidth, arg->name().length());
 	for (const auto &arg : _args) {
-		if (arg->flag()) usage += fmt::format("  -{}, ", arg->flag());
-		else usage += fmt::format("{:^6}", "");
-		usage += fmt::format("--{:<{}}{}\n", arg->name(), maxWidth + 4, arg->desc());
+		if (arg->flag()) usage += std::format("  -{}, ", arg->flag());
+		else usage += std::format("{:^6}", "");
+		usage += std::format("--{:<{}}{}\n", arg->name(), maxWidth + 4, arg->desc());
 	}
 	// Return usage.
 	return usage;
@@ -46,13 +46,13 @@ void ArgsParser::parse(const int argc, const char *const argv[])
 				// Handle options without value, assuming _defaultValue == false.
 				if (arg->type() == typeid(bool) && !arg->isMandatory()) arg->parseValue("1");
 				else {
-					if (i + 1 == argc) reportError(fmt::format("missing value for option {}", argv[i]));
+					if (i + 1 == argc) reportError(std::format("missing value for option {}", argv[i]));
 					else if (!arg->parseValue(argv[i + 1]))
-						reportError(fmt::format("invalid value {} for option {}", argv[i + 1], argv[i]));
+						reportError(std::format("invalid value {} for option {}", argv[i + 1], argv[i]));
 					i++;
 				}
 			}
-			else reportError(fmt::format("invalid option {}", argv[i]));
+			else reportError(std::format("invalid option {}", argv[i]));
 		}
 		else _extraArgs.push_back(argv[i]);
 	}
@@ -61,7 +61,7 @@ void ArgsParser::parse(const int argc, const char *const argv[])
 		std::exit(0);
 	}
 	for (const auto &arg : _args)
-		if (arg->isMandatory() && !arg->isSet()) reportError(fmt::format("unassigned argument {}", arg->name()));
+		if (arg->isMandatory() && !arg->isSet()) reportError(std::format("unassigned argument {}", arg->name()));
 }
 
 void ArgsParser::parse(const char *cmdLine)
@@ -111,6 +111,6 @@ ArgDataBase *ArgsParser::findArgByFlag(const char flag) const
 
 void ArgsParser::reportError(const std::string &msg) const
 {
-	std::cerr << fmt::format("Error: [ArgsParser] encountered {}.\n{}", msg, generateUsage()) << std::flush;
+	std::cerr << std::format("Error: [ArgsParser] encountered {}.\n{}", msg, generateUsage()) << std::flush;
 	std::exit(-1);
 }

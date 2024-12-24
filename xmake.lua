@@ -4,9 +4,9 @@ set_optimize("faster")
 
 add_rules("mode.debug", "mode.release")
 
-add_requires("eigen","fmt")
+add_requires("eigen")
 add_requires("nlohmann_json")
-add_requires("spdlog")
+add_requires("spdlog", { configs = { std_format = true } })
 
 target("rational")
     set_kind("static")
@@ -30,5 +30,5 @@ target("ccd_io")
 target("benchmark")
     set_kind("binary")
     add_deps("ccd_io")
-    add_packages("eigen","fmt", {public = true})
+    add_packages("eigen", {public = true})
     add_files("benchmark/**.cpp")

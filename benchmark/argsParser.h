@@ -1,7 +1,7 @@
 #pragma once
 
 #include <any>
-#include <fmt/core.h>
+#include <format>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -68,7 +68,7 @@ public:
 
 	virtual ~ArgData() = default;
 
-	virtual std::string getShortDesc() const override { return _mandatory ? fmt::format("--{}", _name) : fmt::format("--{}={}", _name, _defaultValue); }
+	virtual std::string getShortDesc() const override { return _mandatory ? std::format("--{}", _name) : std::format("--{}={}", _name, _defaultValue); }
 	virtual bool parseValue(const std::string &str) override { return _set = true, bool(std::istringstream(str) >> _setValue); }
 	virtual std::any getValue() const override { return _set ? _setValue : (_mandatory ? std::any() : _defaultValue); }
 };
