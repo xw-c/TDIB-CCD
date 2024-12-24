@@ -37,8 +37,8 @@ public:
 		auto AxisCheck=[&](std::vector<Line> lines1, std::vector<Line> lines2){
 			std::vector<Line> ch1, ch2;
 			ch1.clear(); ch2.clear();
-			for( auto& l:lines1)l.b += 1e-6 * abs(l.b);
-			for( auto& l:lines2)l.b -= 1e-6 * abs(l.b);
+			for( auto& l:lines1)l.b += 1e-12 * abs(l.b);
+			for( auto& l:lines2)l.b -= 1e-12 * abs(l.b);
 			calcBoundaries(lines1, ch1, true, timeIntv);
 			calcBoundaries(lines2, ch2, false, timeIntv);
 			const auto intvT = boundaryIntersect(ch1, ch2, timeIntv);
